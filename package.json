@@ -1,24 +1,13 @@
 {
-  "name": "dave-tracker",
+  "name": "nearest-user-compass",
   "version": "1.0.0",
+  "description": "Simple HTTPS Node app showing total users, nearby users, and an arrow to the nearest user with compass support.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/iamdavecon/dave-tracker.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/iamdavecon/dave-tracker/issues"
-  },
-  "homepage": "https://github.com/iamdavecon/dave-tracker#readme",
-  "description": "",
   "dependencies": {
-    "ws": "^8.18.3"
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
   }
 }
