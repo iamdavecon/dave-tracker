@@ -23,16 +23,8 @@ body {
 	    font-size: 64px; display: inline-block; transform: rotate(0deg);
 	    transition: transform 80ms linear;
     }
-    #compassPermission {
-	    padding: 10px 14px; border-radius: 12px; border: 1px solid #ccc;
-	    background: #f9f9f9; cursor: pointer; font-weight: 600;
-    }
-    #compassPermission.hidden { display: none; }
-    .muted { color: #666; }
-    .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
-
     #map {
-	    height: 300px;
+	    height: 600px;
 	    width: 100%;
 	    margin-top: 20px;
 	    border-radius: 12px;
@@ -53,15 +45,18 @@ body {
 		<div class="card">
 			<div class="row"><div>Daves online</div><div class="mono" id="total">0</div></div>
 			<div class="row"><div>Nearby Daves (≤ 100 m)</div><div class="mono" id="nearby">0</div></div>
-			<div class="row"><div>Nearest Dave</div><div class="mono" id="distance">—</div></div>
 		</div>
 
-		<div class="card" style="text-align:center">
-			<div id="arrow">➤</div>
-			<div class="muted" id="status">Waiting for location…</div>
-			<button id="compassPermission" class="hidden">Enable Compass</button>
-		</div>
 		<div id="map"></div>
+
+		<label>
+			DavID:
+			<input id="userId" type="text" value="Dave" maxlength="64" style="width:200px;">
+			<button id="setIdBtn">Set</button>
+		</label>
+
+		<h3>Daves:</h3>
+		<ul id="distanceList"></ul>
 
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="./app.js"></script>

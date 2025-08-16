@@ -1,7 +1,7 @@
 {
-  "name": "nearest-user-compass",
+  "name": "Dave-Tracker",
   "version": "1.0.0",
-  "description": "Simple HTTPS Node app showing total users, nearby users, and an arrow to the nearest user with compass support.",
+  "description": "Simple Node app showing Daves.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

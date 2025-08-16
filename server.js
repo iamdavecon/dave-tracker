@@ -41,6 +41,25 @@ function bearingDegrees(lat1, lon1, lat2, lon2) {
 	return (brng + 360) % 360; // 0..360
 }
 
+function haversineDistance(a, b) {
+	const R = 6371000; // radius of Earth in meters
+	const toRad = (deg) => (deg * Math.PI) / 180;
+
+	const dLat = toRad(b.lat - a.lat);
+	const dLon = toRad(b.lon - a.lon);
+
+	const lat1 = toRad(a.lat);
+	const lat2 = toRad(b.lat);
+
+	const h =
+		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos(lat1) * Math.cos(lat2) *
+		Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+	return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+
 // Optional: purge stale users if they haven't updated for 2 minutes
 setInterval(() => {
 	const cutoff = Date.now() - 2*60*1000;
@@ -61,18 +80,32 @@ io.on('connection', (socket) => {
 
 	socket.on('location', (loc) => {
 		if (!loc || typeof loc.lat !== 'number' || typeof loc.lon !== 'number') return;
-		users[socket.id] = { lat: loc.lat, lon: loc.lon, updatedAt: Date.now() };
 
-		// Build others list
+		// Save/update this user's location
+		users[socket.id] = { lat: loc.lat, lon: loc.lon, icon: loc.myId, updatedAt: Date.now() };
+
 		const me = users[socket.id];
+
+		// Build list of other users with distances/bearings relative to me
 		const others = Object.entries(users)
-			.filter(([id]) => id !== socket.id)
-			.map(([id, pos]) => ({ id, ...pos }));
+			.filter(([id, u]) => id !== socket.id && u.lat != null && u.lon != null)
+			.map(([id, u]) => {
+				const distance = haversineDistance(
+					{ lat: me.lat, lon: me.lon },
+					{ lat: u.lat, lon: u.lon }
+				);
+				return { id, icon: u.icon, lat: u.lat, lon: u.lon, distance };
+			});
 
+		// Nearby definition (configurable)
 		const NEARBY_METERS = 100;
-		const nearby = others.filter(u => distanceMeters(me.lat, me.lon, u.lat, u.lon) <= NEARBY_METERS);
+		const nearby = others.filter(u => {
+			const d = distanceMeters(me.lat, me.lon, u.lat, u.lon);
+			console.log("distance to", u.icon, "=", d);
+			return d <= NEARBY_METERS;
+		});
 
-		// Nearest
+		// Nearest user
 		let nearest = null;
 		if (others.length) {
 			nearest = others.reduce((a, b) => {
@@ -84,21 +117,22 @@ io.on('connection', (socket) => {
 			nearest.bearing = bearingDegrees(me.lat, me.lon, nearest.lat, nearest.lon);
 		}
 
-
+		// Send update only to this client
 		socket.emit('update', {
 			total: Object.keys(users).length,
 			nearby: nearby.length,
 			nearest,
-			users: Object.entries(users).map(([id, u]) => ({
-				id,
-				lat: u.lat,
-				lon: u.lon,
-				isMe: id === socket.id
-			}))
+			others
 		});
 
-		// But broadcast total to everyone
+		// Broadcast total count to everyone
 		io.emit('totalUsers', Object.keys(users).length);
+	});
+
+	socket.on('setId', (name) => {
+		if (users[socket.id]) {
+			users[socket.id].icon = name;
+		}
 	});
 
 	socket.on('disconnect', () => {
@@ -110,5 +144,5 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-	console.log(`HTTPS server running at http://localhost:${PORT}`);
+	console.log(`server running at http://localhost:${PORT}`);
 });
