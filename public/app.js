@@ -8,18 +8,38 @@ const arrowEl = document.getElementById('arrow');
 const statusEl = document.getElementById('status');
 const compassBtn = document.getElementById('compassPermission');
 
-let lastBearingToNearest = null; // From our position to nearest (deg)
-let currentHeading = 0;          // Device compass heading (0 = North)
 
-// Rotate the arrow so it points towards the nearest user (bearing minus device heading)
-function updateArrow() {
-	if (lastBearingToNearest == null) {
-		arrowEl.style.transform = `rotate(0deg)`;
-		return;
+let lastBearingToNearest = null;
+let lastCompassHeading = null;
+let smoothedBearing = null;
+const bearingHistory = [];
+const MAX_HISTORY = 5; // use last 5 readings for smoothing
+let lastUpdateTime = 0;
+const UPDATE_INTERVAL = 100; // ms
+
+function smoothValue(value) {
+	bearingHistory.push(value);
+	if (bearingHistory.length > MAX_HISTORY) {
+		bearingHistory.shift();
 	}
-	const rotation = (lastBearingToNearest - currentHeading + 360) % 360;
-	arrowEl.style.transform = `rotate(${rotation}deg)`;
+	const sum = bearingHistory.reduce((a, b) => a + b, 0);
+	return sum / bearingHistory.length;
 }
+
+function updateArrow() {
+	const now = Date.now();
+	if (now - lastUpdateTime < UPDATE_INTERVAL) return; // throttle
+	lastUpdateTime = now;
+
+	if (lastBearingToNearest != null && lastCompassHeading != null) {
+		const relativeBearing =
+			(lastBearingToNearest - lastCompassHeading + 360) % 360;
+
+		smoothedBearing = smoothValue(relativeBearing);
+		arrowEl.style.transform = `rotate(${smoothedBearing}deg)`;
+	}
+}
+
 
 // --- Socket events ---
 socket.on('totalUsers', (n) => totalEl.textContent = n);
@@ -49,7 +69,7 @@ socket.on('update', (data) => {
 	if (data.nearest) {
 		lastBearingToNearest = data.nearest.bearing;
 		distanceEl.textContent = `${(data.nearest.distanceMeters).toFixed(0)} m`;
-		statusEl.textContent = `Arrow points toward nearest user.`;
+		statusEl.textContent = `Nearest Dave`;
 
 		// Draw line to nearest
 		if (myMarker) {
@@ -60,7 +80,7 @@ socket.on('update', (data) => {
 	} else {
 		lastBearingToNearest = null;
 		distanceEl.textContent = '—';
-		statusEl.textContent = 'No other users yet.';
+		statusEl.textContent = '';
 	}
 
 	updateArrow();
@@ -117,7 +137,7 @@ function handleOrientation(event) {
 		heading = (360 - event.alpha) % 360;
 	}
 	if (typeof heading === 'number' && !Number.isNaN(heading)) {
-		currentHeading = heading;
+		lastCompassHeading = heading;
 		updateArrow();
 	}
 }
