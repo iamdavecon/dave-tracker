@@ -127,20 +127,34 @@ function startGeolocation() {
 // --- Compass (DeviceOrientation) ---
 function handleOrientation(event) {
 	let heading;
-	// iOS Safari provides webkitCompassHeading (0 = North, clockwise)
-	if (typeof event.webkitCompassHeading === 'number') {
+
+	if (event.webkitCompassHeading !== undefined) {
+		// iOS Safari: already relative to true north
 		heading = event.webkitCompassHeading;
-	} else if (typeof event.alpha === 'number') {
-		// Other browsers: alpha is 0 at initial orientation; if absolute, 0 ~ North.
-		// Convert to compass heading: 0 = North, clockwise.
-		// The commonly used transform is (360 - alpha) % 360
-		heading = (360 - event.alpha) % 360;
+	} else if (event.alpha !== null) {
+		// Android / generic
+		heading = 360 - event.alpha; // compass style (clockwise from north)
+
+		// --- 180° inversion fix for Android back-facing reference ---
+		// Many devices have alpha=0 when the *back camera* is facing north,
+		// but we want alpha=0 when the *screen* faces north.
+		heading = (heading + 180) % 360;
 	}
-	if (typeof heading === 'number' && !Number.isNaN(heading)) {
-		lastCompassHeading = heading;
-		updateArrow();
+
+	// --- Compensate for screen rotation (portrait/landscape) ---
+	let screenAngle = 0;
+	if (screen.orientation && typeof screen.orientation.angle === 'number') {
+		screenAngle = screen.orientation.angle;
+	} else if (typeof window.orientation === 'number') {
+		screenAngle = window.orientation;
 	}
+
+	heading = (heading + screenAngle + 360) % 360;
+
+	lastCompassHeading = heading;
+	updateArrow();
 }
+
 
 function enableCompassListeners() {
 	window.addEventListener('deviceorientationabsolute', handleOrientation, true);
