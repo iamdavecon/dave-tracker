@@ -3,7 +3,6 @@ let myId = "Dave";
 
 const totalEl = document.getElementById('total');
 const nearbyEl = document.getElementById('nearby');
-const arrowEl = document.getElementById('arrow');
 const statusEl = document.getElementById('status');
 const distanceList = document.getElementById("distanceList");
 
@@ -26,14 +25,6 @@ document.getElementById('setIdBtn').addEventListener('click', () => {
 });
 
 
-let lastBearingToNearest = null;
-let lastCompassHeading = null;
-let smoothedBearing = null;
-const bearingHistory = [];
-const MAX_HISTORY = 5; // use last 5 readings for smoothing
-let lastUpdateTime = 0;
-const UPDATE_INTERVAL = 100; // ms
-
 // --- Socket events ---
 socket.on('totalUsers', (n) => totalEl.textContent = n);
 
@@ -46,7 +37,6 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let myMarker = null;
 let userMarkers = {};
-let nearestLine = null;
 
 const markers = {};
 
@@ -54,7 +44,7 @@ const markers = {};
 socket.on('update', (data) => {
 	// --- Update map markers ---
 	Object.values(markers).forEach(m => map.removeLayer(m));
-	for (let other of data.others) {
+	for (let other of data.daves) {
 		const marker = L.marker([other.lat, other.lon], {
 			icon: L.divIcon({
 				className: "custom-icon",
@@ -69,7 +59,7 @@ socket.on('update', (data) => {
 
 	// --- Update distance list ---
 	distanceList.innerHTML = "";
-	data.others
+	data.daves
 		.slice()
 		.sort((a, b) => a.distance - b.distance)
 		.forEach((o, idx) => {
@@ -82,6 +72,9 @@ socket.on('update', (data) => {
 			distanceList.appendChild(li);
 		});
 
+	// --- Update nearby count (within 100m) ---
+	const nearbyCount = data.daves.filter(o => o.distance <= 100).length;
+	nearbyEl.textContent = nearbyCount;
 
 });
 // --- Geolocation ---

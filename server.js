@@ -18,7 +18,7 @@ app.use(express.static('public'));
 // Structure: { socketId: { lat: Number, lon: Number, updatedAt: Number } }
 let users = {};
 
-// --- Helpers: Haversine distance and bearing ---
+// --- Helpers: Haversine distance ---
 const toRad = d => d * Math.PI / 180;
 const toDeg = r => r * 180 / Math.PI;
 
@@ -30,15 +30,6 @@ function distanceMeters(lat1, lon1, lat2, lon2) {
             Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
             Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-function bearingDegrees(lat1, lon1, lat2, lon2) {
-	const phi1 = toRad(lat1);
-	const phi2 = toRad(lat2);
-	const dLon = toRad(lon2 - lon1);
-	const y = Math.sin(dLon) * Math.cos(phi2);
-	const x = Math.cos(phi1)*Math.sin(phi2) - Math.sin(phi1)*Math.cos(phi2)*Math.cos(dLon);
-	const brng = toDeg(Math.atan2(y, x));
-	return (brng + 360) % 360; // 0..360
 }
 
 function haversineDistance(a, b) {
@@ -60,7 +51,6 @@ function haversineDistance(a, b) {
 }
 
 
-// Optional: purge stale users if they haven't updated for 2 minutes
 setInterval(() => {
 	const cutoff = Date.now() - 2*60*1000;
 	let changed = false;
@@ -86,8 +76,8 @@ io.on('connection', (socket) => {
 
 		const me = users[socket.id];
 
-		// Build list of other users with distances/bearings relative to me
-		const others = Object.entries(users)
+		// Build list of other Daves with distances relative to me
+		const daves = Object.entries(users)
 			.filter(([id, u]) => id !== socket.id && u.lat != null && u.lon != null)
 			.map(([id, u]) => {
 				const distance = haversineDistance(
@@ -97,32 +87,8 @@ io.on('connection', (socket) => {
 				return { id, icon: u.icon, lat: u.lat, lon: u.lon, distance };
 			});
 
-		// Nearby definition (configurable)
-		const NEARBY_METERS = 100;
-		const nearby = others.filter(u => {
-			const d = distanceMeters(me.lat, me.lon, u.lat, u.lon);
-			console.log("distance to", u.icon, "=", d);
-			return d <= NEARBY_METERS;
-		});
-
-		// Nearest user
-		let nearest = null;
-		if (others.length) {
-			nearest = others.reduce((a, b) => {
-				const da = distanceMeters(me.lat, me.lon, a.lat, a.lon);
-				const db = distanceMeters(me.lat, me.lon, b.lat, b.lon);
-				return da < db ? a : b;
-			});
-			nearest.distanceMeters = distanceMeters(me.lat, me.lon, nearest.lat, nearest.lon);
-			nearest.bearing = bearingDegrees(me.lat, me.lon, nearest.lat, nearest.lon);
-		}
-
-		// Send update only to this client
 		socket.emit('update', {
-			total: Object.keys(users).length,
-			nearby: nearby.length,
-			nearest,
-			others
+			daves
 		});
 
 		// Broadcast total count to everyone
