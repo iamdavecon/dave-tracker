@@ -73,8 +73,8 @@ socket.on('update', (data) => {
 		});
 
 	// --- Update nearby count (within 100m) ---
-	const nearbyCount = data.daves.filter(o => o.distance <= 100).length;
-	nearbyEl.textContent = nearbyCount;
+	//const nearbyCount = data.daves.filter(o => o.distance <= 100).length;
+	//nearbyEl.textContent = nearbyCount;
 
 });
 // --- Geolocation ---

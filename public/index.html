@@ -2,64 +2,85 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>DaveTracker</title>
-		<style>
-body {
-	font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-	margin: 0; padding: 24px;
-	display: flex; flex-direction: column; align-items: center; gap: 16px;
-}
-    .card {
-	    width: 100%; max-width: 540px;
-	    border: 1px solid #ddd; border-radius: 16px; padding: 16px;
-	    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-    }
-    .row {
-	    display: flex; justify-content: space-between; align-items: center;
-	    margin: 8px 0;
-    }
-    #arrow {
-	    font-size: 64px; display: inline-block; transform: rotate(0deg);
-	    transition: transform 80ms linear;
-    }
-    #map {
-	    height: 600px;
-	    width: 100%;
-	    margin-top: 20px;
-	    border-radius: 12px;
-	    overflow: hidden;
-    }
+		<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+		<title>DaveTracker // Mind Virus Interface</title>
 
-		</style>
+		<link rel="stylesheet" href="/style.css" />
 	</head>
 	<body>
-		<!-- Leaflet CSS & JS -->
-		<link
-				rel="stylesheet"
-				href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-				/>
-		<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+		<div class="container">
+			<header>
+				<h1>DAVE<span class="glitch">TRACKER</span></h1>
+				<div class="subtitle">COGNITIVE INFECTION MONITOR</div>
+			</header>
+
+			<section class="panel">
+				<div class="field">
+					<label>
+						DavID:
+						<input id="userId" type="text" value="Dave" maxlength="64" style="width:200px;">
+						<button id="setIdBtn">Set</button>
+					</label>
+				</div>
+
+				<div class="field">
+					<span class="label">STATUS</span>
+					<span id="status" class="value infected">INFECTED</span>
+				</div>
+
+				<div class="field">
+					<span class="label">INFECTIONS SPREAD</span>
+					<span id="infectedCount" class="value">0</span>
+				</div>
+
+				<div class="field">
+					<span class="label">FRAGMENTS COLLECTED</span>
+					<span id="fragments" class="value">0</span>
+				</div>
+
+				<div class="field">
+					<span class="label">DAVES ONLINE</span>
+					<span id="total" class="value">0</span>
+				</div>
+
+			</section>
+
+			<section class="panel">
+				<button id="infectBtn">INITIATE TRANSMISSION</button>
+				<button id="stabilizeBtn">STABILIZE HOST</button>
+			</section>
+
+			<section class="panel">
+				<!-- Leaflet CSS & JS -->
+				<link
+						rel="stylesheet"
+						href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+						/>
+				<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 
-		<div class="card">
-			<div class="row"><div>Daves online</div><div class="mono" id="total">0</div></div>
-			<div class="row"><div>Nearby Daves (≤ 100 m)</div><div class="mono" id="nearby">0</div></div>
+				<div class="label">LOCAL NETWORK MAP</div>
+				<div id="map" class="map"></div>
+			</section>
+
+			<section class="log">
+				<div class="log-title">EVENT LOG</div>
+				<ul id="logList"></ul>
+			</section>
+
+			<section class="log">
+				<div class="log-title">DAVES</div>
+				<ul id="distanceList"></ul>
+			</section>
+
+
 		</div>
-
-		<div id="map"></div>
-
-		<label>
-			DavID:
-			<input id="userId" type="text" value="Dave" maxlength="64" style="width:200px;">
-			<button id="setIdBtn">Set</button>
-		</label>
-
-		<h3>Daves:</h3>
-		<ul id="distanceList"></ul>
 
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="./app.js"></script>
 
 	</body>
 </html>
+
+
+
