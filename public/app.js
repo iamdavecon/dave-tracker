@@ -3,10 +3,11 @@ let myId = "Dave";
 
 const totalEl = document.getElementById('total');
 const nearbyEl = document.getElementById('nearby');
-const statusEl = document.getElementById('status');
+const stateEl = document.getElementById('state');
 const distanceList = document.getElementById("distanceList");
 
 
+//DavID
 const savedId = localStorage.getItem('DaveID');
 if (savedId) {
 	myId = savedId;
@@ -24,6 +25,40 @@ document.getElementById('setIdBtn').addEventListener('click', () => {
 	}
 });
 
+
+//State
+state = localStorage.getItem('davecon_state') || "UNSTABLE";
+
+function updateStateUI() {
+	stateEl.textContent = state;
+	stateEl.className = "value " + state.toLowerCase();
+}
+
+function updateButtons() {
+	if (state === "IMMUNE" || state == "PATCHED") {
+		stabilizeBtn.disabled = false;
+		stabilizeBtn.textContent = "STABILIZE HOST";
+	} else {
+		stabilizeBtn.disabled = true;
+		stabilizeBtn.textContent = "PATCH REQUIRED";
+	}
+}
+
+updateStateUI();
+updateButtons()
+
+
+// INFECTION
+
+document.getElementById("infectBtn").addEventListener("click", () => {
+	socket.emit("infectNearby");
+});
+
+socket.on("infectResult", (data) => {
+	state.infectedCount += data.count;
+	logEvent(`Transmission spread ? ${data.count} host(s) infected`);
+	updateUI();
+});
 
 // --- Socket events ---
 socket.on('totalUsers', (n) => totalEl.textContent = n);
@@ -80,7 +115,7 @@ socket.on('update', (data) => {
 // --- Geolocation ---
 function startGeolocation() {
 	if (!navigator.geolocation) {
-		statusEl.textContent = 'Geolocation not supported.';
+		stateEl.textContent = 'Geolocation not supported.';
 		return;
 	}
 	navigator.geolocation.watchPosition((pos) => {
@@ -97,7 +132,7 @@ function startGeolocation() {
 		}
 		map.setView([lat, lon]);
 	}, (err) => {
-		statusEl.textContent = `Location error: ${err.message}`;
+		stateEl.textContent = `Location error: ${err.message}`;
 	}, {
 		enableHighAccuracy: true,
 		maximumAge: 2000,

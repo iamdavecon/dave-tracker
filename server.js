@@ -72,7 +72,13 @@ io.on('connection', (socket) => {
 		if (!loc || typeof loc.lat !== 'number' || typeof loc.lon !== 'number') return;
 
 		// Save/update this user's location
-		users[socket.id] = { lat: loc.lat, lon: loc.lon, icon: loc.myId, updatedAt: Date.now() };
+		users[socket.id] = { 
+			lat: loc.lat, 
+			lon: loc.lon, 
+			icon: loc.myId, 
+			status: loc.status || "UNSTABLE",
+			updatedAt: Date.now()
+		};
 
 		const me = users[socket.id];
 
@@ -104,6 +110,45 @@ io.on('connection', (socket) => {
 	socket.on('disconnect', () => {
 		delete users[socket.id];
 		io.emit('totalUsers', Object.keys(users).length);
+	});
+
+	socket.on("infectNearby", () => {
+		const me = users[socket.id];
+		if (!me) return;
+
+		const INFECT_RADIUS = 50; // meters (tune this for Vegas density)
+
+		let infectedTargets = [];
+
+		for (const [id, u] of Object.entries(users)) {
+			if (id === socket.id) continue;
+			if (!u.lat || !u.lon) continue;
+
+			const dist = haversineDistance(
+				{ lat: me.lat, lon: me.lon },
+				{ lat: u.lat, lon: u.lon }
+			);
+
+			// Only infect non-immune users
+			if (dist <= INFECT_RADIUS && u.status !== "IMMUNE" && u.status !== "PATCHED") {
+				u.status = "INFECTED";
+				infectedTargets.push(id);
+			}
+		}
+
+		// notify all affected users
+		infectedTargets.forEach(id => {
+			io.to(id).emit("statusUpdate", {
+				status: "INFECTED"
+			});
+		});
+
+		// tell sender how many they infected
+		socket.emit("infectResult", {
+			count: infectedTargets.length
+		});
+
+		io.emit("totalUsers", Object.keys(users).length);
 	});
 });
 

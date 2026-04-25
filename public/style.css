@@ -45,7 +45,13 @@ header h1 {
 }
 
 .infected {
-  color: #ff4d4d;
+  animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+  0% { text-shadow: 0 0 0px #ff4d4d; }
+  50% { text-shadow: 0 0 8px #ff4d4d; }
+  100% { text-shadow: 0 0 0px #ff4d4d; }
 }
 
 .unstable {
@@ -54,6 +60,11 @@ header h1 {
 
 .patched {
   color: #00ffcc;
+}
+
+.immune {
+  color: #66ccff;
+  text-shadow: 0 0 6px rgba(102, 204, 255, 0.4);
 }
 
 button {
@@ -68,6 +79,12 @@ button {
 
 button:hover {
   background: #1a1a1a;
+}
+
+button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  filter: grayscale(1);
 }
 
 .log {
