@@ -1,10 +1,10 @@
 import { haversineDistance } from './public/utils/distance.js';
+import { saveUsers, loadUsers } from './utils/storage.js';
 import fs from 'fs';
 import express from 'express';
 import { Server } from 'socket.io';
 import http from 'http';
 
-const DATA_FILE = "./users.json";
 
 const app = express();
 
@@ -20,32 +20,12 @@ app.use('/utils', express.static('utils'));
 
 // --- In-memory user location store ---
 let daves = {};
-let persistentUsers = {}
 let userSockets = {}
 
-if (fs.existsSync(DATA_FILE)) {
-	persistentUsers = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-	console.log("reading: " + JSON.stringify(persistentUsers, null, 2));
-}
-function saveUsers() {
-	// start with a shallow copy of persisted users
-	const merged = { ...persistentUsers };
-
-	// add active daves
-	for (const [id, info] of Object.entries(daves)) {
-		if (!info.userId) continue;
-		//console.log("\tmerge: " + JSON.stringify(info, null, 2))
-		merged[id] = info;
-	}
-
-	fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2));
-	persistentUsers = merged;
-
-	console.log(`[SAVE]  wrote ` + JSON.stringify(merged, null, 2));
-}
-
-//setInterval(saveUsers, 10000);
-//setInterval(saveUsers, 5000);
+let savedDaves = await loadUsers();
+setInterval(() => {
+	saveUsers(daves);
+}, 10000);
 
 
 setInterval(() => {
@@ -69,44 +49,37 @@ io.on('connection', (socket) => {
 	socket.on("register", (data) => {
 		userId = data.userId;
 		userSockets[userId] = socket.id;
-		console.log("register: " + socket + " to " + userId);
+		//console.log("register: " + socket + " to " + userId);
 
 		// initialize if new
-		if (!persistentUsers[userId]) {
-			persistentUsers[userId] = {
+		if (!savedDaves[userId]) {
+			savedDaves[userId] = {
+				userId: userId,
 				state: "UNSTABLE",
 				infectedUsers: [],
 				infectedBy: [],
 			};
 		}
 
-		daves[userId] = persistentUsers[userId]
+		daves[userId] = savedDaves[userId]
 		daves[userId].lastSeen = Date.now();
 
 		socket.userId = userId;
-		console.log("client registered:", socket.userId);
 		io.emit("update", { daves });
-
-		console.log(`[R]  ` + JSON.stringify(daves, null, 2));
 	});	
 	
 	socket.on('location', (loc) => {
 		if (!loc || typeof loc.lat !== 'number' || typeof loc.lon !== 'number') return;
-		console.log(`update loc ` + JSON.stringify(loc, null, 2));
-
 
 		// Save/update this user's location
 		const me = daves[socket.userId];
 		if (me) {
-			console.log(`update with me ` + JSON.stringify(me, null, 2));
 			me.lat = loc.lat;
 			me.lon = loc.lon;
 			me.updatedAt = Date.now();
 
 			io.emit("update", { daves });
-		} else {
-			console.log(`update missing me `);
-		}
+		} 
 	});
 
 	socket.on('setId', (name) => {
@@ -140,7 +113,7 @@ io.on('connection', (socket) => {
 
 			// Only infect non-immune daves
 			if (dist <= INFECT_RADIUS && u.state !== "IMMUNE" && u.state !== "PATCHED") {
-				console.log("infecting " + id);
+				//console.log("infecting " + id);
 
 				//infector
 				if (me.infectedUsers && !me.infectedUsers.includes(id)) {
