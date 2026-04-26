@@ -17,15 +17,20 @@
 			<section class="panel">
 				<div class="field">
 					<label>
-						DavID:
-						<input id="userId" type="text" value="Dave" maxlength="64" style="width:200px;">
+						Alias:
+						<input id="userName" type="text" value="Dave" maxlength="64" style="width:200px;">
 						<button id="setIdBtn">Set</button>
 					</label>
 				</div>
 
 				<div class="field">
+					<span class="label">DavID</span>
+					<span id="userId" class="value">?</span>
+				</div>
+
+				<div class="field">
 					<span class="label">STATUS</span>
-					<span id="state" class="value infected">INFECTED</span>
+					<span id="state" class="value infected"></span>
 				</div>
 
 				<div class="field">
@@ -48,6 +53,7 @@
 			<section class="panel">
 				<button id="infectBtn">INITIATE TRANSMISSION</button>
 				<button id="stabilizeBtn">STABILIZE HOST</button>
+				<button id="spawnCluster">SPAWN CLUSTER</button>
 			</section>
 
 			<section class="panel">
@@ -77,7 +83,7 @@
 		</div>
 
 		<script src="/socket.io/socket.io.js"></script>
-		<script src="./app.js"></script>
+		<script type="module" src="./app.js"></script>
 
 	</body>
 </html>

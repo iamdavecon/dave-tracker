@@ -1,7 +1,10 @@
-const fs = require('fs');
-const express = require('express');
-const { Server } = require('socket.io');
-const http = require('http');
+import { haversineDistance } from './public/utils/distance.js';
+import fs from 'fs';
+import express from 'express';
+import { Server } from 'socket.io';
+import http from 'http';
+
+const DATA_FILE = "./users.json";
 
 const app = express();
 
@@ -13,115 +16,121 @@ const io = new Server(server);
 
 // --- Static files ---
 app.use(express.static('public'));
+app.use('/utils', express.static('utils'));
 
 // --- In-memory user location store ---
-// Structure: { socketId: { lat: Number, lon: Number, updatedAt: Number } }
-let users = {};
+let daves = {};
+let persistentUsers = {}
+let userSockets = {}
 
-// --- Helpers: Haversine distance ---
-const toRad = d => d * Math.PI / 180;
-const toDeg = r => r * 180 / Math.PI;
+if (fs.existsSync(DATA_FILE)) {
+	persistentUsers = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+	console.log("reading: " + JSON.stringify(persistentUsers, null, 2));
+}
+function saveUsers() {
+	// start with a shallow copy of persisted users
+	const merged = { ...persistentUsers };
 
-function distanceMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // meters
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+	// add active daves
+	for (const [id, info] of Object.entries(daves)) {
+		if (!info.userId) continue;
+		//console.log("\tmerge: " + JSON.stringify(info, null, 2))
+		merged[id] = info;
+	}
+
+	fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2));
+	persistentUsers = merged;
+
+	console.log(`[SAVE]  wrote ` + JSON.stringify(merged, null, 2));
 }
 
-function haversineDistance(a, b) {
-	const R = 6371000; // radius of Earth in meters
-	const toRad = (deg) => (deg * Math.PI) / 180;
-
-	const dLat = toRad(b.lat - a.lat);
-	const dLon = toRad(b.lon - a.lon);
-
-	const lat1 = toRad(a.lat);
-	const lat2 = toRad(b.lat);
-
-	const h =
-		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(lat1) * Math.cos(lat2) *
-		Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-	return 2 * R * Math.asin(Math.sqrt(h));
-}
+//setInterval(saveUsers, 10000);
+//setInterval(saveUsers, 5000);
 
 
 setInterval(() => {
 	const cutoff = Date.now() - 2*60*1000;
 	let changed = false;
-	for (const [id, info] of Object.entries(users)) {
+	for (const [id, info] of Object.entries(daves)) {
 		if (!info || info.updatedAt < cutoff) {
-			delete users[id];
+			delete daves[id];
 			changed = true;
 		}
 	}
-	if (changed) io.emit('totalUsers', Object.keys(users).length);
+	if (changed) {
+		io.emit("update", { daves });
+	}
 }, 30*1000);
 
 // --- Socket.io handlers ---
 io.on('connection', (socket) => {
-	// Immediately broadcast total users
-	io.emit('totalUsers', Object.keys(users).length);
+	let userId = null;
 
+	socket.on("register", (data) => {
+		userId = data.userId;
+		userSockets[userId] = socket.id;
+		console.log("register: " + socket + " to " + userId);
+
+		// initialize if new
+		if (!persistentUsers[userId]) {
+			persistentUsers[userId] = {
+				state: "UNSTABLE",
+				infectedUsers: [],
+				infectedBy: [],
+			};
+		}
+
+		daves[userId] = persistentUsers[userId]
+		daves[userId].lastSeen = Date.now();
+
+		socket.userId = userId;
+		console.log("client registered:", socket.userId);
+		io.emit("update", { daves });
+
+		console.log(`[R]  ` + JSON.stringify(daves, null, 2));
+	});	
+	
 	socket.on('location', (loc) => {
 		if (!loc || typeof loc.lat !== 'number' || typeof loc.lon !== 'number') return;
+		console.log(`update loc ` + JSON.stringify(loc, null, 2));
+
 
 		// Save/update this user's location
-		users[socket.id] = { 
-			lat: loc.lat, 
-			lon: loc.lon, 
-			icon: loc.myId, 
-			status: loc.status || "UNSTABLE",
-			updatedAt: Date.now()
-		};
+		const me = daves[socket.userId];
+		if (me) {
+			console.log(`update with me ` + JSON.stringify(me, null, 2));
+			me.lat = loc.lat;
+			me.lon = loc.lon;
+			me.updatedAt = Date.now();
 
-		const me = users[socket.id];
-
-		// Build list of other Daves with distances relative to me
-		const daves = Object.entries(users)
-			.filter(([id, u]) => id !== socket.id && u.lat != null && u.lon != null)
-			.map(([id, u]) => {
-				const distance = haversineDistance(
-					{ lat: me.lat, lon: me.lon },
-					{ lat: u.lat, lon: u.lon }
-				);
-				return { id, icon: u.icon, lat: u.lat, lon: u.lon, distance };
-			});
-
-		socket.emit('update', {
-			daves
-		});
-
-		// Broadcast total count to everyone
-		io.emit('totalUsers', Object.keys(users).length);
-	});
-
-	socket.on('setId', (name) => {
-		if (users[socket.id]) {
-			users[socket.id].icon = name;
+			io.emit("update", { daves });
+		} else {
+			console.log(`update missing me `);
 		}
 	});
 
+	socket.on('setId', (name) => {
+		if (daves[socket.userId]) {
+			daves[socket.userId].icon = name;
+		}
+		io.emit("update", { daves });
+	});
+
 	socket.on('disconnect', () => {
-		delete users[socket.id];
-		io.emit('totalUsers', Object.keys(users).length);
+		delete daves[socket.userId];
+		io.emit("update", { daves });
 	});
 
 	socket.on("infectNearby", () => {
-		const me = users[socket.id];
+		const me = daves[socket.userId];
 		if (!me) return;
 
-		const INFECT_RADIUS = 50; // meters (tune this for Vegas density)
+		const INFECT_RADIUS = 50; // meters 
 
 		let infectedTargets = [];
 
-		for (const [id, u] of Object.entries(users)) {
-			if (id === socket.id) continue;
+		for (const [id, u] of Object.entries(daves)) {
+			if (id === socket.userId) continue;
 			if (!u.lat || !u.lon) continue;
 
 			const dist = haversineDistance(
@@ -129,26 +138,70 @@ io.on('connection', (socket) => {
 				{ lat: u.lat, lon: u.lon }
 			);
 
-			// Only infect non-immune users
-			if (dist <= INFECT_RADIUS && u.status !== "IMMUNE" && u.status !== "PATCHED") {
-				u.status = "INFECTED";
+			// Only infect non-immune daves
+			if (dist <= INFECT_RADIUS && u.state !== "IMMUNE" && u.state !== "PATCHED") {
+				console.log("infecting " + id);
+
+				//infector
+				if (me.infectedUsers && !me.infectedUsers.includes(id)) {
+					me.infectedUsers.push(id);
+				}
 				infectedTargets.push(id);
+
+				//infectee
+				u.state = "INFECTED";
+				if (u.infectedBy && !u.infectedBy.includes(me.userId)) {
+					u.infectedBy.push(me.userId)
+				}
+				const targetSocket = userSockets[id];
+				if (targetSocket) {
+					io.to(targetSocket).emit("notifyInfected", { by: socket.userId });
+				}
 			}
 		}
 
-		// notify all affected users
-		infectedTargets.forEach(id => {
-			io.to(id).emit("statusUpdate", {
-				status: "INFECTED"
-			});
-		});
-
-		// tell sender how many they infected
+		// tell sender who they infected
 		socket.emit("infectResult", {
-			count: infectedTargets.length
+			infectedTargets
 		});
 
-		io.emit("totalUsers", Object.keys(users).length);
+		io.emit("update", { daves });
+	});
+
+
+	socket.on("installAntivirus", () => {
+		const me = daves[socket.userId];
+		if (!me) return;
+		me.state = "PATCHED"
+
+		socket.emit("updateState", {
+			state: "PATCHED"
+		});
+	})
+
+	socket.on("spawnCluster", (count = 5) => {
+		console.log(`[SPAWN]  ` + JSON.stringify(daves, null, 2));
+		const me = daves[socket.userId];
+		if (!me) return;
+
+		const centerLat = me.lat;
+		const centerLon = me.lon;
+		const STATUSES = ["INFECTED", "IMMUNE", "UNSTABLE"];
+		for (let i = 0; i < count; i++) {
+			const id = "cluster-" + i + "-" + Date.now();
+
+			daves[id] = {
+				lat: centerLat + (Math.random() - 0.5) * 0.001,
+				lon: centerLon + (Math.random() - 0.5) * 0.001,
+				infectedUsers: [],
+				infectedBy: [],
+				icon: "DAVE",
+				state: STATUSES[Math.floor(Math.random() * STATUSES.length)],
+				updatedAt: Date.now()
+			};
+		}
+
+		io.emit("update", { daves });
 	});
 });
 
