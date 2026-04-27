@@ -23,8 +23,11 @@ function getUserId() {
 	return id;
 }
 
+const params = new URLSearchParams(window.location.search);
+const immune = params.get('immune');
+
 const userId = getUserId();
-socket.emit("register", { userId });
+socket.emit("register", { userId, immune });
 
 document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById('userId').textContent = userId;
@@ -66,16 +69,29 @@ function updateButtons() {
 
 
 document.getElementById("infectBtn").addEventListener("click", () => {
-	console.log("infect");
-	socket.emit("infectNearby");
+	socket.emit("infect");
 });
 
 socket.on('infectResult', (data) => {
-	logEvent(`Transmission spread  ${data.count} host(s) infected`);
+	const infectedTargets = data.infectedTargets;
+	const nInfected = infectedTargets.length;
+	if (nInfected > 0) {
+		if (nInfected == 1) {
+			logEvent(`Transmission spread  1 host infected`);
+		} else {
+			logEvent(`Transmission spread  ${nInfected} hosts infected`);
+		}
+	} else {
+		logEvent(`No hosts were infected`);
+	}
 });
 
-socket.on('updateState', (data) => {
-	logEvent(data);
+socket.on('notifyInfected', (data) => {
+	logEvent(`You have been infected by ${data.by}!`);
+});
+
+socket.on('patch', (data) => {
+	logEvent("You have successfully installed the mind antivirus");
 });
 
 
@@ -84,9 +100,23 @@ socket.on('updateState', (data) => {
 document.getElementById("stabilizeBtn").addEventListener("click", () => {
 	const state = me.state; 
 	if (state === "IMMUNE" || state == "PATCHED") {
-		socket.emit("stabilizeNearby");
+		socket.emit("stabilize");
 	} else {
 		window.location.href = "https://iamdavecon.github.io/bb/";
+	}
+});
+
+socket.on('stabilizeResult', (data) => {
+	const stabilizedTargets = data.stabilizedTargets;
+	const nStabilized = stabilizedTargets.length;
+	if (nStabilized > 0) {
+		if (nStabilized == 1) {
+			logEvent(`Acquired 1 fragment`);
+		} else {
+			logEvent(`Acquired ${nStabilized} fragments`);
+		}
+	} else {
+		logEvent(`No fragments acquired`);
 	}
 });
 
@@ -145,7 +175,19 @@ socket.on('update', (data) => {
 		stateEl.textContent = state;
 		stateEl.className = "value " + state.toLowerCase();
 
-		infectedCountEl.textContent = me.infectedUsers.length; 
+		if (me.infectedUsers) {
+			infectedCountEl.textContent = me.infectedUsers.length; 
+		} else {
+			infectedCountEl.textContent = 0;
+		}
+		if (me.aragmentsCollected) {
+			console.log("update " + JSON.stringify(me.fragmentsCollected, null, 2));
+
+			fragmentsEl.textContent = me.fragmentsCollected.length;
+		} else {
+			console.log("NONE");
+			fragmentsEl.textContent = 0;
+		}
 
 		updateButtons()
 	}

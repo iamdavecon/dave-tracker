@@ -39,13 +39,10 @@ export async function loadUsers() {
 export async function saveUsers(daves) {
 	const merged = { ...savedDaves };
 
-	console.log(`saving ${JSON.stringify(daves, null, 2)}`);
 	for (const [id, info] of Object.entries(daves)) {
 		if (!info.userId) {
-			console.log(`\t missing userId: $id`);
 			continue;
 		}
-		console.log(`\t add $info}`);
 		merged[id] = info; 
 	}
 	savedDaves = merged;
@@ -56,7 +53,7 @@ export async function saveUsers(daves) {
 		fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2)); 
 	}
 
-	console.log(`[SAVE]  wrote ${JSON.stringify(merged, null, 2)}`);
+	//console.log(`[SAVE]  wrote ${JSON.stringify(merged, null, 2)}`);
 }
 
 

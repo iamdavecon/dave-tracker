@@ -1,2 +1,9 @@
 set_redis.sh
 *~
+users.json
+*.swp
+cert.pem
+csr.pem
+key.pem
+node_modules/
+package-lock.json
