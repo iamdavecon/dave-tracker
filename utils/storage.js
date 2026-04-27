@@ -37,6 +37,18 @@ export async function loadUsers() {
 }
 
 export async function saveUsers(daves) {
+	savedDaves = getUsers(daves);
+
+	if (USE_REDIS) {
+		await redis.set("davecon:users", JSON.stringify(savedDaves)); 
+	} else {
+		fs.writeFileSync(DATA_FILE, JSON.stringify(savedDaves, null, 2)); 
+	}
+
+	//console.log(`[SAVE]  wrote ${JSON.stringify(savedDaves, null, 2)}`);
+}
+
+export function getUsers(daves) {
 	const merged = { ...savedDaves };
 
 	for (const [id, info] of Object.entries(daves)) {
@@ -45,15 +57,5 @@ export async function saveUsers(daves) {
 		}
 		merged[id] = info; 
 	}
-	savedDaves = merged;
-
-	if (USE_REDIS) {
-		await redis.set("davecon:users", JSON.stringify(merged)); 
-	} else {
-		fs.writeFileSync(DATA_FILE, JSON.stringify(merged, null, 2)); 
-	}
-
-	//console.log(`[SAVE]  wrote ${JSON.stringify(merged, null, 2)}`);
+	return merged;
 }
-
-

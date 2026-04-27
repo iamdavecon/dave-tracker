@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DaveTracker Leaderboard</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #0b0b0f;
+      color: #e5e5e5;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #111118;
+      border: 1px solid #222;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #222;
+      text-align: left;
+    }
+
+    th {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+    }
+
+    tr:hover {
+      background: #1a1a24;
+    }
+
+    .rank { width: 60px; color: #888; }
+    .score { font-weight: bold; }
+
+    .virus { color: #ff5c5c; }
+    .antivirus { color: #5cff9d; }
+
+    .state {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #2a2a2a;
+      color: #aaa;
+      display: inline-block;
+    }
+
+    /* dominance styling */
+    .row-virus {
+      background: rgba(255, 92, 92, 0.07);
+    }
+
+    .row-antivirus {
+      background: rgba(92, 255, 157, 0.07);
+    }
+
+    .row-balanced {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .small {
+      color: #666;
+      font-size: 12px;
+    }
+
+    /* summary panel */
+    #summary {
+      margin-bottom: 20px;
+      padding: 14px;
+      background: #111118;
+      border: 1px solid #222;
+    }
+
+    .summary-grid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .summary-left div {
+      margin-bottom: 4px;
+    }
+
+    .summary-status {
+      color: #888;
+      text-align: right;
+      max-width: 300px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>DaveTracker Leaderboard</h1>
+      <div class="small" id="updated"></div>
+    </div>
+
+    <!-- SERVER SUMMARY -->
+    <div id="summary"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th class="rank">Rank</th>
+          <th>Name</th>
+          <th>Score</th>
+          <th>Infected</th>
+          <th>Ascended</th>
+          <th>State</th>
+        </tr>
+      </thead>
+
+      <tbody id="rows"></tbody>
+    </table>
+
+  </div>
+
+  <script>
+    async function loadLeaderboard() {
+      const res = await fetch("/api/leaderboard");
+      const payload = await res.json();
+
+      const { summary, leaderboard } = payload;
+
+      // ---------------- SUMMARY ----------------
+      const virus = summary.totalVirus || 0;
+      const antivirus = summary.totalAntivirus || 0;
+
+      let statusText = "Balanced conflict";
+      if (virus > antivirus) statusText = "Virus is currently dominating the system";
+      else if (antivirus > virus) statusText = "DaveCon ascendency is on the rise";
+
+      document.getElementById("summary").innerHTML = `
+        <div class="summary-grid">
+          <div class="summary-left">
+            <div class="virus">Total Virus Influence: ${virus}</div>
+            <div class="antivirus">Total DaveCon Control: ${antivirus}</div>
+          </div>
+
+          <div class="summary-status">
+            ${statusText}
+          </div>
+        </div>
+      `;
+
+      // ---------------- TABLE ----------------
+      const tbody = document.getElementById("rows");
+      tbody.innerHTML = "";
+
+      leaderboard.forEach(row => {
+        const tr = document.createElement("tr");
+
+        const v = row.teamVirus || 0;
+        const a = row.teamAntivirus || 0;
+
+        let rowClass = "row-balanced";
+        if (v > a) rowClass = "row-virus";
+        else if (a > v) rowClass = "row-antivirus";
+
+        tr.className = rowClass;
+
+        tr.innerHTML = `
+          <td class="rank">#${row.rank}</td>
+          <td>${row.name || "unknown"}</td>
+          <td class="score">${row.score}</td>
+          <td class="virus">${v}</td>
+          <td class="antivirus">${a}</td>
+          <td><span class="state">${row.state || "unknown"}</span></td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("updated").textContent =
+        "updated " + new Date().toLocaleTimeString();
+    }
+
+    loadLeaderboard();
+    setInterval(loadLeaderboard, 3000);
+  </script>
+
+</body>
+</html>
+

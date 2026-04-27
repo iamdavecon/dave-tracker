@@ -1,3 +1,4 @@
+import * as state from "./utils/state.js";
 import { haversineDistance } from './utils/distance.js';
 
 const socket = io();
@@ -54,8 +55,7 @@ document.getElementById('setIdBtn').addEventListener('click', () => {
 //State
 
 function updateButtons() {
-	const state = me.state; 
-	if (state === "IMMUNE" || state == "PATCHED") {
+	if (state.canPatch(me)) {
 		//stabilizeBtn.disabled = false;
 		stabilizeBtn.textContent = "STABILIZE HOST";
 	} else {
@@ -98,8 +98,7 @@ socket.on('patch', (data) => {
 //  STABILIZE
 
 document.getElementById("stabilizeBtn").addEventListener("click", () => {
-	const state = me.state; 
-	if (state === "IMMUNE" || state == "PATCHED") {
+	if (state.canPatch(me)) {
 		socket.emit("stabilize");
 	} else {
 		window.location.href = "https://iamdavecon.github.io/bb/";
@@ -161,41 +160,34 @@ const markers = {};
 
 socket.on('update', (data) => {
 	const daves = data.daves;
-	console.log(`[UPDATE]  ` + JSON.stringify(daves, null, 2));
+	//console.log(`[UPDATE]  ` + JSON.stringify(daves, null, 2));
 
 	totalEl.textContent = Object.keys(daves).length
 
 	me = daves[userId]
-	console.log("update " + JSON.stringify(me, null, 2) + " from " + userId)
 
-	// --- Update status ---
+	// --- Update state/status --
+	const stringValue = state.getState(me).toUpperCase();
+	stateEl.textContent = stringValue;
+	stateEl.className = "value " + state.getStateClass(me);
 
-	const state = me.state; 
-	if (state) {
-		stateEl.textContent = state;
-		stateEl.className = "value " + state.toLowerCase();
-
-		if (me.infectedUsers) {
-			infectedCountEl.textContent = me.infectedUsers.length; 
-		} else {
-			infectedCountEl.textContent = 0;
-		}
-		if (me.aragmentsCollected) {
-			console.log("update " + JSON.stringify(me.fragmentsCollected, null, 2));
-
-			fragmentsEl.textContent = me.fragmentsCollected.length;
-		} else {
-			console.log("NONE");
-			fragmentsEl.textContent = 0;
-		}
-
-		updateButtons()
+	if (me.infectedUsers) {
+		infectedCountEl.textContent = me.infectedUsers.length; 
+	} else {
+		infectedCountEl.textContent = 0;
 	}
+	if (me.aragmentsCollected) {
+		fragmentsEl.textContent = me.fragmentsCollected.length;
+	} else {
+		fragmentsEl.textContent = 0;
+	}
+
+	updateButtons()
 
 	// Build list of other Daves with distances relative to me and update map markers
 	distanceList.innerHTML = "";
-	console.log(typeof daves)
-	Object.entries(daves) 
+	let i = 0;
+	Object.entries(daves)
 		.filter(([key, dave]) => key !== socket.userId && dave.lat != null && dave.lon != null)
 		.sort(([, a], [, b]) => {
 			const distanceA = haversineDistance(
@@ -211,27 +203,59 @@ socket.on('update', (data) => {
 			return distanceA - distanceB;
 		})
 		.forEach(([key, dave], idx) => {
-			console.log("\tdave: " + key); // Use the key as the user ID
 			// --- Update map markers ---
+			const stateString = state.getState(dave).toUpperCase();
+			const stateClass = state.getStateClass(dave);
+			console.log("marker: " + stateClass);
 			const marker = L.marker([dave.lat, dave.lon], {
 				icon: L.divIcon({
-					className: `custom-icon ${dave.state.toLowerCase()}`,
+					className: `custom-icon ${stateClass}`,
 					html: `<div class="icon-inner">${dave.icon}</div>`,
-					iconSize: [24, 24],
-					iconAnchor: [12, 12],
+					iconSize: null,
 				})
 			});
 			marker.addTo(map);
 			markers[key] = marker; // Use the key for storing the marker
 
-			// --- Update distance list ---
-			const li = document.createElement("li");
-			li.textContent = `${dave.icon} ${Math.round(dave.distance)} m`;
-			if (idx === 0) {
-				li.style.fontWeight = "bold";
-				li.style.color = "green";
+			i++;
+			if (i < 12) {
+				// --- Update distance list ---
+				const li = document.createElement("li");
+
+				// Create a container div for the layout
+				const container = document.createElement("div");
+				container.style.display = "flex";
+				container.style.justifyContent = "space-between";
+				container.style.alignItems = "center";
+
+				// Left side: Name 
+				const name = document.createElement("span");
+				name.textContent = dave.icon;
+				container.appendChild(name);
+
+				// Middle: State
+				const stateEl = document.createElement("span");
+				stateEl.textContent = stateString;
+				stateEl.style = stateClass;
+				container.appendChild(stateEl);
+
+				// Right side: Distance
+				const distance = document.createElement("span");
+				distance.textContent = `${Math.round(dave.distance)} m`;
+				container.appendChild(distance);
+
+				// Append the container to the list item
+				li.appendChild(container);
+
+				// Highlight the closest one (idx === 0)
+				if (idx === 0) {
+					li.style.fontWeight = "bold";
+					li.style.color = "green";
+				}
+
+				// Add list item to the distance list
+				distanceList.appendChild(li);
 			}
-			distanceList.appendChild(li);
 		});
 	
 });

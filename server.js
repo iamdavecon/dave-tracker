@@ -1,4 +1,5 @@
-import { saveUsers, loadUsers } from './utils/storage.js';
+import * as state from "./public/utils/state.js";
+import { saveUsers, loadUsers, getUsers } from './utils/storage.js';
 import { infect } from './utils/infect.js';
 import { stabilize } from './utils/stabilize.js';
 import fs from 'fs';
@@ -29,6 +30,7 @@ setInterval(() => {
 }, 10000);
 
 
+// --- cull idle users ---
 setInterval(() => {
 	const cutoff = Date.now() - 2*60*1000;
 	let changed = false;
@@ -43,6 +45,67 @@ setInterval(() => {
 	}
 }, 30*1000);
 
+// --- leaderboard ---
+app.get("/api/leaderboard", (req, res) => {
+	const leaderboard = Object.entries(getUsers(daves)) 
+		.map(([key, d], idx) => {
+			let score = 0;
+			let teamVirus = 0;
+			let teamAntivirus = 0;
+
+			if (d.infectedUsers) {
+				teamVirus += d.infectedUsers.length; 
+			}
+			if (d.fragmentsCollected) {
+				teamAntivirus += d.fragmentsCollected.length
+			}
+			score = teamVirus + (teamAntivirus * 2)
+
+			return {
+				name: d.icon,  
+				score: score,
+				teamVirus: teamVirus,
+				teamAntivirus: teamAntivirus,
+				state: state.getState(d).toUpperCase()
+			};
+		})
+		.sort((a, b) => b.score - a.score)  
+		.map((d, idx) => ({
+			rank: idx + 1,
+			name: d.name,
+			score: d.score,
+			teamVirus: d.teamVirus,
+			teamAntivirus: d.teamAntivirus,
+			state: d.state
+		}));
+
+	// SERVER-WIDE AGGREGATES
+	const serverSummary = leaderboard.reduce(
+		(acc, d) => {
+			acc.totalVirus += d.teamVirus || 0;
+			acc.totalAntivirus += d.teamAntivirus || 0;
+			return acc;
+		},
+		{ totalVirus: 0, totalAntivirus: 0 }
+	);
+
+	const sorted = leaderboard
+		.sort((a, b) => b.score - a.score)
+		.map((d, idx) => ({
+			rank: idx + 1,
+			name: d.name,
+			score: d.score,
+			state: d.state,
+			teamVirus: d.teamVirus,
+			teamAntivirus: d.teamAntivirus
+		}));
+
+	res.json({
+		summary: serverSummary,
+		leaderboard: sorted
+	});
+});
+
 // --- Socket.io handlers ---
 io.on('connection', (socket) => {
 	let userId = null;
@@ -56,7 +119,7 @@ io.on('connection', (socket) => {
 		if (!savedDaves[userId]) {
 			savedDaves[userId] = {
 				userId: userId,
-				state: "UNSTABLE",
+				state: state.getDefaultState(),
 				infectedUsers: [],
 				infectedBy: [],
 				fragmentsCollected: [],
@@ -68,13 +131,19 @@ io.on('connection', (socket) => {
 
 		const ts = data.immune;
 		if (ts) {
-			const decoded = atob(ts);
-			const targetTimestamp = parseInt(decoded, 10);
-			const difference = Math.abs(Date.now() - targetTimestamp);
+			//console.log("register with ts: _" + ts + "_");
+			try {
+				const decoded = Buffer.from(ts.trim(), 'base64').toString('utf-8');
+				const targetTimestamp = parseInt(decoded, 10);
+				const difference = Math.abs(Date.now() - targetTimestamp);
 
-			if (difference <= 20 * 1000) {
-				daves[userId].state = "IMMUNE";
-			} 
+				if (difference <= 20 * 1000) {
+					state.installAntivirus(daves[userId]);
+				}
+			} catch (error) { //ignore
+				console.error("Error decoding base64:", error);
+			}
+			 
 		} 
 
 		socket.userId = userId;
@@ -125,7 +194,7 @@ io.on('connection', (socket) => {
 	socket.on("installAntivirus", () => {
 		const me = daves[socket.userId];
 		if (!me) return;
-		me.state = "PATCHED"
+		state.installAntivirus(me);
 
 		socket.emit("patch");
 	})
@@ -135,7 +204,6 @@ io.on('connection', (socket) => {
 		if (!me) return;
 
 		const stabilizedTargets = stabilize(me, daves, userSockets, io);
-		console.log("stabilized: " + JSON.stringify(stabilizedTargets, null, 2));
 
 		// tell sender who they stabilized
 		socket.emit("stabilizeResult", {
@@ -152,17 +220,18 @@ io.on('connection', (socket) => {
 
 		const centerLat = me.lat;
 		const centerLon = me.lon;
-		const STATUSES = ["INFECTED", "IMMUNE", "UNSTABLE"];
 		for (let i = 0; i < count; i++) {
 			const id = "cluster-" + i + "-" + Date.now();
+			const botState = state.getRandomState();
+			//const botState = 0;
 
 			daves[id] = {
-				lat: centerLat + (Math.random() - 0.5) * 0.001,
-				lon: centerLon + (Math.random() - 0.5) * 0.001,
+				lat: centerLat + (Math.random() - 0.5) * 0.01,
+				lon: centerLon + (Math.random() - 0.5) * 0.01,
 				infectedUsers: [],
 				infectedBy: [],
-				icon: "DAVE",
-				state: STATUSES[Math.floor(Math.random() * STATUSES.length)],
+				icon: "DAVE_BOT",
+				state: botState,
 				updatedAt: Date.now()
 			};
 		}

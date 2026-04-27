@@ -16,11 +16,11 @@
 
 			<section class="panel">
 				<div class="field">
-					<label>
-						Alias:
-						<input id="userName" type="text" value="Dave" maxlength="64" style="width:200px;">
+					<label for="userName">Alias:</label>
+					<div class="input-row">
+						<input id="userName" type="text" value="Dave" maxlength="64">
 						<button id="setIdBtn">Set</button>
-					</label>
+					</div>
 				</div>
 
 				<div class="field">
@@ -43,15 +43,11 @@
 					<span id="fragments" class="value">0</span>
 				</div>
 
-				<div class="field">
-					<span class="label">DAVES ONLINE</span>
-					<span id="total" class="value">0</span>
-				</div>
 
 			</section>
 
 			<section class="panel">
-				<button id="infectBtn">INITIATE TRANSMISSION</button>
+				<button id="infectBtn">TRANSMIT VIRUS</button>
 				<button id="stabilizeBtn">STABILIZE HOST</button>
 				<button id="spawnCluster">SPAWN CLUSTER</button>
 			</section>
@@ -75,8 +71,22 @@
 			</section>
 
 			<section class="log">
-				<div class="log-title">DAVES</div>
+				<div class="log-title">
+					<span >DAVES ONLINE</span>
+					<span id="total" class="value">0</span>
+				</div>
+
 				<ul id="distanceList"></ul>
+			</section>
+
+			<section class="panel">
+				<a href="/leaderboard.html" style="
+					 color: #5cff9d;
+					 text-decoration: none;
+					 font-family: ui-monospace, monospace;
+					 ">
+					View Leaderboard
+				</a>
 			</section>
 
 
