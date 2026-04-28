@@ -1,0 +1,117 @@
+{
+  "629603fc-58fa-49c9-ba98-cfc391b82569": {
+    "userId": "629603fc-58fa-49c9-ba98-cfc391b82569",
+    "state": "unstable",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "fragmentsCollected": [],
+    "tags": [],
+    "updatedAt": 1777457058717,
+    "range":1000,  
+    "icon": "DavePrimo",
+    "lat": 42.4071249,
+    "lon": -88.0378566
+  },
+  "DC_DAVE": {
+    "userId": "DC_DAVE",
+    "icon": "DC_DAVE",
+    "state": "unstable",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805613,
+    "lat": 36.17,
+    "lon": -115.14,
+    "fragmentsCollected": []
+  },
+  "DAVE1": {
+    "userId": "DAVE1",
+    "icon": "DAVE1",
+    "state": "unstable",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805613,
+    "lat": 42.4050689,
+    "lon": -88.0410624,
+    "fragmentsCollected": []
+  },
+  "DAVE2": {
+    "userId": "DAVE2",
+    "icon": "DAVE2",
+    "state": "dope",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805614,
+    "lat": 42.405168,
+    "lon": -88.041162
+  },
+  "DAVE3": {
+    "userId": "DAVE3",
+    "icon": "DAVE3",
+    "state": "ascended",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805615,
+    "lat": 42.404968,
+    "lon": -88.040962
+  },
+  "DAVE4": {
+    "userId": "DAVE4",
+    "icon": "DAVE4",
+    "state": "awakening",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805616,
+    "lat": 42.405068,
+    "lon": -88.041262
+  },
+  "DAVE5": {
+    "userId": "DAVE5",
+    "icon": "DAVE5",
+    "state": "immune",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805617,
+    "lat": 42.405168,
+    "lon": -88.040962
+  },
+  "DAVE6": {
+    "userId": "DAVE6",
+    "icon": "DAVE6",
+    "state": "patched",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805618,
+    "lat": 42.404968,
+    "lon": -88.041162
+  },
+  "DAVE7": {
+    "userId": "DAVE7",
+    "icon": "DAVE7",
+    "state": "infected",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805619,
+    "lat": 42.405068,
+    "lon": -88.040862
+  },
+  "DAVE8": {
+    "userId": "DAVE8",
+    "icon": "DAVE8",
+    "state": "corrupted",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805620,
+    "lat": 42.405268,
+    "lon": -88.041062
+  },
+  "DAVE9": {
+    "userId": "DAVE9",
+    "icon": "DAVE9",
+    "state": "voided",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "updatedAt": 2777376805621,
+    "lat": 42.404868,
+    "lon": -88.041062
+  }
+}

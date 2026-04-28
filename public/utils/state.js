@@ -2,16 +2,16 @@ const STATES = {
 	DAVEPRIME: "daveprime",
 	DOPE: "dope",
 	ASCENDED: "ascended",
-	DAVESCIPLE: "davesciple",
-	DOON: "doon",
+	AWAKENING: "awakening",
 	IMMUNE: "immune",
 	PATCHED: "patched",
 	UNSTABLE: "unstable",
 	INFECTED: "infected",
-	CORRUPTED: "corrupted"
+	CORRUPTED: "corrupted",
+	VOIDED: "voided"
 };
 
-export function getDefaultState(dave) {
+export function getDefaultState() {
 	return STATES.UNSTABLE;
 }
 
@@ -22,7 +22,7 @@ export function getRandomState() {
 }
 
 export function getState(dave) {
-	if (dave.state && Object.values(STATES).includes(dave.state)) {
+	if (dave && dave.state && Object.values(STATES).includes(dave.state)) {
 		return dave.state;
 	} else {
 		return STATES.UNSTABLE;
@@ -69,7 +69,6 @@ export function setImmune(dave) {
 	}
 }
 
-
 export function canPatch(dave) {
 	const state = getIndex(dave);
 	return state < STATES.IMMUNE;
@@ -84,3 +83,42 @@ export function isInfected(dave) {
 	const state = getIndex(dave);
 	return state >= STATES.INFECTED; 
 }
+
+export function infect(dave) {
+	if (dave.state == STATES.UNSTABLE) {
+		dave.state = STATES.INFECTED;
+		return true;
+	}
+	return false;
+}
+
+export function stabilize(dave) {
+	if (dave.state == STATES.PATCHED) {
+		dave.patches = (dave.patches ?? 0) + 1;
+		if (dave.patches >= 5) {
+			dave.state = STATES.IMMUNE;
+		}
+	} if (dave.state >= STATES.UNSTABLE) {
+		dave.state = STATES.PATCHED;
+		return true;
+	}
+	return false;
+}
+
+
+export function hasTag(dave, tag) {
+	return (dave.tags && tag in dave.tags) 
+}
+
+export function getActions(source, target) {
+	const state = getIndex(source);
+	return {
+		canInfect : target.state == STATES.UNSTABLE,
+		canAscend : canAscend(source),
+		canDaveputize : hasTag(source, "mayor"),
+		//DEBUGGING:
+		davePrime:  true,  //  state <= STATES.DAVEPRIME,
+
+	}
+}
+

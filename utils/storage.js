@@ -29,7 +29,7 @@ export async function loadUsers() {
 		if (fs.existsSync(DATA_FILE)) {
 			console.log("[LOAD] from file");
 			savedDaves = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-			console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
+			//console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 		} else {
 			savedDaves = {};
 		}
@@ -38,21 +38,30 @@ export async function loadUsers() {
 }
 
 export async function saveUsers(daves) {
-	savedDaves = getUsers(daves);
+	//console.log("SAVE: " + JSON.stringify(savedDaves, null, 2));
+
+	let mergedUsers = getUsers(daves);
+	//console.log(`[SAVE]  ${JSON.stringify(mergedUsers, null, 2)}`);
+	const realUsers = Object.fromEntries(
+		Object.entries(mergedUsers).filter(([id, user]) => !user.isBot)
+	);
+	savedDaves = realUsers;
 
 	if (USE_REDIS) {
-		await redis.set("davecon:users", JSON.stringify(savedDaves)); 
+		await redis.set("davecon:users", JSON.stringify(realUsers)); 
 	} else {
-		fs.writeFileSync(DATA_FILE, JSON.stringify(savedDaves, null, 2)); 
+		fs.writeFileSync(DATA_FILE, JSON.stringify(realUsers, null, 2)); 
 	}
 
-	//console.log(`[SAVE]  wrote ${JSON.stringify(savedDaves, null, 2)}`);
+	//console.log(`[SAVE]  wrote ${JSON.stringify(realUsers, null, 2)}`);
 }
 
 export function getUsers(daves) {
 	const merged = { ...savedDaves };
 
+	//console.log("GETTING DAVES");
 	for (const [id, info] of Object.entries(daves)) {
+		//console.log("\t" + id);
 		if (!info.userId) {
 			continue;
 		}

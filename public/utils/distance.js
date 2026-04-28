@@ -30,4 +30,9 @@ export function haversineDistance(a, b) {
 	return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+export function inRange(src, target) {
+	const range = src.range || 50;
+	return haversineDistance(src, target) < range;
+}
+
 

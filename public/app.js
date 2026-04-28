@@ -1,131 +1,44 @@
+import { getUserId } from './utils/id.js';
 import * as state from "./utils/state.js";
 import { haversineDistance } from './utils/distance.js';
+import { inRange } from './utils/distance.js';
 
-const socket = io();
-let myId = "Dave";
+const userId = getUserId();
+const socket = io({
+    auth: {
+        userId: userId
+    }
+});
+
 let me = {}
-
-const totalEl = document.getElementById('total');
-const stateEl = document.getElementById('state');
-const infectedCountEl = document.getElementById('infectedCount');
-const fragmentsEl = document.getElementById('fragments');
-const distanceList = document.getElementById("distanceList");
-
-//DavID
-
-function getUserId() {
-	let id = localStorage.getItem("davecon_user_id");
-
-	if (!id) {
-		id = crypto.randomUUID();
-		localStorage.setItem("davecon_user_id", id);
-	}
-
-	return id;
-}
 
 const params = new URLSearchParams(window.location.search);
 const immune = params.get('immune');
 
-const userId = getUserId();
 socket.emit("register", { userId, immune });
 
 document.addEventListener("DOMContentLoaded", () => {
 	document.getElementById('userId').textContent = userId;
 });
 
-const savedId = localStorage.getItem('DaveID');
-if (savedId) {
-	myId = savedId;
-	document.getElementById('userName').value = myId;
-	socket.emit('setId', myId); 
-}
-
-
 document.getElementById('setIdBtn').addEventListener('click', () => {
-	const val = document.getElementById('userName').value.trim();
-	if (val) {
-		myId = val;
-		localStorage.setItem('DaveID', myId); 
-		socket.emit('setId', myId); 
+	const userName = document.getElementById('userName').value.trim();
+	if (userName) {
+		socket.emit('setId', userName); 
 	}
 });
 
-
-//State
 
 function updateButtons() {
 	if (state.canPatch(me)) {
-		//stabilizeBtn.disabled = false;
-		stabilizeBtn.textContent = "STABILIZE HOST";
+		const btn = document.getElementById("install-antivirus");
+		btn.style.display = "none";
 	} else {
-		//stabilizeBtn.disabled = true;
-		stabilizeBtn.textContent = "ANTIVIRUS REQUIRED";
+		document.getElementById("install-antivirus").onclick = () => {
+			window.location.href = "https://iamdavecon.github.io/bb/";
+		};
 	}
 }
-
-
-// INFECTION
-
-
-document.getElementById("infectBtn").addEventListener("click", () => {
-	socket.emit("infect");
-});
-
-socket.on('infectResult', (data) => {
-	const infectedTargets = data.infectedTargets;
-	const nInfected = infectedTargets.length;
-	if (nInfected > 0) {
-		if (nInfected == 1) {
-			logEvent(`Transmission spread  1 host infected`);
-		} else {
-			logEvent(`Transmission spread  ${nInfected} hosts infected`);
-		}
-	} else {
-		logEvent(`No hosts were infected`);
-	}
-});
-
-socket.on('notifyInfected', (data) => {
-	logEvent(`You have been infected by ${data.by}!`);
-});
-
-socket.on('patch', (data) => {
-	logEvent("You have successfully installed the mind antivirus");
-});
-
-
-//  STABILIZE
-
-document.getElementById("stabilizeBtn").addEventListener("click", () => {
-	if (state.canPatch(me)) {
-		socket.emit("stabilize");
-	} else {
-		window.location.href = "https://iamdavecon.github.io/bb/";
-	}
-});
-
-socket.on('stabilizeResult', (data) => {
-	const stabilizedTargets = data.stabilizedTargets;
-	const nStabilized = stabilizedTargets.length;
-	if (nStabilized > 0) {
-		if (nStabilized == 1) {
-			logEvent(`Acquired 1 fragment`);
-		} else {
-			logEvent(`Acquired ${nStabilized} fragments`);
-		}
-	} else {
-		logEvent(`No fragments acquired`);
-	}
-});
-
-
-//  etc
-
-document.getElementById("spawnCluster").addEventListener("click", () => {
-	console.log("spawn");
-	socket.emit("spawnCluster", 5);
-});
 
 function logEvent(message) {
 	const logList = document.getElementById("logList");
@@ -145,37 +58,39 @@ function logEvent(message) {
 }
 
 
-
-
 // --- Leaflet map setup ---
 let map = L.map('map').setView([0, 0], 15);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 	attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-let myMarker = null;
-let userMarkers = {};
-
-const markers = {};
-
 socket.on('update', (data) => {
 	const daves = data.daves;
 	//console.log(`[UPDATE]  ` + JSON.stringify(daves, null, 2));
 
+	const totalEl = document.getElementById('total');
 	totalEl.textContent = Object.keys(daves).length
 
 	me = daves[userId]
+	if (!me) {
+		console.log("I'm missing");
+		return;
+	}
 
 	// --- Update state/status --
 	const stringValue = state.getState(me).toUpperCase();
+	const stateEl = document.getElementById('state');
 	stateEl.textContent = stringValue;
-	stateEl.className = "value " + state.getStateClass(me);
+	stateEl.className = "value pill " + state.getStateClass(me);
 
+	const infectedCountEl = document.getElementById('infectedCount');
 	if (me.infectedUsers) {
 		infectedCountEl.textContent = me.infectedUsers.length; 
 	} else {
 		infectedCountEl.textContent = 0;
 	}
+
+	const fragmentsEl = document.getElementById('fragments');
 	if (me.aragmentsCollected) {
 		fragmentsEl.textContent = me.fragmentsCollected.length;
 	} else {
@@ -185,6 +100,7 @@ socket.on('update', (data) => {
 	updateButtons()
 
 	// Build list of other Daves with distances relative to me and update map markers
+	const distanceList = document.getElementById("distanceList");
 	distanceList.innerHTML = "";
 	let i = 0;
 	Object.entries(daves)
@@ -203,22 +119,38 @@ socket.on('update', (data) => {
 			return distanceA - distanceB;
 		})
 		.forEach(([key, dave], idx) => {
-			// --- Update map markers ---
 			const stateString = state.getState(dave).toUpperCase();
 			const stateClass = state.getStateClass(dave);
-			console.log("marker: " + stateClass);
 			const marker = L.marker([dave.lat, dave.lon], {
 				icon: L.divIcon({
-					className: `custom-icon ${stateClass}`,
-					html: `<div class="icon-inner">${dave.icon}</div>`,
-					iconSize: null,
+					className: "custom-icon", 
+					html: `<div class="pill center ${stateClass}">
+						${dave.icon}
+					</div>`,
+					iconSize: null, 
+					iconAnchor: [0, 0] 
 				})
 			});
 			marker.addTo(map);
-			markers[key] = marker; // Use the key for storing the marker
 
-			i++;
+			 //L.marker([dave.lat, dave.lon], { title: dave.icon }).addTo(map);
+
+
+			if (key == userId) {
+				const range = dave.range || 50;
+				const rangeCircle = L.circle([dave.lat, dave.lon], {
+					radius: range,
+					color: "#00ffcc",
+					weight: 2,
+					fillColor: "#00ffcc",
+					fillOpacity: 0.08,
+				}).addTo(map);
+			} 
 			if (i < 12) {
+				marker.on("click", () => {
+					window.location.href = `/player.html?id=${encodeURIComponent(key)}&viewerId=${encodeURIComponent(userId)}`;
+				});
+
 				// --- Update distance list ---
 				const li = document.createElement("li");
 
@@ -273,7 +205,12 @@ socket.on('update', (data) => {
 				// Middle: State
 				const stateEl = document.createElement("span");
 				stateEl.textContent = stateString;
-				stateEl.style = stateClass;
+				stateEl.className = stateClass;
+				if (stateClass == "ascended" || stateClass == "dope" || stateClass == "awakening") {
+					stateEl.style.color = "black";
+				} else {
+					stateEl.style.color = "white";
+				}
 
 				// Optional: prevent row click if you later make this interactive
 				stateEl.addEventListener("click", (e) => {
@@ -303,14 +240,18 @@ socket.on('update', (data) => {
 				// Append the container to the list item
 				li.appendChild(container);
 
-				// Highlight the closest one (idx === 0)
-				if (idx === 0) {
+				// Highlight daves in range
+				if (key == userId) {
 					li.style.fontWeight = "bold";
 					li.style.color = "green";
+				} else if (inRange(me, dave)) {
+					li.style.fontWeight = "bold";
+					li.style.color = "blue";
 				}
 
 				// Add list item to the distance list
 				distanceList.appendChild(li);
+				i++;
 			}
 		});
 	
@@ -327,15 +268,8 @@ function startGeolocation() {
 	navigator.geolocation.watchPosition((pos) => {
 		const lat = pos.coords.latitude;
 		const lon = pos.coords.longitude;
-		//console.log("sending: " + myId);
 		socket.emit('location', { lat, lon });
 
-		// Update my marker
-		if (!myMarker) {
-			myMarker = L.marker([lat, lon], { title: "You" }).addTo(map);
-		} else {
-			myMarker.setLatLng([lat, lon]);
-		}
 		map.setView([lat, lon]);
 	}, (err) => {
 		stateEl.textContent = `Location error: ${err.message}`;

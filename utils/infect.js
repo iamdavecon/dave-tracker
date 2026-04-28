@@ -1,60 +1,58 @@
-import { haversineDistance } from '../public/utils/distance.js';
+import { infect } from "../public/utils/state.js";
+import { getUsers } from './storage.js';
+import { notifyUser } from './sockets.js';
 
-
-function canInfect(state) {
-	return state !== "IMMUNE" 
-		&& state !== "PATCHED"
-		&& state !== "INFECTED";
-}
 
 /**
  * Handles the infection process for the given user and other users.
  * 
  * @param {Object} me - The current user who is spreading infection.
- * @param {Object} daves - The collection of all users.
- * @param {Object} userSockets - The socket map for each user.
- * @param {Object} io - The Socket.IO server instance.
- * @returns {Array} - List of users infected by the current user.
+ * @param {Object} target - The user receiving the infection
+ * @returns true if target was infected
  */
-export function infect(me, daves, userSockets, io) {
-	const INFECT_RADIUS = 50; // meters 
-
-	let infectedTargets = [];
-
-	for (const [id, u] of Object.entries(daves)) {
-		if (id === me.userId) continue;
-		if (!u.lat || !u.lon) continue;
-
-		const dist = haversineDistance(
-			{ lat: me.lat, lon: me.lon },
-			{ lat: u.lat, lon: u.lon }
-		);
-
-		// Only infect viable daves
-		if (dist <= INFECT_RADIUS && canInfect(u.state)) {
-			// Infector (current user)
-			if (!me.infectedUsers) {
-				me.infectedUsers = [];
-			}
-			if (!me.infectedUsers.includes(id)) {
-				me.infectedUsers.push(id);
-				infectedTargets.push(id);
-			}
-
-			// Infectee (target user)
-			u.state = "INFECTED";
-			if (u.infectedBy && !u.infectedBy.includes(me.userId)) {
-				u.infectedBy.push(me.userId);
-			}
-
-			// Notify infected user via socket
-			const targetSocket = userSockets[id];
-			if (targetSocket) {
-				io.to(targetSocket).emit("notifyInfected", { by: me.icon });
-			}
-		}
+export function infectTarget(me, target) {
+	const id = target.userId;
+	// Infector (current user)
+	if (!me.infectedUsers) {
+		me.infectedUsers = [];
 	}
+	if (!me.infectedUsers.includes(id) && infect(target)) {
+		me.infectedUsers.push(id);
+		if (!target.infectedBy) {
+			target.infectedBy = [];
+		}
+		target.infectedBy.push(me.userId);
 
-	return infectedTargets;
+		// Notify infected user via socket
+		notifyUser(target, "notifyInfected", { by: me.icon });
+		return true;
+	}
+	return false;
 }
 
+export function registerHandlers(socket, daves, io) {
+	socket.on("infect", (sourceId, targetId) => {
+		//console.log("INFECT: " + JSON.stringify(socket, null, 2));
+		console.log("recv'd infect: " + sourceId + " => " + targetId);
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target) {
+			console.log("missing user");
+			return;
+		}
+
+		const success = infectTarget(me, target);
+		//console.log("infected: " + JSON.stringify(infectedTargets, null, 2));
+
+		socket.emit("infectResult", {
+			success
+		});
+
+		if (success) {
+			io.emit("update", { daves });
+		}
+	});
+
+
+}
