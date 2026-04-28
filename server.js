@@ -21,13 +21,15 @@ app.use(express.static('public'));
 app.use('/utils', express.static('utils'));
 
 // --- In-memory user location store ---
-let daves = {};
-let userSockets = {}
-
 let savedDaves = await loadUsers();
 setInterval(() => {
 	saveUsers(daves);
 }, 10000);
+
+//let daves = {};
+let daves = savedDaves;
+let userSockets = {}
+
 
 
 // --- cull idle users ---
@@ -36,6 +38,7 @@ setInterval(() => {
 	let changed = false;
 	for (const [id, info] of Object.entries(daves)) {
 		if (!info || info.updatedAt < cutoff) {
+			console.log("\tCULLED: " + info.updatedAt);
 			delete daves[id];
 			changed = true;
 		}
@@ -45,29 +48,49 @@ setInterval(() => {
 	}
 }, 30*1000);
 
+
+function summarizeDave(dave) {
+	let score = 0;
+	let teamVirus = 0;
+	let teamAntivirus = 0;
+
+	if (dave.infectedUsers) {
+		teamVirus += dave.infectedUsers.length; 
+	}
+	if (dave.fragmentsCollected) {
+		teamAntivirus += dave.fragmentsCollected.length
+	}
+	score = teamVirus + (teamAntivirus * 2)
+
+	return {
+		name: dave.icon,  
+		score: score,
+		teamVirus: teamVirus,
+		teamAntivirus: teamAntivirus,
+		state: state.getState(dave).toUpperCase()
+	};
+
+}
+
+// --- dave details ---
+app.get('/api/dave', (req, res) => {
+	const { id, viewerId } = req.query;
+	const dave = getUsers(daves)[id]; 
+
+	if (!dave) {
+		return res.status(404).json({ error: "Dave's not here" });
+	}
+
+	let daveDetails = summarizeDave(dave);
+	daveDetails.isMe = id === viewerId
+	res.json(daveDetails);
+});
+
 // --- leaderboard ---
 app.get("/api/leaderboard", (req, res) => {
 	const leaderboard = Object.entries(getUsers(daves)) 
-		.map(([key, d], idx) => {
-			let score = 0;
-			let teamVirus = 0;
-			let teamAntivirus = 0;
-
-			if (d.infectedUsers) {
-				teamVirus += d.infectedUsers.length; 
-			}
-			if (d.fragmentsCollected) {
-				teamAntivirus += d.fragmentsCollected.length
-			}
-			score = teamVirus + (teamAntivirus * 2)
-
-			return {
-				name: d.icon,  
-				score: score,
-				teamVirus: teamVirus,
-				teamAntivirus: teamAntivirus,
-				state: state.getState(d).toUpperCase()
-			};
+		.map(([key, d], idx) => { 
+			return summarizeDave(d);
 		})
 		.sort((a, b) => b.score - a.score)  
 		.map((d, idx) => ({
@@ -123,11 +146,12 @@ io.on('connection', (socket) => {
 				infectedUsers: [],
 				infectedBy: [],
 				fragmentsCollected: [],
+				tags: [],
 			};
 		}
 
 		daves[userId] = savedDaves[userId]
-		daves[userId].lastSeen = Date.now();
+		daves[userId].updatedAt = Date.now();
 
 		const ts = data.immune;
 		if (ts) {
@@ -146,6 +170,8 @@ io.on('connection', (socket) => {
 			 
 		} 
 
+		console.log("registered: " + JSON.stringify(daves, null, 2));
+
 		socket.userId = userId;
 		io.emit("update", { daves });
 	});	
@@ -162,6 +188,8 @@ io.on('connection', (socket) => {
 
 			io.emit("update", { daves });
 		} 
+
+		//console.log("location update: " + JSON.stringify(daves, null, 2));
 	});
 
 	socket.on('setId', (name) => {

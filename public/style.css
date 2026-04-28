@@ -1,8 +1,4 @@
-/**
- * STATES
- *
- **/
-
+/** STATES **/
 
 .custom-icon.dope .icon-inner {
 	background: linear-gradient(135deg, #ffd700, #ffb300);
@@ -107,6 +103,8 @@
 	100% { transform: translate(0, 0); }
 }
 
+
+/** MAIN CONTENT **/
 
 body {
 	background: #0a0a0a;
@@ -330,3 +328,19 @@ button:disabled {
 }
 
 
+/**  STATUS PAGES  **/ 
+
+.player-link {
+	color: #4da6ff;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.player-link:hover {
+	text-decoration: underline;
+}
+
+.distance {
+	margin-left: 8px;
+	opacity: 0.7;
+}

@@ -222,13 +222,50 @@ socket.on('update', (data) => {
 				// --- Update distance list ---
 				const li = document.createElement("li");
 
+				// Make row feel tappable
+				li.style.cursor = "pointer";
+				li.style.padding = "12px 16px";
+				li.style.borderRadius = "10px";
+				li.style.transition = "background 0.15s ease, transform 0.05s ease";
+				li.style.borderBottom = "1px solid rgba(255,255,255,0.08)";
+
+				// Navigation on click
+				li.addEventListener("click", () => {
+					window.location.href = `/player.html?id=${encodeURIComponent(key)}&viewerId=${encodeURIComponent(userId)}`;
+				});
+
+				// Touch feedback (mobile)
+				li.addEventListener("touchstart", () => {
+					li.style.background = "rgba(255,255,255,0.08)";
+					li.style.transform = "scale(0.98)";
+				});
+
+				li.addEventListener("touchend", () => {
+					li.style.background = "transparent";
+					li.style.transform = "scale(1)";
+				});
+
+				li.addEventListener("touchcancel", () => {
+					li.style.background = "transparent";
+					li.style.transform = "scale(1)";
+				});
+
+				// Hover (desktop)
+				li.addEventListener("mouseenter", () => {
+					li.style.background = "rgba(255,255,255,0.05)";
+				});
+
+				li.addEventListener("mouseleave", () => {
+					li.style.background = "transparent";
+				});
+
 				// Create a container div for the layout
 				const container = document.createElement("div");
 				container.style.display = "flex";
 				container.style.justifyContent = "space-between";
 				container.style.alignItems = "center";
 
-				// Left side: Name 
+				// Left side: Name
 				const name = document.createElement("span");
 				name.textContent = dave.icon;
 				container.appendChild(name);
@@ -237,12 +274,31 @@ socket.on('update', (data) => {
 				const stateEl = document.createElement("span");
 				stateEl.textContent = stateString;
 				stateEl.style = stateClass;
+
+				// Optional: prevent row click if you later make this interactive
+				stateEl.addEventListener("click", (e) => {
+					e.stopPropagation();
+				});
+
 				container.appendChild(stateEl);
 
-				// Right side: Distance
+				// Right side: Distance + chevron
+				const rightSide = document.createElement("div");
+				rightSide.style.display = "flex";
+				rightSide.style.alignItems = "center";
+				rightSide.style.gap = "8px";
+
 				const distance = document.createElement("span");
 				distance.textContent = `${Math.round(dave.distance)} m`;
-				container.appendChild(distance);
+
+				const chevron = document.createElement("span");
+				chevron.textContent = ">";
+				chevron.style.opacity = "0.5";
+
+				rightSide.appendChild(distance);
+				rightSide.appendChild(chevron);
+
+				container.appendChild(rightSide);
 
 				// Append the container to the list item
 				li.appendChild(container);

@@ -29,6 +29,7 @@ export async function loadUsers() {
 		if (fs.existsSync(DATA_FILE)) {
 			console.log("[LOAD] from file");
 			savedDaves = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+			console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 		} else {
 			savedDaves = {};
 		}
