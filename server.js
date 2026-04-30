@@ -1,4 +1,4 @@
-import { saveUsers, loadUsers, getUsers } from './utils/storage.js';
+import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
 import { inRange } from "./public/utils/distance.js";
 
@@ -35,8 +35,9 @@ server.listen(PORT, () => {
 });
 
 
-// --- In-memory user location store ---
+// --- In-memory location stores ---
 let savedDaves = await loadUsers();
+let savedPlaces = getPlaces();
 
 //let daves = {};
 let daves = savedDaves;  //for debugging - show saved daves in addition to active sessions
@@ -54,7 +55,7 @@ setInterval(async () => {
 		}
 	}
 
-	saveUsers(daves);
+	saveUsers(daves, savedPlaces);
 
 	if (davesToCull.length > 0) {
 		for (const id of davesToCull) {
@@ -82,9 +83,7 @@ function randomSpawn() {
 		daves[bot.userId] = bot;
 
 		io.emit("update", { daves });
-	} else {
-		console.log("skip");
-	}
+	} 
 }
 
 setInterval(randomSpawn, 45_000);
@@ -104,6 +103,7 @@ function summarizeDave(dave) {
 	score = teamVirus + (teamAntivirus * 2)
 
 	return {
+		userId: dave.userId,
 		name: dave.icon,  
 		score: score,
 		teamVirus: teamVirus,
@@ -132,7 +132,7 @@ app.get('/api/dave', (req, res) => {
 
 	let daveDetails = summarizeDave(dave);
 	daveDetails.isMe = id === viewerId
-	daveDetails.availableActions = state.getActions(me, dave);
+	daveDetails.availableActions = state.getUserActions(me, dave);
 
 	daveDetails.targetLat = dave.lat;
 	daveDetails.targetLon = dave.lon;
@@ -154,12 +154,8 @@ app.get("/api/leaderboard", (req, res) => {
 		})
 		.sort((a, b) => b.score - a.score)  
 		.map((d, idx) => ({
+			...d,
 			rank: idx + 1,
-			name: d.name,
-			score: d.score,
-			teamVirus: d.teamVirus,
-			teamAntivirus: d.teamAntivirus,
-			state: d.state
 		}));
 
 	// SERVER-WIDE AGGREGATES
@@ -172,21 +168,26 @@ app.get("/api/leaderboard", (req, res) => {
 		{ totalVirus: 0, totalAntivirus: 0 }
 	);
 
-	const sorted = leaderboard
-		.sort((a, b) => b.score - a.score)
-		.map((d, idx) => ({
-			rank: idx + 1,
-			name: d.name,
-			score: d.score,
-			state: d.state,
-			teamVirus: d.teamVirus,
-			teamAntivirus: d.teamAntivirus
-		}));
-
+	//console.log("leaderboard: " + JSON.stringify(leaderboard, null, 2));
 	res.json({
 		summary: serverSummary,
-		leaderboard: sorted
+		leaderboard: leaderboard
 	});
+});
+
+// --- place details ---
+app.get('/api/place', (req, res) => {
+	const { id, viewerId } = req.query;
+	const localDaves = getUsers(daves);
+	const place = savedPlaces[id];
+	const me = localDaves[viewerId]; 
+
+	let placeDetails = {
+		name : place.name,
+		availableActions : state.getPlaceActions(me, place)
+	}
+
+	res.json(placeDetails);
 });
 
 // --- Socket.io handlers ---
@@ -224,10 +225,12 @@ io.on('connection', (socket) => {
 	}
 	
 	me.updatedAt = Date.now();
-	if (!me.sockets) {
+	if (!me.sockets || Object.keys(me.sockets).length === 0) {
 		me.sockets = new Set();
-	}
+	} 
 	me.sockets.add(socket);
+
+	io.emit("setSavedPlaces", { savedPlaces });
 
 	//console.log("registered: " + JSON.stringify(daves, null, 2));
 

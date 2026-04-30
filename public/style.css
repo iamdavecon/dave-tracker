@@ -109,6 +109,25 @@
 }
 
 
+/** PLACES **/
+.canonical-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+
+	padding: 6px 10px;
+	border-radius: 999px;
+	white-space: nowrap;
+
+	background: rgba(0, 0, 0, 0.8);
+	color: #ffd700;
+	border: 1px solid #ffd700;
+
+	font-size: 12px;
+	line-height: 1;
+}
+
+
 /** MAIN CONTENT **/
 
 body {
@@ -298,6 +317,22 @@ button:disabled {
 .row {
 	display: flex; justify-content: space-between; align-items: center;
 	margin: 8px 0;
+}
+
+
+/**   LEADERBOARD  **/
+.row-me {
+	outline: 2px solid #5cff9d;
+	background: rgba(92, 255, 157, 0.12) !important;
+}
+
+.clickable-row {
+	cursor: pointer;
+	transition: transform 0.05s ease;
+}
+
+.clickable-row:active {
+	transform: scale(0.995);
 }
 
 

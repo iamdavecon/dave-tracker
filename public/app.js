@@ -2,6 +2,7 @@ import { getUserId } from './utils/id.js';
 import * as state from "./utils/state.js";
 import { haversineDistance } from './utils/distance.js';
 import { inRange } from './utils/distance.js';
+import { addPlace } from './utils/places.js';
 
 const userId = getUserId();
 const socket = io({
@@ -11,6 +12,7 @@ const socket = io({
 });
 
 let me = {}
+let savedPlaces = {}
 
 const params = new URLSearchParams(window.location.search);
 const immune = params.get('immune');
@@ -28,6 +30,9 @@ document.getElementById('setIdBtn').addEventListener('click', () => {
 	}
 });
 
+
+const leaderboard = document.getElementById("leaderboardLink");
+leaderboard .href = `/leaderboard.html?userId=${encodeURIComponent(userId)}`;
 
 function updateButtons() {
 	if (state.canPatch(me)) {
@@ -64,8 +69,39 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 	attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
+function roughDistance(a, b) {
+	const dx = a.lat - b.lat;
+	const dy = a.lon - b.lon;
+	return dx * dx + dy * dy; 
+}
+
+function renderPlaces() {
+	canonicalLayer.clearLayers();
+
+	const zoom = map.getZoom();
+
+	//console.log(JSON.stringify(savedPlaces, null, 2));
+
+	Object.entries(savedPlaces)  
+		.map(([id, place]) => ({ id, ...place }))  
+		.sort((a, b) => roughDistance(a, me) - roughDistance(b, me))  
+		.slice(0, 50)  
+		.forEach((place, idx) => {  
+			addPlace(place.id, userId, canonicalLayer, zoom, place, true);  
+		});
+}
+
+socket.on('setSavedPlaces', (data) => {
+	savedPlaces = data.savedPlaces;
+	renderPlaces();
+});
+
+const canonicalLayer = L.layerGroup().addTo(map);
+
+
 socket.on('update', (data) => {
 	const daves = data.daves;
+
 	//console.log(`[UPDATE]  ` + JSON.stringify(daves, null, 2));
 
 	const totalEl = document.getElementById('total');
@@ -133,7 +169,7 @@ socket.on('update', (data) => {
 			});
 			marker.addTo(map);
 
-			 //L.marker([dave.lat, dave.lon], { title: dave.icon }).addTo(map);
+			//L.marker([dave.lat, dave.lon], { title: dave.icon }).addTo(map);
 
 
 			if (key == userId) {
@@ -254,7 +290,6 @@ socket.on('update', (data) => {
 				i++;
 			}
 		});
-	
 });
 
 
@@ -271,6 +306,7 @@ function startGeolocation() {
 		socket.emit('location', { lat, lon });
 
 		map.setView([lat, lon]);
+		map.on("zoomend", renderPlaces);
 	}, (err) => {
 		stateEl.textContent = `Location error: ${err.message}`;
 	}, {

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<title>Node</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<a href="/" class="back-link">< Back</a>
+		<section class="panel">
+			<div id="name" class="player-name">Loading...</div>
+			<div id="stats"></div>
+		</section>
+		<section class="panel">
+			<div id="actions"></div>
+		</section>
+
+		<br/><br/>
+		<section class="log">
+			<ul id="logList"></ul>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="place.js"></script>
+</body>
+</html>
+

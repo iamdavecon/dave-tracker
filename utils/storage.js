@@ -2,7 +2,8 @@ import { Redis } from '@upstash/redis';
 import fs from 'fs';
 
 const USE_REDIS = process.env.USE_REDIS === "true";
-const DATA_FILE = "./users.json";
+const USER_FILE = "./users.json";
+const PLACE_FILE = "./places.json";
 
 let redis;
 if (USE_REDIS) {
@@ -13,31 +14,45 @@ if (USE_REDIS) {
 }
 
 let savedDaves = {};
+let savedPlaces = {};
 
 export async function loadUsers() {
 	if (USE_REDIS) {
 		savedDaves = await redis.get("davecon:users");
+		savedPlaces = await redis.get("davecon:places");
 
-		// If Redis returned a non-null value, parse it as JSON
 		if (savedDaves !== null) {
-			console.log("[LOAD] from redis");
+			console.log("[LOAD] users from redis");
 		} else {
-			console.log("[LOAD] empty from redis");
+			console.log("[LOAD] init from redis");
 			savedDaves = {}; 
 		}
+		if (savedPlaces !== null) {
+			console.log("[LOAD] places from redis");
+		} else {
+			savedPlaces = {}; 
+		}
+
 	} else {
-		if (fs.existsSync(DATA_FILE)) {
-			console.log("[LOAD] from file");
-			savedDaves = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+		if (fs.existsSync(USER_FILE)) {
+			console.log("[LOAD] users from file");
+			savedDaves = JSON.parse(fs.readFileSync(USER_FILE, "utf8"));
 			//console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 		} else {
 			savedDaves = {};
+		}
+		if (fs.existsSync(PLACE_FILE)) {
+			console.log("[LOAD] places from file");
+			savedPlaces = JSON.parse(fs.readFileSync(PLACE_FILE, "utf8"));
+			//console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
+		} else {
+			savedPlaces = {};
 		}
 	}
 	return savedDaves;
 }
 
-export async function saveUsers(daves) {
+export async function saveUsers(daves, places) {
 	//console.log("SAVE: " + JSON.stringify(savedDaves, null, 2));
 
 	let mergedUsers = getUsers(daves);
@@ -49,8 +64,10 @@ export async function saveUsers(daves) {
 
 	if (USE_REDIS) {
 		await redis.set("davecon:users", JSON.stringify(realUsers)); 
+		await redis.set("davecon:places", JSON.stringify(places)); 
 	} else {
-		fs.writeFileSync(DATA_FILE, JSON.stringify(realUsers, null, 2)); 
+		fs.writeFileSync(USER_FILE, JSON.stringify(realUsers, null, 2)); 
+		fs.writeFileSync(PLACE_FILE, JSON.stringify(places, null, 2)); 
 	}
 
 	//console.log(`[SAVE]  wrote ${JSON.stringify(realUsers, null, 2)}`);
@@ -68,4 +85,8 @@ export function getUsers(daves) {
 		merged[id] = info; 
 	}
 	return merged;
+}
+
+export function getPlaces() {
+	return savedPlaces;
 }

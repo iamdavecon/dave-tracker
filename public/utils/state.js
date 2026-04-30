@@ -110,12 +110,22 @@ export function hasTag(dave, tag) {
 	return (dave.tags && tag in dave.tags) 
 }
 
-export function getActions(source, target) {
+export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
 		canInfect : target.state == STATES.UNSTABLE,
 		canAscend : canAscend(source),
 		canDaveputize : hasTag(source, "mayor"),
+		//DEBUGGING:
+		davePrime:  true,  //  state <= STATES.DAVEPRIME,
+
+	}
+}
+
+export function getPlaceActions(source, target) {
+	const state = getIndex(source);
+	return {
+		canAscend : canAscend(source),
 		//DEBUGGING:
 		davePrime:  true,  //  state <= STATES.DAVEPRIME,
 

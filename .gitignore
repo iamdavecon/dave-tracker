@@ -1,6 +1,7 @@
 set_redis.sh
-*~
 users.json
+places.json
+*~
 *.swp
 cert.pem
 csr.pem
