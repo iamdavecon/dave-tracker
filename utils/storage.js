@@ -37,23 +37,29 @@ export async function loadUsers() {
 		if (fs.existsSync(USER_FILE)) {
 			console.log("[LOAD] users from file");
 			savedDaves = JSON.parse(fs.readFileSync(USER_FILE, "utf8"));
-			//console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 		} else {
 			savedDaves = {};
 		}
 		if (fs.existsSync(PLACE_FILE)) {
 			console.log("[LOAD] places from file");
 			savedPlaces = JSON.parse(fs.readFileSync(PLACE_FILE, "utf8"));
-			//console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 		} else {
 			savedPlaces = {};
 		}
 	}
+	console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 	return savedDaves;
 }
 
 export async function saveUsers(daves, places) {
-	//console.log("SAVE: " + JSON.stringify(savedDaves, null, 2));
+	if (!daves) {
+		daves = {};
+	}
+	if (!places) {
+		places = {};
+	}
+	console.log("SAVE: " + JSON.stringify(savedDaves, null, 2));
+	console.log("SAVE: " + JSON.stringify(places, null, 2));
 
 	let mergedUsers = getUsers(daves);
 	//console.log(`[SAVE]  ${JSON.stringify(mergedUsers, null, 2)}`);

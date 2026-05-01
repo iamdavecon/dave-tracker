@@ -10,3 +10,15 @@ export function getUserId() {
 	return id;
 }
 
+export function getFragmentFrom(me, target) {
+	const id = target.userId;
+
+	if (!me.fragmentsCollected) {
+		me.fragmentsCollected = [];
+	}
+	if (!me.fragmentsCollected.includes(id)) {
+		me.fragmentsCollected.push(id);
+		return true;
+	} 
+	return false;
+}

@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>DaveTracker Places</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: #111;
+      color: #eee;
+    }
+
+    .container {
+      padding: 16px;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background: #1a1a1a;
+      position: sticky;
+      top: 0;
+    }
+
+    tr {
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    tr:hover {
+      background: #1f1f1f;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #333;
+      font-size: 12px;
+    }
+
+    .level {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <a href="/" class="back-link">< Back</a>
+
+    <div class="header">
+      <h1>Nodes</h1>
+      <div class="small" id="updated"></div>
+    </div>
+
+    <table id="placesTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Owner</th>
+          <th>Level</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    async function loadPlaces() {
+      const params = new URLSearchParams(window.location.search);
+      const myUserId = params.get("userId");
+
+      const res = await fetch('/api/places');
+      const places = await res.json();
+
+      const tbody = document.querySelector('#placesTable tbody');
+      tbody.innerHTML = '';
+
+      const entries = Object.entries(places);
+
+      // sort by name
+      entries.sort((a, b) => {
+        const nameA = (a[1].name || '').toLowerCase();
+        const nameB = (b[1].name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      for (const [id, place] of entries) {
+        const level = place.level ?? 0;
+
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `
+          <td>${place.name || '(unnamed)'}</td>
+          <td>
+            ${place.owner
+              ? `<span class="pill">${place.owner}</span>`
+              : `<span class="pill">Dave</span>`}
+          </td>
+          <td class="level">${level}</td>
+        `;
+
+        tr.onclick = () => {
+          window.location.href = `/place.html?id=${id}`;
+        };
+
+        tbody.appendChild(tr);
+      }
+    }
+
+    loadPlaces();
+  </script>
+</body>
+</html>
+

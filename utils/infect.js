@@ -24,7 +24,7 @@ export function infectTarget(me, target) {
 		target.infectedBy.push(me.userId);
 
 		// Notify infected user via socket
-		notifyUser(target, "notifyInfected", { by: me.icon });
+		notifyUser(target, "notifyInfected", { by: me.userId });
 		return true;
 	}
 	return false;

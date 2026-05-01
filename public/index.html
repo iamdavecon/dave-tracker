@@ -33,21 +33,21 @@
 					<span id="state" class="value infected"></span>
 				</div>
 
+				<br />
+
 				<div class="field">
-					<span class="label">INFECTIONS SPREAD</span>
+					<span class="label">☣️ INFECTIONS SPREAD</span>
 					<span id="infectedCount" class="value">0</span>
 				</div>
 
 				<div class="field">
-					<span class="label">FRAGMENTS COLLECTED</span>
+					<span class="label">🧬 FRAGMENTS</span>
 					<span id="fragments" class="value">0</span>
 				</div>
 
 				<button id="install-antivirus">
 					INSTALL MIND ANTIVIRUS
 				</button>
-
-
 			</section>
 
 
@@ -62,23 +62,17 @@
 
 				<div class="label">LOCAL NETWORK MAP</div>
 				<div id="map" class="map"></div>
+				<button id="centerMe">Center on Me</button>
 			</section>
 
-			<section class="log">
-				<div class="log-title">EVENT LOG</div>
-				<ul id="logList"></ul>
-			</section>
-
-			<section class="log">
+			<section class="log daves-online">
 				<div class="log-title">
-					<span >DAVES ONLINE</span>
-					<span id="total" class="value">0</span>
+				<span>DAVES ONLINE</span>
+				<span id="total" class="value">0</span>
 				</div>
-
 				<ul id="distanceList"></ul>
-			</section>
 
-			<section class="panel">
+				<br />
 				<a id="leaderboardLink" href="/leaderboard.html" style="
 					 color: #5cff9d;
 					 text-decoration: none;
@@ -86,6 +80,30 @@
 					 ">
 					View Leaderboard
 				</a>
+
+
+			</section>
+
+			<section class="log nodes">
+				<div class="log-title">
+				<span>NODES</span>
+				<span id="totalNodes" class="value">0</span>
+				</div>
+				<ul id="nodeDistanceList"></ul>
+				<br />
+				<a id="nodeLink" href="/nodes.html" style="
+					 color: #5cff9d;
+					 text-decoration: none;
+					 font-family: ui-monospace, monospace;
+					 ">
+					View all nodes
+				</a>
+
+			</section>
+
+			<section class="log event-log">
+				<div class="log-title">EVENT LOG</div>
+				<ul id="logList"></ul>
 			</section>
 
 

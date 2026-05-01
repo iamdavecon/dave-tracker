@@ -1,4 +1,6 @@
 import { getUserId } from './utils/id.js';
+import { logEvent } from './utils/log.js';
+import { addMap } from './utils/map.js';
 import * as state from "./utils/state.js";
 
 const userId = getUserId();
@@ -13,33 +15,79 @@ const daveId = params.get("id");
 
 let map;
 
-function createPill(label, state = "neutral", isYou = false) {
-	return L.divIcon({
-		className: "",
-		html: `
-			<div class="map-pill ${state} ${isYou ? "you" : ""}">
-				${label}
-			</div>
-		`,
-		iconSize: null
+function renderTags(tags = []) {
+	const container = document.getElementById("player-tags");
+	container.innerHTML = "";
+
+	tags.forEach(tag => {
+		const el = document.createElement("span");
+		el.className = `tag tag-${tag}`;
+		// Pretty label
+		const LABELS = {
+			mayor: "🏛 Mayor",
+			doon: "💀 DOON",
+			dod: "🛡 DoD"
+		};
+
+		el.textContent = LABELS[tag] || tag;
+		container.appendChild(el);
 	});
 }
 
-function logEvent(message) {
-	const logList = document.getElementById("logList");
+function emit(event) {
+	socket.emit(event, userId, daveId);
+	switch(event) {
+		case "spawnCluster":
+			logEvent("BOTS SPAWNED");
+			break;	
 
-	const li = document.createElement("li");
-
-	const timestamp = new Date().toLocaleTimeString();
-
-	li.textContent = `[${timestamp}] ${message}`;
-
-	logList.prepend(li);
-
-	const maxLogs = 10;
-	while (logList.children.length > maxLogs) {
-		logList.removeChild(logList.lastChild);
+		default:
+			location.reload()
 	}
+}
+
+async function teleport(freeRoam) {
+	const payload = JSON.stringify({
+		source: userId,
+		targetId: daveId,
+		targetType: "player",
+		freeRoam: freeRoam
+	});
+	//console.log("teleport: " + payload);
+	await fetch('/api/teleport', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: payload
+	});
+
+	logEvent("Teleported");
+}
+
+function addActions(actionHtml) {
+	const actionsContainer = document.getElementById("actions");
+
+	actionsContainer.innerHTML = actionHtml;
+
+	actionsContainer.onclick = (e) => {
+		const action = e.target.dataset.action;
+		if (!action) return;
+
+		switch (action) {
+			case "antivirus":
+				window.location.href = "https://iamdavecon.github.io/bb/";
+				break;
+
+			case "teleport":
+				teleport(true);
+				break;
+			case "exitFreeRoam":
+				logEvent("DONE");
+				teleport(false);
+				break;	
+			default:
+				emit(action);
+		}
+	};
 }
 
 async function loadPlayer() {
@@ -47,7 +95,7 @@ async function loadPlayer() {
 
 	const res = await fetch(`/api/dave?id=${encodeURIComponent(daveId)}&viewerId=${encodeURIComponent(userId)}`);
 	const dave = await res.json();
-	console.log("loading: " + JSON.stringify(dave, null, 2));
+	//console.log("loading: " + JSON.stringify(dave, null, 2));
 
 
 	// --- Populate fields ---
@@ -57,164 +105,100 @@ async function loadPlayer() {
 	stateEl.textContent = dave.state.toUpperCase();
 	stateEl.className = "state-pill " + dave.state.toLowerCase();
 
+	if (dave.tags) {
+		renderTags(dave.tags);
+	}
+
+	let infectedCount = 0;
+	if (dave.infectedUsers) {
+		infectedCount = dave.infectedUsers.length; 
+	}
+	let fragments = 0;
+	if (dave.fragmentsCollected) {
+		fragments = dave.fragmentsCollected.length; 
+	}
+	const nodes = dave.nodeCount ?? 0;
+ 
 	document.getElementById("stats").innerHTML = `
 		<div class="field">
-			<span class="label">Score</span>
-			<span>${dave.score}</span>
+			<span class="label">☣️ Infected</span>
+			<span>${infectedCount}</span>
 		</div>
 		<div class="field">
-			<span class="label">Infected</span>
-			<span>${dave.teamVirus}</span>
+			<span class="label">🧬Fragments</span>
+			<span>${fragments}</span>
 		</div>
 		<div class="field">
-			<span class="label">Ascended</span>
-			<span>${dave.teamAntivirus}</span>
+			<span class="label">🏙️ Nodes</span>
+			<span>${nodes}</span>
 		</div>
+
 	`;	
 
 	if (dave.isMe) {
 		let actionHtml = "";
 
 		//TODO  ??
-		//actionHtml += `<button id="chooseTags">CHOOSE TAGS</button> `   
+		//actionHtml += `<button id="chooseTags">Choose </button> `   
 
-
-
-		if (dave.availableActions.dropPin) {
-			actionHtml += `<button id="davePoint">Daveify This Spot</button> `   
+		if (dave.availableActions.hasFragments) {
+			actionHtml += `<button data-action="dropDavePoint">Daveify This Spot</button> `   
 		} else {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
 
 		//  DAVEPRIME (CHEATS)
 		if (dave.availableActions.davePrime) {
-			actionHtml += `<button id="spawnCluster">SPAWN CLUSTER</button>`
-		}
-
-		document.getElementById("actions").innerHTML = actionHtml;
-
-		const davePoint = document.getElementById("davePoint");
-		if (davePoint) {
-			 davePoint.addEventListener("click", () => {
-				socket.emit("dropDavePoint", userId);
-			});
-		}
-		const spawnBtn = document.getElementById("spawnCluster");
-		if (spawnBtn) {
-			 spawnBtn.addEventListener("click", () => {
-				 logEvent("BOTS SPAWNED");
-				socket.emit("spawnCluster", userId);
-			});
-		}
-
-	} else  {
-		if (dave.inRange) {
-			let actionHtml = "";
-
-			// Basic infect button
-			actionHtml += `<button id="infectBtn">TRANSMIT VIRUS</button>`;
-
-			// Conditional stabilize button
-			if (dave.availableActions.canAscend) {
-				actionHtml += `<button id="stabilizeBtn">STABILIZE HOST</button>`;
-			} else {
-				actionHtml += `<button id="stabilizeBtn">ANTIVIRUS REQUIRED</button>`;
+			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
+			if (dave.freeRoam) {
+				actionHtml += `<button data-action="exitFreeRoam">Exit Free Roam</button>`
 			}
 
-			// Conditional other actions
+		}
+		addActions(actionHtml);
+	} else  {
+		if (dave.mapData.inRange) {
+			let actionHtml = "";
+
+			if (dave.availableActions.canInfect) {
+				actionHtml += `<button data-action="infect">TRANSMIT VIRUS</button>`;
+			} else {
+				actionHtml += `<button disabled class="disabled">TRANSMIT VIRUS</button>`;
+			}
+
+			if (dave.availableActions.canPatch) {
+				if (dave.availableActions.canBePatched) {
+					actionHtml += `<button data-action="stabilize">STABILIZE HOST</button>`;
+				}
+			} else {
+				actionHtml += `<button data-action="antivirus">ANTIVIRUS REQUIRED</button>`;
+			}
+
 			if (dave.availableActions.canAscend) {
-				actionHtml += `<button id="ascend">ASCEND</button>`;
+				actionHtml += `<button data-action="ascend">ASCEND</button>`;
 			}
 
 			if (dave.availableActions.canDaveputize) {
-				actionHtml += `<button id="daveputize">DAVEPUTIZE</button>`;
+				actionHtml += `<button data-action="daveputize">DAVEPUTIZE</button>`;
 			}
 
-			if (actionHtml.trim().length === 0) {
-				actionHtml = `You must advance to unlock options`;
+			if (dave.availableActions.davePrime) {
+				actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
 			}
 
-			// Add buttons to DOM
-			const actionsContainer = document.getElementById("actions");
-			actionsContainer.innerHTML = actionHtml;
-
-			// Add event listeners AFTER elements exist
-			const infectBtn = document.getElementById("infectBtn");
-			if (infectBtn) {
-				if (dave.availableActions.canInfect) {
-					infectBtn.addEventListener("click", () => {
-						console.log("emit infect");
-						socket.emit("infect", userId, daveId);
-					});
-				} else {
-					infectBtn.disabled = true;
-				}
-			}
-
-			const stabilizeBtn = document.getElementById("stabilizeBtn");
-			if (stabilizeBtn) {
-				if (dave.availableActions.canAscend) {
-					stabilizeBtn.addEventListener("click", () => {
-						socket.emit("stabilize");
-					});
-				} else {
-					stabilizeBtn.addEventListener("click", () => {
-						window.location.href = "https://iamdavecon.github.io/bb/";
-					});
-				}
-			}
-
-			const ascendBtn = document.getElementById("ascend");
-			if (ascendBtn) {
-				ascendBtn.addEventListener("click", () => {
-					socket.emit("ascend");
-				});
-			}
-
-			const daveputizeBtn = document.getElementById("daveputize");
-			if (daveputizeBtn) {
-				daveputizeBtn.addEventListener("click", () => {
-					socket.emit("daveputize");
-				});
-			}
-
+			addActions(actionHtml);
 		} else {
-			document.getElementById("actions").innerHTML = `OUT OF RANGE`;
+			if (dave.availableActions.davePrime) {
+				let actionHtml = "";
+				actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
+				addActions(actionHtml);
+			} else {
+				document.getElementById("actions").innerHTML = `OUT OF RANGE`;
+			}
 		}
 
 
-
-		// --- init map ---
-		map = L.map("map");
-
-		L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-			attribution: "� OpenStreetMap"
-		}).addTo(map);
-
-		// --- markers ---
-		const meMarker = L.marker([dave.viewerLat, dave.viewerLon], {
-			icon: createPill("YOU", "", true)
-		}).addTo(map);
-
-		const targetMarker = L.marker([dave.targetLat, dave.targetLon], {
-			icon: createPill(dave.name, dave.state?.toLowerCase())
-		}).addTo(map);
-
-		//L.marker([dave.targetLat, dave.targetLon], { title: dave.icon }).addTo(map);
-
-
-		// --- fit bounds to both ---
-		const group = new L.featureGroup([meMarker, targetMarker]);
-		map.fitBounds(group.getBounds(), { padding: [30, 30] });
-
-		// --- draw connection line ---
-		L.polyline(
-			[
-				[dave.viewerLat, dave.viewerLon],
-				[dave.targetLat, dave.targetLon]
-			],
-			{ color: "white", opacity: 0.5 }
-		).addTo(map);
+		map = addMap(dave.mapData);
 	}
 }
 
@@ -227,7 +211,7 @@ loadPlayer();
 
 
 socket.on('infectResult', (data) => {
-	console.log("infect result: " + data.sucess);
+	//console.log("infect result: " + data.sucess);
 	if (data.success) {
 		logEvent(`Host infected`);
 		location.reload()
@@ -245,6 +229,7 @@ socket.on('notifyInfected', (data) => {
 socket.on('stabilizeResult', (data) => {
 	if (data.success) {
 		logEvent(`Fragment acquired`);
+		location.reload()
 	}
 });
 

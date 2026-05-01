@@ -1,3 +1,6 @@
+import { inRange } from './distance.js';
+
+
 function metersToPixels(meters, lat, zoom) {
 	const metersPerPixel =
 		40075016.686 * Math.abs(Math.cos(lat * Math.PI / 180)) / Math.pow(2, zoom + 8);
@@ -6,7 +9,7 @@ function metersToPixels(meters, lat, zoom) {
 }
 
 function createInfluenceSVG({ radiusPx, color, isCanonical }) {
-	const edge = isCanonical ? "hard" : "soft";
+	const edge = "hard"
 
 	return `
     <svg width="${radiusPx * 2}" height="${radiusPx * 2}" viewBox="0 0 ${radiusPx * 2} ${radiusPx * 2}" xmlns="http://www.w3.org/2000/svg">
@@ -64,23 +67,28 @@ function svgStringToElement(svgString) {
 	return doc.documentElement;
 }
 
-export function addPlace(id, userId, layer, zoom, place, isCanonical) {
+export function addPlace(id, dave, layer, zoom, place, isCanonical, i) {
 	const lat = place.lat;
-	const lng = place.lon; 
+	const lng = place.lng; 
 	const radiusMeters = place.influence || 100;
 
 	// --- marker ---
+	let name = "";
+	if (place.owner) {
+		name = "🏙️ "
+	}
+	name += place.name;
 	const marker = L.marker([lat, lng], {
 		icon: L.divIcon({
 			className: "custom-icon", 
-			html: `<div class="canonical-pill center">${place.name}</div>`,
+			html: `<div class="canonical-pill center">${name}</div>`,
 			iconSize: null,  
 			iconAnchor: [0, 0] 
 		})
 	}).addTo(layer);
 
 	marker.on("click", () => {
-		window.location.href = `/place.html?id=${encodeURIComponent(id)}&viewerId=${encodeURIComponent(userId)}`;
+		window.location.href = `/place.html?id=${encodeURIComponent(id)}&viewerId=${encodeURIComponent(dave.userId)}`;
 	});
 
 
@@ -102,6 +110,68 @@ export function addPlace(id, userId, layer, zoom, place, isCanonical) {
 
 	overlay.addTo(layer);
 
+	//console.log("addPlace: " + JSON.stringify(place, null, 2))
+	if (i < 12) {
+		// --- Update distance list ---
+		const li = document.createElement("li");
+		li.classList.add("tappable-list-item");
+
+		// Navigation on click
+		li.addEventListener("click", () => {
+				window.location.href = `/place.html?id=${encodeURIComponent(id)}&viewerId=${encodeURIComponent(dave.userId)}`;
+				});
+
+		const container = document.createElement("div");
+		container.style.display = "flex";
+		container.style.justifyContent = "space-between";
+		container.style.alignItems = "center";
+
+		// Left side: Name
+		const nameEl = document.createElement("span");
+		nameEl.textContent = name;
+		container.appendChild(nameEl);
+
+		if (place.level) {
+			const levelEl = document.createElement("span");
+			levelEl.textContent = `Level: ${place.level}`;
+			levelEl.style.marginLeft = "auto";  
+			levelEl.style.textAlign = "center"; 
+			levelEl.style.flexGrow = "1"; 
+			container.appendChild(levelEl);
+		}
+
+		// Right side: Distance + chevron
+		const rightSide = document.createElement("div");
+		rightSide.style.display = "flex";
+		rightSide.style.alignItems = "center";
+		rightSide.style.gap = "8px";
+
+		const distance = document.createElement("span");
+		distance.textContent = `${Math.round(place.distance)} m`;
+
+		const chevron = document.createElement("span");
+		chevron.textContent = ">";
+		chevron.style.opacity = "0.5";
+
+		rightSide.appendChild(distance);
+		rightSide.appendChild(chevron);
+
+		container.appendChild(rightSide);
+
+
+		li.appendChild(container);                
+
+		if (inRange(dave, place)) {
+			li.classList.add("in-range");
+			li.classList.remove("out-of-range");
+		} else {
+			li.classList.add("out-of-range");
+			li.classList.remove("in-range");
+		}
+
+		nodeDistanceList.appendChild(li);
+	}
+	
 }
 
 function addInfluenceOverlay(map, lat, lng, radiusMeters, options = {}) {
