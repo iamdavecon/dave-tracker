@@ -1,31 +1,10 @@
-import { stabilize } from '../public/utils/state.js';
+import { getFragmentFrom } from '../public/utils/id.js';
+import { stabilize, ascendUser, addTag } from '../public/utils/state.js';
 import { getUsers } from './storage.js';
-
-
-/**
- * Handles the stabilization process for the given user and other users.
- * 
- * @param {Object} me - The current user 
- * @param {Object} target - The other player.
- * @returns true if target was stabilized
- */
-export function stabilizeTarget(me, target) {
-	const id = targe.userId;
-
-	if (!me.fragmentsCollected) {
-		me.fragmentsCollected = [];
-	}
-	// Only infect viable daves
-	if (!me.fragmentsCollected.includes(id) && stabilize(target)) {
-		me.fragmentsCollected.push(id);
-		return true;
-	} 
-
-	return false;
-}
 
 export function registerHandlers(socket, daves, io) {
 	socket.on("stabilize", (sourceId, targetId) => {
+		console.log("stabilizing: " + sourceId + " => " + targetId);
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		const target = localDaves[targetId];
@@ -33,7 +12,8 @@ export function registerHandlers(socket, daves, io) {
 			return;
 		}
 
-		const success = stabilizeTarget(me, daves, userSockets, io);
+		const success = (getFragmentFrom(me, target) && stabilize(target));
+		console.log("result: " + success);
 
 		socket.emit("stabilizeResult", {
 			success 
@@ -41,5 +21,34 @@ export function registerHandlers(socket, daves, io) {
 
 		io.emit("update", { daves });
 	});
+
+	socket.on("ascend", (sourceId, targetId) => {
+		console.log("ascending: " + sourceId + " => " + targetId);
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target) {
+			return;
+		}
+
+		const success = (getFragmentFrom(me, target) && ascendUser(target));
+		console.log("result: " + success);
+
+		io.emit("update", { daves });
+	});
+
+	socket.on("daveputize", (sourceId, targetId) => {
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target) {
+			return;
+		}
+
+		const success = addTag(target, "doon");
+
+		io.emit("update", { daves });
+	});
+
 }
 

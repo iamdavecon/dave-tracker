@@ -108,6 +108,87 @@
 	text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
+.radar {
+  stroke-width: 2;
+  fill-opacity: 0.15;
+  animation: radarPulse 2s infinite;
+}
+
+/* State colors */
+
+.radar.ascended {
+  stroke: gold;
+  fill: gold;
+}
+
+.radar.immune {
+  stroke: #4da3ff;
+  fill: #4da3ff;
+}
+
+.radar.unstable {
+  stroke: grey;
+  fill: grey;
+}
+
+.radar.infected {
+  stroke: red;
+  fill: red;
+}
+
+/* Pulse animation */
+@keyframes radarPulse {
+  0%   { stroke-width: 2; fill-opacity: 0.2; }
+  50%  { stroke-width: 6; fill-opacity: 0.05; }
+  100% { stroke-width: 2; fill-opacity: 0.2; }
+}
+
+
+/** TAGS **/
+.tag-container {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.tag {
+	display: inline-flex;
+	align-items: center;
+	white-space: nowrap; 
+
+	padding: 5px 12px;
+	border-radius: 999px;
+	border: 1px solid rgba(255,255,255,0.2);
+
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+}
+
+
+/* Mayor (territory control) */
+.tag-mayor {
+	background: linear-gradient(135deg, #78350f, #f59e0b);
+	color: #111;
+	border-color: #fbbf24;
+}
+
+/* Doon (chaos agent) */
+.tag-doon {
+	background: #1f2937;
+	color: #f87171;
+	border-color: #ef4444;
+}
+
+/* Department of Davefence (elite defenders) */
+.tag-dod {
+	background: #0f172a;
+	color: #38bdf8;
+	border-color: #0ea5e9;
+}
+
+
 
 /** PLACES **/
 .canonical-pill {
@@ -258,40 +339,194 @@ button:disabled {
 	filter: grayscale(1);
 }
 
+/* Common styles for the sections */
 .log {
 	font-size: 12px;
+	margin-bottom: 20px;
+padding: 15px;
+	 border-radius: 8px;
+background: #111;  /* Base background */
+	    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.log-title {
-	color: #888;
-	margin-bottom: 5px;
+/* Event Log */
+.log.event-log {
+background: #1a1a1a;  /* Slightly darker background for Event Log */
+	    border-left: 5px solid #ff6f61;  /* Red left border */
 }
+
+.log.event-log .log-title {
+color: #ff6f61;  /* Red title text */
+       font-size: 1.2rem;  /* Larger title */
+       font-weight: bold;
+       padding-bottom: 10px;
+       margin-bottom: 10px;
+       border-bottom: 2px solid #ff6f61;  /* Underline for separation */
+}
+
+/* Daves Online */
+.log.daves-online {
+background: #2b2b2b;  /* Dark background for Daves Online */
+	    border-left: 5px solid #5cff9d;  /* Green left border */
+}
+
+.log.daves-online .log-title {
+color: #5cff9d;  /* Green title text */
+       font-size: 1.2rem;  /* Larger title */
+       font-weight: bold;
+       padding-bottom: 10px;
+       margin-bottom: 10px;
+       border-bottom: 2px solid #5cff9d;  /* Underline for separation */
+}
+
+/* Nodes */
+.log.nodes {
+background: #3b3b3b;  /* A bit lighter gray for Nodes */
+	    border-left: 5px solid #7c3aed;  /* Purple left border */
+}
+
+.log.nodes .log-title {
+color: #7c3aed;  /* Purple title text */
+       font-size: 1.2rem;  /* Larger title */
+       font-weight: bold;
+       padding-bottom: 10px;
+       margin-bottom: 10px;
+       border-bottom: 2px solid #7c3aed;  /* Underline for separation */
+}
+
+/* =========================
+   ADDITIONAL STYLING FOR COMMON LIST ITEMS
+   ========================= */
 
 .log ul {
 	list-style: none;
-	padding: 0;
+margin: 0;
+	padding-left: 20px;
 }
 
 .log li {
 	border-bottom: 1px solid #222;
-	padding: 5px 0;
+padding: 8px 0;
 }
 
-/* subtle glitch */
+.log li:last-child {
+	border-bottom: none;
+}
+
+/* =========================
+   TWEAKS FOR MISC TEXT AND LINKS
+   ========================= */
+
+a {
+color: #5cff9d;
+       text-decoration: none;
+       font-weight: 600;
+}
+
+a:hover {
+	  text-decoration: underline;
+  }
+
+/* Subtle Glitch Effect */
 .glitch {
-	position: relative;
-	color: #fff;
+position: relative;
+color: #fff;
 }
 
 .glitch::after {
-	content: "TRACKER";
-	position: absolute;
-	left: 2px;
-	top: 0;
-	color: red;
-	opacity: 0.3;
+content: "TRACKER";
+position: absolute;
+left: 2px;
+top: 0;
+color: red;
+opacity: 0.3;
 }
 
+/* =========================
+   IN-RANGE ROW STYLES 
+========================= */
+
+/* Base styles for list items */
+.tappable-list-item {
+    cursor: pointer;
+    padding: 12px 16px;
+    border-radius: 10px;
+    transition: background 0.15s ease, transform 0.05s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 10px; /* Add some spacing between items */
+}
+
+/* =========================
+   STYLES FOR CURRENT USER ROW
+========================= */
+.tappable-list-item.current-user {
+    background: rgba(79, 195, 247, 0.2); /* Soft blue background for your row */
+    color: #1e88e5; /* Text color that contrasts the background */
+    font-weight: bold; /* Make it bolder to draw attention */
+    border-left: 4px solid #1e88e5; /* Blue border to highlight the row */
+    box-shadow: 0 0 12px rgba(79, 195, 247, 0.3); /* Glow effect around the row */
+    transition: transform 0.15s ease-in-out, background 0.2s ease;
+}
+
+/* Hover effect for current user row */
+.tappable-list-item.current-user:hover {
+    background: rgba(79, 195, 247, 0.4); /* Slightly darker on hover */
+    transform: scale(1.05); /* Slightly enlarge on hover */
+}
+
+/* Active effect for current user row */
+.tappable-list-item.current-user:active {
+    transform: scale(0.98); /* Shrink on click */
+    background: rgba(79, 195, 247, 0.3); /* Lighter blue for active state */
+}
+
+/* Styles for in-range items (subtle) */
+.tappable-list-item.in-range {
+    background: #3a4e57; /* Muted grayish-green background */
+    color: #e0e0e0; /* Lighter text for subtle contrast */
+    font-weight: 600; /* Medium-weight font */
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Very subtle shadow */
+    border-left: 4px solid #5f7073; /* Slightly muted, soft teal border */
+}
+
+/* Hover effect for in-range items */
+.tappable-list-item.in-range:hover {
+    background: #475a5d; /* Slightly lighter grayish-green on hover */
+    transform: scale(1.02); /* Slightly increase size on hover */
+}
+
+/* Active (clicked) effect for in-range items */
+.tappable-list-item.in-range:active {
+    transform: scale(0.98); /* Shrink slightly on click */
+    background: #3e4d4b; /* Darker shade for active effect */
+}
+
+/* =========================
+   OUT-OF-RANGE ROW STYLES
+========================= */
+
+/* Styles for out-of-range items */
+.tappable-list-item.out-of-range {
+    background: #282828; /* Darker gray background */
+    color: #6b6b6b; /* Muted gray text */
+    border-left: 4px dashed #444; /* Muted dashed border for out-of-range */
+    cursor: pointer;
+}
+
+/* Hover effect for out-of-range items (disabled) */
+.tappable-list-item.out-of-range:hover {
+    background: #282828; /* No hover effect */
+    transform: none; /* No scale effect */
+}
+
+/* Active effect for out-of-range items */
+.tappable-list-item.out-of-range:active {
+    transform: none; /* No shrink effect */
+    background: #282828; /* Keep the same background */
+}
+
+
+/** MAP **/
 
 .map {
 	height: 250px;

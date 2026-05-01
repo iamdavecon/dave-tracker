@@ -1,10 +1,12 @@
 import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
-import { inRange } from "./public/utils/distance.js";
 
+import { notifyUser } from './utils/sockets.js';
 import * as infect from './utils/infect.js';
 import * as stabilize from './utils/stabilize.js';
-import { spawnBot } from "./utils/bots.js";
+import * as places from './utils/places.js';
+import { spawnBot, updateBots } from "./utils/bots.js";
+import { summarizeDave, getInteraction } from "./utils/players.js";
 
 
 // --- HTTP server ---
@@ -23,6 +25,7 @@ export function getIO() {
 
 app.use(express.static('public'));
 app.use('/utils', express.static('utils'));
+app.use(express.json()); 
 
 export function getApp() {
 	return app;
@@ -35,23 +38,28 @@ server.listen(PORT, () => {
 });
 
 
-// --- In-memory location stores ---
+// --- In-memory state ---
 let savedDaves = await loadUsers();
 let savedPlaces = getPlaces();
 
-//let daves = {};
-let daves = savedDaves;  //for debugging - show saved daves in addition to active sessions
+let daves = savedDaves;  
 
 // --- save active users, cull idle users ---
 setInterval(async () => { 
-	const cutoff = Date.now() - 20 * 60 * 1000; // 20 minutes
+	const cutoff = Date.now() - 15 * 60 * 1000; // 15 minutes
+	const botCutoff = Date.now() - 4 * 60 * 1000; // 4 minutes
 	let davesToCull = [];
 
 	// Build a list of daves to cull
 	for (const [id, info] of Object.entries(daves)) {
 		if (!info || info.updatedAt < cutoff) {
-			console.log("\tCULLED: " + info.userId);
+			//console.log("\tCULLED: " + info.userId);
 			davesToCull.push(id);
+		} else {
+			if (info.isBot && info.updatedAt < botCutoff) {
+				//console.log("\tCULLED: " + info.userId);
+				davesToCull.push(id);
+			}
 		}
 	}
 
@@ -63,13 +71,21 @@ setInterval(async () => {
 		}
 
 		// Notify clients about the update
-		io.emit("update", { daves });
+		io.emit("update");
 	}
-}, 30_000);
+}, 60_000);  //save / cull once a minute
 
-
+const MAX_BOTS = 50;
 
 function randomSpawn() {
+	const nBots = Object.keys(Object.fromEntries(
+		Object.entries(daves).filter(([id, user]) => user.isBot)
+	)).length;
+	//console.log(nBots + " bots");
+	if (nBots >= MAX_BOTS) {
+		return;
+	}
+
 	const realUsers = Object.fromEntries(
 		Object.entries(daves).filter(([id, user]) => !user.isBot)
 	);
@@ -82,36 +98,50 @@ function randomSpawn() {
 		//console.log("spawn: " + randomDave + " => " + bot.userId);
 		daves[bot.userId] = bot;
 
-		io.emit("update", { daves });
+		io.emit("update");
 	} 
 }
 
 setInterval(randomSpawn, 45_000);
 
+setInterval(() => {
+	const bots = Object.fromEntries(
+		Object.entries(daves).filter(([id, user]) => user.isBot)
+	);
 
-function summarizeDave(dave) {
-	let score = 0;
-	let teamVirus = 0;
-	let teamAntivirus = 0;
+	updateBots(bots);
+	io.emit("update");
+}, 1000); // 1 second
 
-	if (dave.infectedUsers) {
-		teamVirus += dave.infectedUsers.length; 
-	}
-	if (dave.fragmentsCollected) {
-		teamAntivirus += dave.fragmentsCollected.length
-	}
-	score = teamVirus + (teamAntivirus * 2)
+const globalLog = [];
 
-	return {
-		userId: dave.userId,
-		name: dave.icon,  
-		score: score,
-		teamVirus: teamVirus,
-		teamAntivirus: teamAntivirus,
-		state: state.getState(dave).toUpperCase()
+function logEvent(message, options = {}) {
+	const entry = {
+		id: crypto.randomUUID(),
+		message,
+		timestamp: Date.now(),
+
+		// optional metadata
+		type: options.type || "system",
+		userId: options.userId || null,
+		placeId: options.placeId || null,
 	};
 
+	globalLog.unshift(entry);
+
+	// cap size so it doesn't grow forever
+	const MAX_LOG_ENTRIES = 50;
+
+	if (globalLog.length > MAX_LOG_ENTRIES) {
+		globalLog.length = MAX_LOG_ENTRIES;
+	}
+
+	// broadcast to all connected clients
+	io.emit("logEvent", entry);
+
+	return entry;
 }
+
 
 // --- dave details ---
 app.get('/api/dave', (req, res) => {
@@ -130,19 +160,9 @@ app.get('/api/dave', (req, res) => {
 		return res.status(404).json({ error: "Dave's not here" });
 	}
 
-	let daveDetails = summarizeDave(dave);
-	daveDetails.isMe = id === viewerId
-	daveDetails.availableActions = state.getUserActions(me, dave);
-
-	daveDetails.targetLat = dave.lat;
-	daveDetails.targetLon = dave.lon;
-
-	daveDetails.viewerLat = me.lat;
-	daveDetails.viewerLon = me.lon;
-
-	daveDetails.inRange = inRange(me, dave);
-
-	res.json(daveDetails);
+	let result = getInteraction(me, dave);
+	result.availableActions.tooNear = places.isTooNear(me, savedPlaces);
+	res.json(result);
 });
 
 // --- leaderboard ---
@@ -175,6 +195,7 @@ app.get("/api/leaderboard", (req, res) => {
 	});
 });
 
+
 // --- place details ---
 app.get('/api/place', (req, res) => {
 	const { id, viewerId } = req.query;
@@ -182,13 +203,102 @@ app.get('/api/place', (req, res) => {
 	const place = savedPlaces[id];
 	const me = localDaves[viewerId]; 
 
-	let placeDetails = {
-		name : place.name,
-		availableActions : state.getPlaceActions(me, place)
+	res.json({
+		place: places.getInteraction(me, place),
+		dave: me
+	});
+});
+
+app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
+	const placeId = req.params.id;
+	const userId = req.body.userId;
+console.log("deconstruct: " + userId + " => " + placeId);
+	const place = savedPlaces[placeId];
+	const localDaves = getUsers(daves);
+	const dave = localDaves[userId];
+
+	if (!place) {
+		return res.status(404).json({ ok: false, error: "place not found" });
 	}
 
-	res.json(placeDetails);
+	if (!dave) {
+		return res.status(404).json({ ok: false, error: "dave not found" });
+	}
+
+	const placeName = place.name || "UNKNOWN NODE";
+	const daveName = dave.name || dave.icon || "A Dave";
+
+	delete savedPlaces[placeId];
+
+	logEvent(`${daveName} deconstructed ${placeName}.`);
+
+	io.emit("update");
+
+	res.json({ ok: true });
 });
+
+app.get('/api/places', (req, res) => {
+	const localDaves = getUsers(daves);
+
+	const enriched = Object.entries(savedPlaces).map(([placeId, place]) => {
+		const ownerId = place.owner;
+
+		return {
+			id: placeId,
+			...place,
+			owner: ownerId
+				? (localDaves[ownerId]?.name || 'Some Dave')
+				: null
+		};
+	});
+
+	enriched.sort((a, b) => Number(b.level) - Number(a.level));
+
+	res.json(enriched);
+});
+
+//  --- daves and places ---
+app.get('/api/data', (req, res) => {
+	res.json( {
+		daves: getUsers(daves), 
+		places: savedPlaces 
+	});
+});
+
+app.post('/api/teleport', (req, res) => {
+	const { source, targetId, targetType, freeRoam = true } = req.body;
+
+	//console.log("recv'd teleport call: " + JSON.stringify(req.body, null, 2));
+
+	const localDaves = getUsers(daves);
+	const me = localDaves[source];
+	if (state.isDavePrime(me)) {
+		let target = {}	
+		if (targetType == "coords") {
+			target = { 
+				lat: req.body.lat, 
+				lng: req.body.lng,
+			};
+		} else {
+			 target = targetType == "place" ? savedPlaces[targetId] : localDaves[targetId];
+			//console.log(target + " from " + targetType + " and " + targetId);
+			//console.log("recv'd teleport call: " + JSON.stringify(savedPlaces, null, 2));
+		}	
+		if (!me || !target) return res.sendStatus(404);
+
+		me.lat = target.lat;
+		me.lng = target.lng;
+		me.freeRoam = !!freeRoam;
+		//notifyUser(me, "teleport", { lat : dave.lat, lng : dave.lng, freeRoam : !!freeRoam });
+
+		res.sendStatus(200);
+	} else {
+		return res.sendStatus(403);
+	}
+
+});
+
+
 
 // --- Socket.io handlers ---
 io.on('connection', (socket) => {
@@ -213,6 +323,7 @@ io.on('connection', (socket) => {
 			//console.log("new dave: " + userId);
 			 me = {
 				userId: userId,
+				name: "Dave",
 				state: state.getDefaultState(),
 				infectedUsers: [],
 				infectedBy: [],
@@ -229,8 +340,6 @@ io.on('connection', (socket) => {
 		me.sockets = new Set();
 	} 
 	me.sockets.add(socket);
-
-	io.emit("setSavedPlaces", { savedPlaces });
 
 	//console.log("registered: " + JSON.stringify(daves, null, 2));
 
@@ -253,7 +362,7 @@ io.on('connection', (socket) => {
 			}
 		}
 		//console.log("update on register: " + JSON.stringify(daves, null, 2));
-		io.emit("update", { daves });
+		io.emit("update");
 	});	
 
 	socket.on('disconnect', () => {
@@ -264,16 +373,16 @@ io.on('connection', (socket) => {
 	});
 	
 	socket.on('location', (loc) => {
-		if (!loc || typeof loc.lat !== 'number' || typeof loc.lon !== 'number') return;
+		if (!loc || typeof loc.lat !== 'number' || typeof loc.lng !== 'number') return;
 
 		// Save/update this user's location
 		const me = daves[socket.userId];
 		if (me) {
 			me.lat = loc.lat;
-			me.lon = loc.lon;
+			me.lng = loc.lng;
 			me.updatedAt = Date.now();
 
-			io.emit("update", { daves });
+			io.emit("update");
 		} 
 
 		//console.log("location update: " + JSON.stringify(daves, null, 2));
@@ -282,8 +391,8 @@ io.on('connection', (socket) => {
 	socket.on('setId', (name) => {
 		const dave = daves[socket.userId];
 		if (dave) {
-			dave.icon = name;
-			io.emit("update", { daves });
+			dave.name = name;
+			io.emit("update");
 		}
 	});
 
@@ -309,11 +418,12 @@ io.on('connection', (socket) => {
 			daves[bot.userId] = bot;
 		}
 
-		io.emit("update", { daves });
+		io.emit("update");
 	});
 
 	infect.registerHandlers(socket, daves, io);
 	stabilize.registerHandlers(socket, daves, io);
+	places.registerHandlers(socket, daves, savedPlaces, io);
 });
 
 

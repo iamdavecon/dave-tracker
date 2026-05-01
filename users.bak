@@ -1,117 +1,131 @@
 {
   "629603fc-58fa-49c9-ba98-cfc391b82569": {
     "userId": "629603fc-58fa-49c9-ba98-cfc391b82569",
-    "state": "unstable",
+    "state": "daveprime",
     "infectedUsers": [],
     "infectedBy": [],
-    "fragmentsCollected": [],
+    "fragmentsCollected": ["a", "b", "c"],
     "tags": [],
     "updatedAt": 1777457058717,
-    "range":1000,  
-    "icon": "DavePrimo",
-    "lat": 42.4071249,
-    "lon": -88.0378566
+    "range": 1000,
+    "name": "DavePrimo",
+    "lat": 38.60779513038755,
+    "lng": -90.50781867573762
+  },
+  "91f5eeaf-cfa7-4df4-b078-769d3cd3ccc0": {
+    "userId": "91f5eeaf-cfa7-4df4-b078-769d3cd3ccc0",
+    "state": "daveprime",
+    "infectedUsers": [],
+    "infectedBy": [],
+    "fragmentsCollected": ["a", "b", "c"],
+    "tags": [],
+    "updatedAt": 1777457058717,
+    "range": 1000,
+    "name": "DesktopDave",
+    "lat": 38.60779513038755,
+    "lng": -90.50781867573762
   },
   "DC_DAVE": {
     "userId": "DC_DAVE",
-    "icon": "DC_DAVE",
+    "name": "DC_DAVE",
     "state": "unstable",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805613,
     "lat": 36.17,
-    "lon": -115.14,
+    "lng": -115.14,
     "fragmentsCollected": []
   },
   "DAVE1": {
     "userId": "DAVE1",
-    "icon": "DAVE1",
+    "name": "DAVE1",
     "state": "unstable",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805613,
-    "lat": 42.4050689,
-    "lon": -88.0410624,
+    "lat": 38.60839513038755,
+    "lng": -90.50781867573762,
     "fragmentsCollected": []
   },
   "DAVE2": {
     "userId": "DAVE2",
-    "icon": "DAVE2",
+    "name": "DAVE2",
     "state": "dope",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805614,
-    "lat": 42.405168,
-    "lon": -88.041162
+    "lat": 38.60809513038755,
+    "lng": -90.50721867573762
   },
   "DAVE3": {
     "userId": "DAVE3",
-    "icon": "DAVE3",
+    "name": "DAVE3",
     "state": "ascended",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805615,
-    "lat": 42.404968,
-    "lon": -88.040962
+    "lat": 38.60749513038755,
+    "lng": -90.50721867573762
   },
   "DAVE4": {
     "userId": "DAVE4",
-    "icon": "DAVE4",
+    "name": "DAVE4",
     "state": "awakening",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805616,
-    "lat": 42.405068,
-    "lon": -88.041262
+    "lat": 38.60719513038755,
+    "lng": -90.50781867573762
   },
   "DAVE5": {
     "userId": "DAVE5",
-    "icon": "DAVE5",
+    "name": "DAVE5",
     "state": "immune",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805617,
-    "lat": 42.405168,
-    "lon": -88.040962
+    "lat": 38.60749513038755,
+    "lng": -90.50841867573762
   },
   "DAVE6": {
     "userId": "DAVE6",
-    "icon": "DAVE6",
+    "name": "DAVE6",
     "state": "patched",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805618,
-    "lat": 42.404968,
-    "lon": -88.041162
+    "lat": 38.60809513038755,
+    "lng": -90.50841867573762
   },
   "DAVE7": {
     "userId": "DAVE7",
-    "icon": "DAVE7",
+    "name": "DAVE7",
     "state": "infected",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805619,
-    "lat": 42.405068,
-    "lon": -88.040862
+    "lat": 38.60869513038755,
+    "lng": -90.50781867573762
   },
   "DAVE8": {
     "userId": "DAVE8",
-    "icon": "DAVE8",
+    "name": "DAVE8",
     "state": "corrupted",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805620,
-    "lat": 42.405268,
-    "lon": -88.041062
+    "lat": 38.60779513038755,
+    "lng": -90.50691867573762
   },
   "DAVE9": {
     "userId": "DAVE9",
-    "icon": "DAVE9",
+    "name": "DAVE9",
     "state": "voided",
     "infectedUsers": [],
     "infectedBy": [],
     "updatedAt": 2777376805621,
-    "lat": 42.404868,
-    "lon": -88.041062
+    "lat": 38.60699513038755,
+    "lng": -90.50781867573762
   }
 }
+

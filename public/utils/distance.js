@@ -17,7 +17,7 @@ export function haversineDistance(a, b) {
 	const toRad = (deg) => (deg * Math.PI) / 180;
 
 	const dLat = toRad(b.lat - a.lat);
-	const dLon = toRad(b.lon - a.lon);
+	const dLon = toRad(b.lng - a.lng);
 
 	const lat1 = toRad(a.lat);
 	const lat2 = toRad(b.lat);
@@ -30,9 +30,27 @@ export function haversineDistance(a, b) {
 	return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+export function getRange(src) {
+	switch (src.state) {
+		case "daveprime":
+			return 1000;
+		case "dope":
+			return 500;
+		case "ascended":
+			return 250;
+		case "awakening":
+			return 125;
+		case "immune":  //fallthrough
+		case "patched":
+			return 75;
+		default:
+			return 50;
+	}
+}
+
 export function inRange(src, target) {
-	const range = src.range || 50;
-	return haversineDistance(src, target) < range;
+	//console.log("\t\tdx:  " + haversineDistance(src, target) + " < " + getRange(src));
+	return haversineDistance(src, target) < getRange(src);
 }
 
 
