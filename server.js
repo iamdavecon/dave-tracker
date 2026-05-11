@@ -47,7 +47,7 @@ let daves = savedDaves;
 // --- save active users, cull idle users ---
 setInterval(async () => { 
 	const cutoff = Date.now() - 15 * 60 * 1000; // 15 minutes
-	const botCutoff = Date.now() - 4 * 60 * 1000; // 4 minutes
+	const botCutoff = Date.now() - 2 * 60 * 1000; // 2 minutes
 	let davesToCull = [];
 
 	// Build a list of daves to cull
@@ -75,7 +75,7 @@ setInterval(async () => {
 	}
 }, 60_000);  //save / cull once a minute
 
-const MAX_BOTS = 50;
+const MAX_BOTS = 80;
 
 function randomSpawn() {
 	const nBots = Object.keys(Object.fromEntries(
@@ -102,7 +102,7 @@ function randomSpawn() {
 	} 
 }
 
-setInterval(randomSpawn, 45_000);
+setInterval(randomSpawn, 10_000);
 
 setInterval(() => {
 	const bots = Object.fromEntries(
