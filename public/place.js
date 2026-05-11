@@ -147,6 +147,7 @@ async function loadPlace() {
 
 	}
 	document.getElementById("stats").innerHTML = statHtml;
+	const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
 
 	let actionHtml = "";
 	if (place.mapData.inRange) {
@@ -155,20 +156,27 @@ async function loadPlace() {
 		} else {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
-	
-		if (place.name.endsWith("Tacos El Gordo")) {
+
+		if (place.name.includes("🌮")) {	
 			if (place.availableActions.canGetTaco) {
 				actionHtml += `<button data-action="getTaco">Get a Taco</button> `   
 			} else {
 				actionHtml += `<button disabled=true>Get a Taco (on cooldown)</button> `   
 			}
-		} else if (place.name.endsWith("Slots A Fun")) {
+		} else if (place.name.includes("🌭")) {	
 			if (place.availableActions.canGetHotdog) {
 				actionHtml += `<button data-action="getHotdog">Get a Hotdog</button> `   
 			} else {
 				actionHtml += `<button disabled=true>Get a Hotdog (on cooldown)</button> `   
 			}
-		} 
+		} else if (alcoholEmojis.some(emoji => place.name.includes(emoji))) {
+			if (place.availableActions.canGetDrink) {
+				actionHtml += `<button data-action="getDrink">Get a Drink</button> `   
+			} else {
+				actionHtml += `<button disabled=true>Get a Drink (on cooldown)</button> `   
+			}
+		}
+
 	} else {
 		actionHtml += "OUT OF RANGE";
 	}

@@ -131,6 +131,10 @@ async function loadPlayer() {
 		if (dave.taco) {
 			tacos = dave.taco.count ?? 0;
 		}	
+		let drinks = 0;
+		if (dave.drinks) {
+			drinks = dave.drinks.count ?? 0;
+		}	
 
 		document.getElementById("stats").innerHTML = `
 			<div class="field">
@@ -153,7 +157,10 @@ async function loadPlayer() {
 				<span class="label">🌮 Tacos</span>
 				<span>${tacos}</span>
 			</div>
-
+			<div class="field">
+				<span class="label">🍸 Drinks</span>
+				<span>${drinks}</span>
+			</div>
 
 		`;	
 	}

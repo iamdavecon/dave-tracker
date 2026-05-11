@@ -61,8 +61,17 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 
 	socket.on("getHotdog", (sourceId, placeId) => {
 		const dave = daves[sourceId];
-		state.add(dave, "hotdog"); 
+		const count = state.add(dave, "hotdog"); 
+		if (count == 7) {
+			state.addTag(dave, "Timmy");
+		}
 	});
+
+	socket.on("getDrink", (sourceId, placeId) => {
+		const dave = daves[sourceId];
+		state.add(dave, "drinks"); 
+	});
+
 
 };
 

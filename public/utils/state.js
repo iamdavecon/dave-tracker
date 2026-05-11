@@ -264,7 +264,9 @@ export function add(dave, item) {
 		dave[item].count += 1;
 		dave[item].lastTime = now;
 		//console.log("add1:  " + dave[item].lastTime);
-	} 
+	}
+	return dave[item]; 
+	
 }
 
 export function getPlaceActions(dave, place) {
