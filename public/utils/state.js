@@ -78,6 +78,27 @@ export function getRadarClass(dave) {
 
 }
 
+export function ascendencyIndex(dave) {
+	// Explicit tuning overrides
+	const overrides = {
+		[STATES.DAVEPRIME]: 20,
+		[STATES.DOPE]: 10,
+		[STATES.ASCENDED]: 8,
+		[STATES.AWAKENING]: 6,
+		[STATES.IMMUNE]: 4,
+		[STATES.PATCHED]: 2
+	};
+
+	if (overrides[dave.state] != null) {
+		return overrides[dave.state];
+	}
+
+	// Fallback formula for future inserted states
+	const unstableIndex = toNumber(STATES.UNSTABLE);
+	const stateIndex = toNumber(dave.state);
+
+	return Math.max(1, unstableIndex - stateIndex + 1);
+}
 
 export function installAntivirus(dave) {
 	const state = getIndex(dave);

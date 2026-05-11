@@ -1,3 +1,5 @@
+import * as state from "./state.js";
+
 // --- Helpers: Haversine distance ---
 const toRad = d => d * Math.PI / 180;
 const toDeg = r => r * 180 / Math.PI;
@@ -31,21 +33,7 @@ export function haversineDistance(a, b) {
 }
 
 export function getRange(src) {
-	switch (src.state) {
-		case "daveprime":
-			return 1000;
-		case "dope":
-			return 500;
-		case "ascended":
-			return 250;
-		case "awakening":
-			return 125;
-		case "immune":  //fallthrough
-		case "patched":
-			return 75;
-		default:
-			return 50;
-	}
+	return 50 * state.ascendencyIndex(src);
 }
 
 export function inRange(src, target) {

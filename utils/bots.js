@@ -9,8 +9,8 @@ export function spawnBot(me) {
 	const centerLon = me.lng;
 
 	return {
-		lat: centerLat + (Math.random() - 0.5) * 0.001,
-		lng: centerLon + (Math.random() - 0.5) * 0.001,
+		lat: centerLat + (Math.random() - 0.5) * 0.0008,
+		lng: centerLon + (Math.random() - 0.5) * 0.0008,
 
 		userId: id,
 		isBot: true,

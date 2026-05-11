@@ -26,7 +26,11 @@ function renderTags(tags = []) {
 		const LABELS = {
 			mayor: "🏛 Mayor",
 			doon: "💀 DOON",
-			dod: "🛡 DoD"
+			peppercon: "🌶️PepperCon",
+			toxicbbg: "🍖 Toxic BBQ",
+			drinks: "🍻Cheers!",
+			dod: "🛡 DoD",
+			general: "🎖️General"
 		};
 
 		el.textContent = LABELS[tag] || tag;
