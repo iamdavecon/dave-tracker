@@ -111,7 +111,7 @@ function renderPlaces(places) {
 		.forEach((place, idx) => {  
 			let isCannonical = !place.owner
 			//console.log(JSON.stringify(place, null, 2));
-			addPlace(place.id, me, canonicalLayer, zoom, place, isCannonical, i);  
+			addPlace(place.id, me, canonicalLayer, zoom, place, isCannonical, nodeDistanceList, i);  
 		});
 }
 

@@ -24,6 +24,15 @@ function getIndex(dave) {
 	return toNumber(getState(dave));
 }
 
+export function getAscension(state) {
+	const unstableIndex = STATE_ORDER.indexOf(STATES.UNSTABLE);
+	const stateIndex = STATE_ORDER.indexOf(state);
+
+	if (stateIndex === -1) return 0;
+
+	return Math.max(0, unstableIndex - stateIndex);
+}
+
 export function getDefaultState() {
 	return STATES.UNSTABLE;
 }
@@ -52,6 +61,31 @@ export function getRandomBotState() {
 	}
 }
 
+
+export function increaseRank(dave) {
+	const currentIndex = getIndex(dave);
+
+	// higher rank = lower index
+	if (currentIndex <= 0) {
+		return false;
+	}
+
+	dave.state = toState(currentIndex - 1);
+	return true;
+}
+
+export function decreaseRank(dave) {
+	const currentIndex = getIndex(dave);
+
+	// lower rank = higher index
+	if (currentIndex >= STATE_LIST.length - 1) {
+		return false;
+	}
+
+	dave.state = toState(currentIndex + 1);
+	return true;
+}
+
 export function getState(dave) {
 	if (dave && dave.state && Object.values(STATES).includes(dave.state)) {
 		return dave.state;
@@ -78,6 +112,31 @@ export function getRadarClass(dave) {
 
 }
 
+export function getAscendencyBonus(obj) {
+	if (obj.state) {
+		// Explicit tuning overrides
+		const overrides = {
+			[STATES.DAVEPRIME]: 20,
+			[STATES.DOPE]: 10,
+			[STATES.ASCENDED]: 8,
+			[STATES.AWAKENING]: 6,
+			[STATES.IMMUNE]: 4,
+			[STATES.PATCHED]: 2
+		};
+		if (overrides[obj.state] != null) {
+			return overrides[obj.state];
+		}
+
+		// Fallback formula for future inserted states
+		const unstableIndex = toNumber(STATES.UNSTABLE);
+		const stateIndex = toNumber(obj.state);
+
+		return Math.max(1, unstableIndex - stateIndex + 1);
+	} else if (obj.level) {
+		return obj.level;
+	}
+	return 1;
+}
 
 export function installAntivirus(dave) {
 	const state = getIndex(dave);
@@ -118,9 +177,14 @@ export function canPatch(dave) {
 	return state <= toNumber(STATES.PATCHED);
 }
 
-export function canAscend(dave) {
-	const state = getIndex(dave);
-	return state <= toNumber(STATES.ASCENDED); 
+export function canAscend(me, dave) {
+	if (me.fragmentsCollected.includes(dave.userId)) {
+		return false;
+	}
+
+	const myState = getIndex(me);
+	const theirState = getIndex(dave);
+	return myState <= toNumber(STATES.ASCENDED) && myState < theirState; 
 }
 
 export function isInfected(dave) {
@@ -138,7 +202,7 @@ export function infect(dave) {
 
 export function stabilize(dave) {
 	//console.log("stabilizing");
-	console.log(JSON.stringify(dave, null, 2));
+	//console.log(JSON.stringify(dave, null, 2));
 
 	if (dave.state == STATES.PATCHED) {
 		//console.log("\tpatched");
@@ -183,7 +247,7 @@ export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
 		canInfect : target.state == STATES.UNSTABLE,
-		canAscend : canAscend(source),
+		canAscend : canAscend(source, target),
 		canPatch : canPatch(source),
 		canBePatched : target.state == STATES.UNSTABLE,
 		hasFragments : canAfford(source, 1),
@@ -192,20 +256,35 @@ export function getUserActions(source, target) {
 	}
 }
 
-function maxState(dave) {
+export function maxState(dave) {
 	switch (dave.state) {
-		case STATES.IMMUNE:
+		case STATES.PATCHED:
 			return 2;
+		case STATES.IMMUNE:
+			return 3;
 		case STATES.AKAKENING:
 			return 4;
+		case STATES.IMMUNE:
+			return 5;
 		case STATES.ASCENDED:
-			return 8;
+			return 6;
 		case STATES.DOPE:
-			return 32;
+			return 7;
 		case STATES.DAVEPRIME:
-			return 64;
+			return 10;
 	}
 	return 0;
+}
+
+export function ascendency(dave) {
+	const unstableIndex = toNumber(STATES.UNSTABLE);
+	const daveIndex = getIndex(dave);
+
+	if (daveIndex === -1 || daveIndex >= unstableIndex) {
+		return 0;
+	}
+
+	return unstableIndex - daveIndex;
 }
 
 function canUpgrade(dave, place) {
@@ -218,17 +297,46 @@ function canUpgrade(dave, place) {
 	}
 }
 
-function canUse(dave, item) {
+const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
+
+export function canGet(dave, item) {
+	/*
+	if (dave.state == STATES.DAVEPRIME) {
+		return true;
+	}
+	*/
+	if (item in alcoholEmojis) {
+		item = alcoholEmojis[0];
+	}
+
 	const obj = dave[item];
 	if (obj == null) {
+		//console.log("missing, approved: " + item);
 		return true;
 	} else {
-		const tenMinutesMs = 10 * 60 * 1000;
-		console.log(obj.lastTime + " vs " + tenMinutesMs);
-		if (obj.lastTime >= tenMinutesMs) {
+		const tenMinutesPastLastAcquisition =  obj.lastTime + 10 * 60 * 1000;
+		if (Date.now() >= tenMinutesPastLastAcquisition) {
+			//console.log(Date.now() + " is above " + tenMinutesPastLastAcquisition + " so " + item + " approved")
 			return true;
 		} else {
+			//console.log(item + " denied, timeout")
 			return false;
+		}
+	}
+}
+
+export function getAmt(dave, item) {
+	if (item in alcoholEmojis) {
+		item = alcoholEmojis[0];
+	}
+	const obj = dave[item];
+	if (obj == null) {
+		return 0;
+	} else {
+		if (obj.count) {
+			return obj.count;
+		} else {
+			return 0;
 		}
 	}
 }
@@ -242,8 +350,9 @@ export function add(dave, item) {
 	} else if (now - dave[item].lastTime > TEN_MINUTES) {
 		dave[item].count += 1;
 		dave[item].lastTime = now;
-		//console.log("add1:  " + dave[item].lastTime);
-	} 
+	}
+	return dave[item]; 
+	
 }
 
 export function getPlaceActions(dave, place) {
@@ -252,8 +361,6 @@ export function getPlaceActions(dave, place) {
 		hasFragments : canAfford(dave, 1),
 		canUpgrade : canUpgrade(dave, place),
 		davePrime:  isDavePrime(dave),
-		canGetTaco: canUse(dave, "tacos"),
-		canGetHotdog: canUse(dave, "hotdogs"),
 	}
 }
 

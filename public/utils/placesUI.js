@@ -1,4 +1,5 @@
-import { inRange } from './distance.js';
+import { inRange, getRange } from './distance.js';
+import { ascendency, maxState } from './state.js';
 
 
 function metersToPixels(meters, lat, zoom) {
@@ -67,10 +68,10 @@ function svgStringToElement(svgString) {
 	return doc.documentElement;
 }
 
-export function addPlace(id, dave, layer, zoom, place, isCanonical, i) {
+export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistanceList, i) {
 	const lat = place.lat;
 	const lng = place.lng; 
-	const radiusMeters = place.influence || 100;
+	const radiusMeters = getRange(place);
 	//console.log("addPlace: " + JSON.stringify(place, null, 2))
 
 	// --- marker ---
@@ -101,7 +102,7 @@ export function addPlace(id, dave, layer, zoom, place, isCanonical, i) {
 	const svg = createInfluenceSVG({
 		radiusPx,
 		color: "#fff",   
-		isCanonical: isCanonical,
+		isCanonical: 1,
 	});
 
 	const overlay = L.svgOverlay(svgStringToElement(svg), bounds, {
@@ -203,3 +204,36 @@ export function bindInfluence(map, config) {
 		overlay = addInfluenceOverlay(map, config.lat, config.lng, config.radius, config);
 	});
 }
+
+export function getAscensionText(dave, place) {
+	const ascescion = ascendency(dave);
+	const maxState = place.level;
+	if (maxState > ascescion) {
+		const characters = [...place.name]; // Splits correctly by Unicode code points
+		const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
+		if (firstEmoji) {
+			switch (firstEmoji) {
+				case "🌮": return "CONSUME SACRED TACO";
+				case "🌭": return "CONSUME SACRED HOTDOG";
+				case "☠️": return "ESCALATE PRIVILEGES";
+				case "🛡": return "REQUEST CLEARANCE";
+			}
+		} 
+		switch (ascescion) {
+			case "0": return "BECOME MORE DAVE";
+			case "1": return "REQUEST ELEVATION";
+			case "2": return "INSTALL NEW DAVEWARE";
+			case "3": return "ATTUNE TO THE FREQUENCY";
+			case "4": return "PROCEED TO HIGHER CLEARANCE";
+			case "5": return "OVERCLOCK CONSCIOUSNESS";
+			case "6": return "ACHIEVE DAVEHOOD";
+		}
+		
+	} else {
+		console.log("CANT: " + ascescion + " vs " + maxState);
+	}
+
+	return "";
+	
+}
+

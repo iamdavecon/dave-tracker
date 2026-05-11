@@ -24,7 +24,6 @@ function updateMarker(dave) {
 export function cullNotSeen(map, seen) {
 	for (const id in playerMarkers) {
 		if (!seen.has(id)) {
-			console.log("\tremoving: " + id);
 			map.removeLayer(playerMarkers[id]);
 			delete playerMarkers[id];
 		}

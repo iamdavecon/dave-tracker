@@ -33,7 +33,7 @@ export function infectTarget(me, target) {
 export function registerHandlers(socket, daves, io) {
 	socket.on("infect", (sourceId, targetId) => {
 		//console.log("INFECT: " + JSON.stringify(socket, null, 2));
-		console.log("recv'd infect: " + sourceId + " => " + targetId);
+		//console.log("recv'd infect: " + sourceId + " => " + targetId);
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		const target = localDaves[targetId];

@@ -96,7 +96,6 @@
 
       for (const [id, place] of entries) {
         const level = place.level ?? 0;
-	console.log("P: " + id);
         const tr = document.createElement('tr');
 
         tr.innerHTML = `
@@ -104,7 +103,7 @@
           <td>
             ${place.owner
               ? `<span class="pill">${place.owner}</span>`
-              : `<span class="pill">Dave</span>`}
+              : ""}
           </td>
           <td class="level">${level}</td>
         `;

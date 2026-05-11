@@ -22,8 +22,8 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 			state.addTag(dave, "mayor");	
 			dave.nodeCount = (dave.nodeCount ?? 0) + 1;
 			const newPlace = getNewPlace(dave);
-			console.log("dropped: " + JSON.stringify(newPlace, null, 2));
-			console.log("from: " + JSON.stringify(dave, null, 2));
+			//console.log("dropped: " + JSON.stringify(newPlace, null, 2));
+			//console.log("from: " + JSON.stringify(dave, null, 2));
 			savedPlaces[newPlace.id] = newPlace;
 		}
 	});
@@ -54,14 +54,12 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		console.log("visitDavePoint");
 	});
 
-	socket.on("getTaco", (sourceId, placeId) => {
+	socket.on("getItem", (sourceId, item) => {
 		const dave = daves[sourceId];
-		state.add(dave, "taco"); 
-	});
-
-	socket.on("getHotdog", (sourceId, placeId) => {
-		const dave = daves[sourceId];
-		state.add(dave, "hotdog"); 
+		const count = state.add(dave, item); 
+		if (item == "🌭" && count == 7) {
+			state.addTag(dave, "Timmy");
+		}
 	});
 
 };
