@@ -1,4 +1,5 @@
 import { getUserId } from './utils/id.js';
+import { getValidItems, displayItems } from './utils/itemUI.js';
 import { logEvent } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import * as state from "./utils/state.js";
@@ -59,6 +60,17 @@ async function deconstructPlace() {
 	window.location.href = "/";
 }
 
+function getItem(item) {
+	const payload = JSON.stringify({
+		source: userId,
+		item: item,
+	});
+
+	console.log("getItem: " + payload);
+	socket.emit("getItem", userId, item);
+	location.reload()
+}
+
 function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
 
@@ -70,7 +82,9 @@ function addActions(actionHtml) {
 		if (!action) return;
 
 		switch (action) {
-
+			case "placeAction":
+				const item = e.target.dataset.item;
+				getItem(item);			
 			case "teleport":
 				teleport();
 				break;
@@ -134,7 +148,6 @@ async function loadPlace() {
 			<span class="label">🧬Fragments available</span>
 			<span>${fragments}</span>
 		</div>`
-
 	if (place.level) {
 		statHtml += `
 		<br />
@@ -142,12 +155,19 @@ async function loadPlace() {
 			<span class="label">Level</span>
 			<span>${place.level}</span>
 		</div>`
+	}
 
+	const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
 
+	statHtml += displayItems (dave, firstEmoji);
+
+	const validItems = getValidItems();
+	for (const rule of validItems) {
+		if (firstEmoji !== rule.item) continue;
+		const count = state.getAmt(dave, rule.item);
 
 	}
 	document.getElementById("stats").innerHTML = statHtml;
-	const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
 
 	let actionHtml = "";
 	if (place.mapData.inRange) {
@@ -157,26 +177,18 @@ async function loadPlace() {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
 
-		if (place.name.includes("🌮")) {	
-			if (place.availableActions.canGetTaco) {
-				actionHtml += `<button data-action="getTaco">Get a Taco</button> `   
-			} else {
-				actionHtml += `<button disabled=true>Get a Taco (on cooldown)</button> `   
-			}
-		} else if (place.name.includes("🌭")) {	
-			if (place.availableActions.canGetHotdog) {
-				actionHtml += `<button data-action="getHotdog">Get a Hotdog</button> `   
-			} else {
-				actionHtml += `<button disabled=true>Get a Hotdog (on cooldown)</button> `   
-			}
-		} else if (alcoholEmojis.some(emoji => place.name.includes(emoji))) {
-			if (place.availableActions.canGetDrink) {
-				actionHtml += `<button data-action="getDrink">Get a Drink</button> `   
-			} else {
-				actionHtml += `<button disabled=true>Get a Drink (on cooldown)</button> `   
-			}
-		}
+		const characters = [...place.name]; // Splits correctly by Unicode code points
 
+		for (const rule of validItems) {
+			if (firstEmoji !== rule.item) continue;
+
+			const available = state.canGet(dave, rule.item);
+
+			actionHtml += available
+					? `<button data-action="placeAction" data-item="${rule.item}"> ${rule.getLabel} </button>`
+					: `<button disabled> ${rule.getLabel} (on cooldown) </button>`;
+			break;
+		}
 	} else {
 		actionHtml += "OUT OF RANGE";
 	}
@@ -184,7 +196,7 @@ async function loadPlace() {
 		actionHtml += `<button data-action="deconstructNode">Deconstruct node</button> `   
 	} 
 	if (place.availableActions.davePrime) {
-		actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
+		actionHtml += `<button data-action="teleport">Teleport</button>`;
 	}
 	addActions(actionHtml);
 

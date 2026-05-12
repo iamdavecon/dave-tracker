@@ -4,6 +4,7 @@ import * as state from "./public/utils/state.js";
 import { notifyUser } from './utils/sockets.js';
 import * as infect from './utils/infect.js';
 import * as stabilize from './utils/stabilize.js';
+import * as items from './utils/items.js';
 import * as places from './utils/places.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
@@ -421,8 +422,23 @@ io.on('connection', (socket) => {
 		io.emit("update");
 	});
 
+	socket.on("increaseRank", (sourceId) => {
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		state.increaseRank(me);
+		io.emit("update");
+	});
+
+	socket.on("decreaseRank", (sourceId) => {
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		state.decreaseRank(me);
+		io.emit("update");
+	});
+
 	infect.registerHandlers(socket, daves, io);
 	stabilize.registerHandlers(socket, daves, io);
+	items.registerHandlers(socket, daves, io);
 	places.registerHandlers(socket, daves, savedPlaces, io);
 });
 

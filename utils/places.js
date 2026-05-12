@@ -54,24 +54,13 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		console.log("visitDavePoint");
 	});
 
-	socket.on("getTaco", (sourceId, placeId) => {
+	socket.on("getItem", (sourceId, item) => {
 		const dave = daves[sourceId];
-		state.add(dave, "taco"); 
-	});
-
-	socket.on("getHotdog", (sourceId, placeId) => {
-		const dave = daves[sourceId];
-		const count = state.add(dave, "hotdog"); 
-		if (count == 7) {
+		const count = state.add(dave, item); 
+		if (item == "🌭" && count == 7) {
 			state.addTag(dave, "Timmy");
 		}
 	});
-
-	socket.on("getDrink", (sourceId, placeId) => {
-		const dave = daves[sourceId];
-		state.add(dave, "drinks"); 
-	});
-
 
 };
 

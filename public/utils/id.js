@@ -10,6 +10,10 @@ export function getUserId() {
 	return id;
 }
 
+export function isDebugId(id) {
+	return id == "59a388e8-413a-4d8e-906e-15469bb3b471";
+}
+
 export function getFragmentFrom(me, target) {
 	const id = target.userId;
 

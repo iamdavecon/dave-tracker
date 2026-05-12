@@ -52,6 +52,29 @@ export function getRandomBotState() {
 	}
 }
 
+
+export function increaseRank(dave) {
+	const currentIndex = getIndex(dave);
+
+	// higher rank = lower index
+	if (currentIndex <= 0) {
+		return getState(dave);
+	}
+
+	return toState(currentIndex - 1);
+}
+
+export function decreaseRank(dave) {
+	const currentIndex = getIndex(dave);
+
+	// lower rank = higher index
+	if (currentIndex >= STATE_LIST.length - 1) {
+		return getState(dave);
+	}
+
+	return toState(currentIndex + 1);
+}
+
 export function getState(dave) {
 	if (dave && dave.state && Object.values(STATES).includes(dave.state)) {
 		return dave.state;
@@ -239,17 +262,44 @@ function canUpgrade(dave, place) {
 	}
 }
 
-function canUse(dave, item) {
+const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
+
+export function canGet(dave, item) {
+	if (dave.state == STATES.DAVEPRIME) {
+		return true;
+	}
+	if (item in alcoholEmojis) {
+		item = alcoholEmojis[0];
+	}
+
 	const obj = dave[item];
 	if (obj == null) {
+		console.log("missing, approved: " + item);
 		return true;
 	} else {
 		const tenMinutesMs = 10 * 60 * 1000;
-		console.log(obj.lastTime + " vs " + tenMinutesMs);
 		if (obj.lastTime >= tenMinutesMs) {
+			console.log(item + " approved")
 			return true;
 		} else {
+			console.log(item + " denied, timeout")
 			return false;
+		}
+	}
+}
+
+export function getAmt(dave, item) {
+	if (item in alcoholEmojis) {
+		item = alcoholEmojis[0];
+	}
+	const obj = dave[item];
+	if (obj == null) {
+		return 0;
+	} else {
+		if (obj.count) {
+			return obj.count;
+		} else {
+			return 0;
 		}
 	}
 }
@@ -275,8 +325,6 @@ export function getPlaceActions(dave, place) {
 		hasFragments : canAfford(dave, 1),
 		canUpgrade : canUpgrade(dave, place),
 		davePrime:  isDavePrime(dave),
-		canGetTaco: canUse(dave, "tacos"),
-		canGetHotdog: canUse(dave, "hotdogs"),
 	}
 }
 

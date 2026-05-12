@@ -1,6 +1,7 @@
-import { getUserId } from './utils/id.js';
+import { getUserId, isDebugId} from './utils/id.js';
 import { logEvent } from './utils/log.js';
 import { addMap } from './utils/map.js';
+import { displayItems } from './utils/itemUI.js';
 import * as state from "./utils/state.js";
 
 const userId = getUserId();
@@ -123,20 +124,8 @@ async function loadPlayer() {
 			fragments = dave.fragmentsCollected.length; 
 		}
 		const nodes = dave.nodeCount ?? 0;
-		let hotDogs = 0;
-		if (dave.hotdog) {
-			hotDogs = dave.hotdog.count ?? 0;
-		}
-		let tacos = 0;
-		if (dave.taco) {
-			tacos = dave.taco.count ?? 0;
-		}	
-		let drinks = 0;
-		if (dave.drinks) {
-			drinks = dave.drinks.count ?? 0;
-		}	
 
-		document.getElementById("stats").innerHTML = `
+		statHtml = `
 			<div class="field">
 				<span class="label">☣️ Infected</span>
 				<span>${infectedCount}</span>
@@ -149,20 +138,9 @@ async function loadPlayer() {
 				<span class="label">🏙️ Nodes</span>
 				<span>${nodes}</span>
 			</div>
-			<div class="field">
-				<span class="label">🌭 Hotdogs</span>
-				<span>${hotDogs}</span>
-			</div>
-			<div class="field">
-				<span class="label">🌮 Tacos</span>
-				<span>${tacos}</span>
-			</div>
-			<div class="field">
-				<span class="label">🍸 Drinks</span>
-				<span>${drinks}</span>
-			</div>
-
-		`;	
+		`;
+		statHtml += displayItems(dave);
+		document.getElementById("stats").innerHTML = statHtml;
 	}
 
 	if (dave.isMe) {
@@ -181,7 +159,7 @@ async function loadPlayer() {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
 
-		//  DAVEPRIME (CHEATS)
+		//  DAVEPRIME (ENABLES CHEATS)
 		if (dave.availableActions.davePrime) {
 			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
 			if (dave.freeRoam) {
@@ -189,6 +167,13 @@ async function loadPlayer() {
 			}
 
 		}
+
+		//  DEBUG
+		if (isDebugId(daveId)) {
+			actionHtml += `<button data-action="increaseRank">Increase Rank</button>`
+			actionHtml += `<button data-action="decreaseRank">Decrease Rank</button>`
+		}
+
 		addActions(actionHtml);
 	} else  {
 		if (dave.mapData.inRange) {
