@@ -6,6 +6,7 @@ import * as infect from './utils/infect.js';
 import * as stabilize from './utils/stabilize.js';
 import * as items from './utils/items.js';
 import * as places from './utils/places.js';
+import * as debug from './utils/debug.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
 
@@ -151,11 +152,7 @@ app.get('/api/dave', (req, res) => {
 	const dave = localDaves[id]; 
 	const me = localDaves[viewerId]; 
 
-	/*
-	console.log("api daves: " + JSON.stringify(localDaves, null, 2));
-	console.log("dave: " + JSON.stringify(dave, null, 2) + " from " + id);
-	console.log("me: " + JSON.stringify(me, null, 2) + " from " + viewerId);
-	*/
+	//console.log("api daves: " + JSON.stringify(localDaves, null, 2));
 
 	if (!dave || !me) {
 		return res.status(404).json({ error: "Dave's not here" });
@@ -213,7 +210,6 @@ app.get('/api/place', (req, res) => {
 app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 	const placeId = req.params.id;
 	const userId = req.body.userId;
-console.log("deconstruct: " + userId + " => " + placeId);
 	const place = savedPlaces[placeId];
 	const localDaves = getUsers(daves);
 	const dave = localDaves[userId];
@@ -305,10 +301,8 @@ app.post('/api/teleport', (req, res) => {
 io.on('connection', (socket) => {
 	const userId = socket.handshake.auth.userId;
 	socket.userId = userId;
-	/*
-	console.log("new connection: " + socket.id + " => " + userId);
-	console.log("saved Daves: " + JSON.stringify(savedDaves, null, 2));
-	*/
+	//console.log("new connection: " + socket.id + " => " + userId);
+	//console.log("saved Daves: " + JSON.stringify(savedDaves, null, 2));
 
 	// load from savedDaves or initialize if new
 	let me = daves[userId];
@@ -355,7 +349,7 @@ io.on('connection', (socket) => {
 				const difference = Math.abs(Date.now() - targetTimestamp);
 
 				if (difference <= 20 * 1000) {
-					console.log("INSTALL");
+					//console.log("INSTALL");
 					state.installAntivirus(daves[socket.userId]);
 				}
 			} catch (error) { //ignore
@@ -408,9 +402,8 @@ io.on('connection', (socket) => {
 	socket.on("spawnCluster", (sourceId, count = 10) => {
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
-		console.log(`[SPAWN]  ` + JSON.stringify(daves, null, 2));
+		//console.log(`[SPAWN]  ` + JSON.stringify(daves, null, 2));
 		if (!me) {
-			console.log("MISSING: " + socket.userId);
 			return;
 		}
 
@@ -422,24 +415,13 @@ io.on('connection', (socket) => {
 		io.emit("update");
 	});
 
-	socket.on("increaseRank", (sourceId) => {
-		const localDaves = getUsers(daves);
-		const me = localDaves[sourceId];
-		state.increaseRank(me);
-		io.emit("update");
-	});
-
-	socket.on("decreaseRank", (sourceId) => {
-		const localDaves = getUsers(daves);
-		const me = localDaves[sourceId];
-		state.decreaseRank(me);
-		io.emit("update");
-	});
 
 	infect.registerHandlers(socket, daves, io);
 	stabilize.registerHandlers(socket, daves, io);
 	items.registerHandlers(socket, daves, io);
 	places.registerHandlers(socket, daves, savedPlaces, io);
+
+	debug.registerHandlers(socket, daves, savedPlaces, io);
 });
 
 

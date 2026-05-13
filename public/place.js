@@ -27,7 +27,7 @@ async function teleport() {
 		targetId: placeId,
 		targetType: "place",
 	});
-	console.log("teleport: " + payload);
+	//console.log("teleport: " + payload);
 	await fetch('/api/teleport', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -39,7 +39,7 @@ async function teleport() {
 }
 
 async function deconstructPlace() {
-	console.log("deconstructing: " + placeId);
+	//console.log("deconstructing: " + placeId);
 	const res = await fetch(`/api/places/${placeId}/deconstruct`, {
 		method: "POST",
 		headers: {
@@ -66,7 +66,6 @@ function getItem(item) {
 		item: item,
 	});
 
-	console.log("getItem: " + payload);
 	socket.emit("getItem", userId, item);
 	location.reload()
 }
@@ -78,7 +77,7 @@ function addActions(actionHtml) {
 
 	actionsContainer.onclick = (e) => {
 		const action = e.target.dataset.action;
-		console.log("onClick: " + action);
+		//console.log("onClick: " + action);
 		if (!action) return;
 
 		switch (action) {
@@ -104,7 +103,7 @@ async function loadPlace() {
 	const payload = await res.json();
 	const { place, dave } = payload;
 
-	console.log("loading: " + JSON.stringify(payload, null, 2));
+	//console.log("loading: " + JSON.stringify(payload, null, 2));
 
 
 	// --- Populate fields ---
@@ -143,30 +142,30 @@ async function loadPlace() {
 		fragments = dave.fragmentsCollected.length;
 	}
 
-	let statHtml = `
+	let statHtml = ""
+	if (place.level) {
+		statHtml += `
+		<div class="field">
+			<span class="label">Level</span>
+			<span>${place.level}</span>
+		</div>
+		<br />
+		`
+	}
+
+	const characters = [...place.name]; // Splits correctly by Unicode code points
+	const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
+
+	statHtml += `
 		<div class="field">
 			<span class="label">🧬Fragments available</span>
 			<span>${fragments}</span>
 		</div>`
-	if (place.level) {
-		statHtml += `
-		<br />
-		<div class="field">
-			<span class="label">Level</span>
-			<span>${place.level}</span>
-		</div>`
+
+	if (firstEmoji) {
+		statHtml += displayItems (dave, firstEmoji);
 	}
 
-	const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
-
-	statHtml += displayItems (dave, firstEmoji);
-
-	const validItems = getValidItems();
-	for (const rule of validItems) {
-		if (firstEmoji !== rule.item) continue;
-		const count = state.getAmt(dave, rule.item);
-
-	}
 	document.getElementById("stats").innerHTML = statHtml;
 
 	let actionHtml = "";
@@ -177,12 +176,12 @@ async function loadPlace() {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
 
-		const characters = [...place.name]; // Splits correctly by Unicode code points
-
+		const validItems = getValidItems();
 		for (const rule of validItems) {
 			if (firstEmoji !== rule.item) continue;
 
 			const available = state.canGet(dave, rule.item);
+			//console.log("canget:  " + rule.item + " avail " + available);
 
 			actionHtml += available
 					? `<button data-action="placeAction" data-item="${rule.item}"> ${rule.getLabel} </button>`

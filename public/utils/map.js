@@ -29,7 +29,7 @@ function createPill(label, state = "neutral", isYou = false) {
 }
 
 export function addMap(mapData) {
-	console.log("loading: " + JSON.stringify(mapData, null, 2));
+	//console.log("loading: " + JSON.stringify(mapData, null, 2));
 
 	// --- init map ---
 	const map = L.map("map");

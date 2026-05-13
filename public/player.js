@@ -125,6 +125,7 @@ async function loadPlayer() {
 		}
 		const nodes = dave.nodeCount ?? 0;
 
+		let statHtml = "";
 		statHtml = `
 			<div class="field">
 				<span class="label">☣️ Infected</span>
@@ -209,7 +210,7 @@ async function loadPlayer() {
 		} else {
 			if (dave.availableActions.davePrime) {
 				let actionHtml = "";
-				actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
+				actionHtml += `<button data-action="teleport">Teleport</button>`;
 				addActions(actionHtml);
 			} else {
 				document.getElementById("actions").innerHTML = `OUT OF RANGE`;

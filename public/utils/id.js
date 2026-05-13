@@ -11,7 +11,8 @@ export function getUserId() {
 }
 
 export function isDebugId(id) {
-	return id == "59a388e8-413a-4d8e-906e-15469bb3b471";
+	return id == "59a388e8-413a-4d8e-906e-15469bb3b471" 
+	|| id == "629603fc-58fa-49c9-ba98-cfc391b82569";
 }
 
 export function getFragmentFrom(me, target) {

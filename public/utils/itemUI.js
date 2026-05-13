@@ -12,7 +12,7 @@ const validItems = [
 		label: "🌭 Hotdogs",
 	},
 	{
-		emoji: "🍸",
+		item: "🍸",
 		getLabel: "Get a drink",
 		label: "🍸 Drinks",
 	},

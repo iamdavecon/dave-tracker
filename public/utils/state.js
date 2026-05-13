@@ -58,10 +58,11 @@ export function increaseRank(dave) {
 
 	// higher rank = lower index
 	if (currentIndex <= 0) {
-		return getState(dave);
+		return false;
 	}
 
-	return toState(currentIndex - 1);
+	dave.state = toState(currentIndex - 1);
+	return true;
 }
 
 export function decreaseRank(dave) {
@@ -69,10 +70,11 @@ export function decreaseRank(dave) {
 
 	// lower rank = higher index
 	if (currentIndex >= STATE_LIST.length - 1) {
-		return getState(dave);
+		return false;
 	}
 
-	return toState(currentIndex + 1);
+	dave.state = toState(currentIndex + 1);
+	return true;
 }
 
 export function getState(dave) {
@@ -182,7 +184,7 @@ export function infect(dave) {
 
 export function stabilize(dave) {
 	//console.log("stabilizing");
-	console.log(JSON.stringify(dave, null, 2));
+	//console.log(JSON.stringify(dave, null, 2));
 
 	if (dave.state == STATES.PATCHED) {
 		//console.log("\tpatched");
@@ -265,24 +267,26 @@ function canUpgrade(dave, place) {
 const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
 
 export function canGet(dave, item) {
+	/*
 	if (dave.state == STATES.DAVEPRIME) {
 		return true;
 	}
+	*/
 	if (item in alcoholEmojis) {
 		item = alcoholEmojis[0];
 	}
 
 	const obj = dave[item];
 	if (obj == null) {
-		console.log("missing, approved: " + item);
+		//console.log("missing, approved: " + item);
 		return true;
 	} else {
-		const tenMinutesMs = 10 * 60 * 1000;
-		if (obj.lastTime >= tenMinutesMs) {
-			console.log(item + " approved")
+		const tenMinutesPastLastAcquisition =  obj.lastTime + 10 * 60 * 1000;
+		if (Date.now() >= tenMinutesPastLastAcquisition) {
+			//console.log(Date.now() + " is above " + tenMinutesPastLastAcquisition + " so " + item + " approved")
 			return true;
 		} else {
-			console.log(item + " denied, timeout")
+			//console.log(item + " denied, timeout")
 			return false;
 		}
 	}
@@ -313,7 +317,6 @@ export function add(dave, item) {
 	} else if (now - dave[item].lastTime > TEN_MINUTES) {
 		dave[item].count += 1;
 		dave[item].lastTime = now;
-		//console.log("add1:  " + dave[item].lastTime);
 	}
 	return dave[item]; 
 	
