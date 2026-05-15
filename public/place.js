@@ -1,5 +1,6 @@
 import { getUserId } from './utils/id.js';
 import { getValidItems, displayItems } from './utils/itemUI.js';
+import { getAscensionText } from "./utils/placesUI.js";
 import { logEvent } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import * as state from "./utils/state.js";
@@ -174,6 +175,11 @@ async function loadPlace() {
 			actionHtml += `<button data-action="upgradeDavePoint">Daveify This Spot</button> `   
 		} else {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
+		}
+
+		const stateAscension = getAscensionText(dave, place);
+		if (stateAscension != "") {
+			actionHtml += `<button data-action="ascend">${stateAscension}</button>`   
 		}
 
 		const validItems = getValidItems();

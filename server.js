@@ -6,6 +6,7 @@ import * as infect from './utils/infect.js';
 import * as stabilize from './utils/stabilize.js';
 import * as items from './utils/items.js';
 import * as places from './utils/places.js';
+import * as ascension from './utils/ascension.js';
 import * as debug from './utils/debug.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
@@ -420,6 +421,7 @@ io.on('connection', (socket) => {
 	stabilize.registerHandlers(socket, daves, io);
 	items.registerHandlers(socket, daves, io);
 	places.registerHandlers(socket, daves, savedPlaces, io);
+	ascension.registerHandlers(socket, daves, savedPlaces, io);
 
 	debug.registerHandlers(socket, daves, savedPlaces, io);
 });

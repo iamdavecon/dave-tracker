@@ -33,11 +33,14 @@ export function haversineDistance(a, b) {
 }
 
 export function getRange(src) {
-	return 50 * state.ascendencyIndex(src);
+	//console.log("from: " + state.getAscendencyBonus(src));
+	return 50 * state.getAscendencyBonus(src);
 }
 
 export function inRange(src, target) {
 	//console.log("\t\tdx:  " + haversineDistance(src, target) + " < " + getRange(src));
+	//console.log(JSON.stringify(src, null, 2));
+	//console.log(JSON.stringify(target, null, 2));
 	return haversineDistance(src, target) < getRange(src);
 }
 

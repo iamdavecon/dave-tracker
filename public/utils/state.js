@@ -24,6 +24,15 @@ function getIndex(dave) {
 	return toNumber(getState(dave));
 }
 
+export function getAscension(state) {
+	const unstableIndex = STATE_ORDER.indexOf(STATES.UNSTABLE);
+	const stateIndex = STATE_ORDER.indexOf(state);
+
+	if (stateIndex === -1) return 0;
+
+	return Math.max(0, unstableIndex - stateIndex);
+}
+
 export function getDefaultState() {
 	return STATES.UNSTABLE;
 }
@@ -103,26 +112,30 @@ export function getRadarClass(dave) {
 
 }
 
-export function ascendencyIndex(dave) {
-	// Explicit tuning overrides
-	const overrides = {
-		[STATES.DAVEPRIME]: 20,
-		[STATES.DOPE]: 10,
-		[STATES.ASCENDED]: 8,
-		[STATES.AWAKENING]: 6,
-		[STATES.IMMUNE]: 4,
-		[STATES.PATCHED]: 2
-	};
+export function getAscendencyBonus(obj) {
+	if (obj.state) {
+		// Explicit tuning overrides
+		const overrides = {
+			[STATES.DAVEPRIME]: 20,
+			[STATES.DOPE]: 10,
+			[STATES.ASCENDED]: 8,
+			[STATES.AWAKENING]: 6,
+			[STATES.IMMUNE]: 4,
+			[STATES.PATCHED]: 2
+		};
+		if (overrides[obj.state] != null) {
+			return overrides[obj.state];
+		}
 
-	if (overrides[dave.state] != null) {
-		return overrides[dave.state];
+		// Fallback formula for future inserted states
+		const unstableIndex = toNumber(STATES.UNSTABLE);
+		const stateIndex = toNumber(obj.state);
+
+		return Math.max(1, unstableIndex - stateIndex + 1);
+	} else if (obj.level) {
+		return obj.level;
 	}
-
-	// Fallback formula for future inserted states
-	const unstableIndex = toNumber(STATES.UNSTABLE);
-	const stateIndex = toNumber(dave.state);
-
-	return Math.max(1, unstableIndex - stateIndex + 1);
+	return 1;
 }
 
 export function installAntivirus(dave) {
@@ -164,9 +177,14 @@ export function canPatch(dave) {
 	return state <= toNumber(STATES.PATCHED);
 }
 
-export function canAscend(dave) {
-	const state = getIndex(dave);
-	return state <= toNumber(STATES.ASCENDED); 
+export function canAscend(me, dave) {
+	if (me.fragmentsCollected.includes(dave.userId)) {
+		return false;
+	}
+
+	const myState = getIndex(me);
+	const theirState = getIndex(dave);
+	return myState <= toNumber(STATES.ASCENDED) && myState < theirState; 
 }
 
 export function isInfected(dave) {
@@ -229,7 +247,7 @@ export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
 		canInfect : target.state == STATES.UNSTABLE,
-		canAscend : canAscend(source),
+		canAscend : canAscend(source, target),
 		canPatch : canPatch(source),
 		canBePatched : target.state == STATES.UNSTABLE,
 		hasFragments : canAfford(source, 1),
@@ -238,20 +256,35 @@ export function getUserActions(source, target) {
 	}
 }
 
-function maxState(dave) {
+export function maxState(dave) {
 	switch (dave.state) {
-		case STATES.IMMUNE:
+		case STATES.PATCHED:
 			return 2;
+		case STATES.IMMUNE:
+			return 3;
 		case STATES.AKAKENING:
 			return 4;
+		case STATES.IMMUNE:
+			return 5;
 		case STATES.ASCENDED:
-			return 8;
+			return 6;
 		case STATES.DOPE:
-			return 32;
+			return 7;
 		case STATES.DAVEPRIME:
-			return 64;
+			return 10;
 	}
 	return 0;
+}
+
+export function ascendency(dave) {
+	const unstableIndex = toNumber(STATES.UNSTABLE);
+	const daveIndex = getIndex(dave);
+
+	if (daveIndex === -1 || daveIndex >= unstableIndex) {
+		return 0;
+	}
+
+	return unstableIndex - daveIndex;
 }
 
 function canUpgrade(dave, place) {

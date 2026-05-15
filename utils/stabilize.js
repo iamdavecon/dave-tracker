@@ -4,7 +4,7 @@ import { getUsers } from './storage.js';
 
 export function registerHandlers(socket, daves, io) {
 	socket.on("stabilize", (sourceId, targetId) => {
-		console.log("stabilizing: " + sourceId + " => " + targetId);
+		//console.log("stabilizing: " + sourceId + " => " + targetId);
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		const target = localDaves[targetId];
@@ -13,7 +13,7 @@ export function registerHandlers(socket, daves, io) {
 		}
 
 		const success = (getFragmentFrom(me, target) && stabilize(target));
-		console.log("result: " + success);
+		//console.log("result: " + success);
 
 		socket.emit("stabilizeResult", {
 			success 
@@ -23,7 +23,7 @@ export function registerHandlers(socket, daves, io) {
 	});
 
 	socket.on("ascend", (sourceId, targetId) => {
-		console.log("ascending: " + sourceId + " => " + targetId);
+		//console.log("ascending: " + sourceId + " => " + targetId);
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		const target = localDaves[targetId];
@@ -32,7 +32,7 @@ export function registerHandlers(socket, daves, io) {
 		}
 
 		const success = (getFragmentFrom(me, target) && ascendUser(target));
-		console.log("result: " + success);
+		//console.log("result: " + success);
 
 		io.emit("update", { daves });
 	});
