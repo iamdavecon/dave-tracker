@@ -14,7 +14,7 @@ export function summarizeDave(dave) {
 		teamAntivirus += dave.fragmentsCollected.length;
 	}
 	if (dave.nodeCount) {
-		teamAntivirus += dave.nodeCount;
+		teamAntivirus += (dave.nodeCount * 5);
 	}
 	score = teamVirus + (teamAntivirus * 2); 
 

@@ -3,6 +3,7 @@ import { getValidItems, displayItems } from './utils/itemUI.js';
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
+import * as dod from "./utils/dod.js";
 import * as state from "./utils/state.js";
 
 const userId = getUserId();
@@ -85,7 +86,11 @@ function addActions(actionHtml) {
 		switch (action) {
 			case "placeAction":
 				const item = e.target.dataset.item;
-				getItem(item);			
+				getItem(item);
+				break;
+			case "dod":
+				window.location.href = `/dod-application.html?placeId=${encodeURIComponent(placeId)}`;
+				break;
 			case "teleport":
 				teleport();
 				break;
@@ -171,6 +176,19 @@ async function loadPlace() {
 	document.getElementById("stats").innerHTML = statHtml;
 
 	let actionHtml = "";
+
+	if (firstEmoji == '🛡') {
+		let dodLevel = dod.getLevel(dave);
+		switch(dodLevel) {
+			case 0:
+				actionHtml += `<button data-action="dod">Apply to the Department of Davefence</button>`   
+				break;
+			default:
+				actionHtml += `<button data-action="dod">Department of Davefence File</button>`   
+				break;
+		}
+	}
+
 	if (place.mapData.inRange) {
 		if (place.availableActions.canUpgrade) {
 			actionHtml += `<button data-action="upgradeDavePoint">Daveify This Spot</button> `   
@@ -182,6 +200,8 @@ async function loadPlace() {
 		if (stateAscension != "") {
 			actionHtml += `<button data-action="ascend">${stateAscension}</button>`   
 		}
+
+
 
 		const validItems = getValidItems();
 		for (const rule of validItems) {
