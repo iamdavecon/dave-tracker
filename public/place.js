@@ -1,7 +1,7 @@
 import { getUserId } from './utils/id.js';
 import { getValidItems, displayItems } from './utils/itemUI.js';
 import { getAscensionText } from "./utils/placesUI.js";
-import { logEvent } from './utils/log.js';
+import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import * as state from "./utils/state.js";
 
@@ -16,6 +16,8 @@ const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
 
 let map;
+
+bindLogEvents(socket);
 
 function emit(event) {
 	socket.emit(event, userId, placeId);
@@ -35,7 +37,6 @@ async function teleport() {
 		body: payload
 	});
 
-	//logEvent("Teleported");
 	window.location.href = "/";
 }
 

@@ -1,5 +1,5 @@
 import { getUserId, isDebugId} from './utils/id.js';
-import { logEvent } from './utils/log.js';
+import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import { displayItems } from './utils/itemUI.js';
 import * as state from "./utils/state.js";
@@ -15,6 +15,8 @@ const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 
 let map;
+
+bindLogEvents(socket);
 
 function renderTags(tags = []) {
 	const container = document.getElementById("player-tags");
@@ -41,14 +43,7 @@ function renderTags(tags = []) {
 
 function emit(event) {
 	socket.emit(event, userId, daveId);
-	switch(event) {
-		case "spawnCluster":
-			logEvent("BOTS SPAWNED");
-			break;	
-
-		default:
-			location.reload()
-	}
+	location.reload()
 }
 
 async function teleport(freeRoam) {
@@ -64,8 +59,6 @@ async function teleport(freeRoam) {
 		headers: { 'Content-Type': 'application/json' },
 		body: payload
 	});
-
-	logEvent("Teleported");
 }
 
 function addActions(actionHtml) {
@@ -86,7 +79,6 @@ function addActions(actionHtml) {
 				teleport(true);
 				break;
 			case "exitFreeRoam":
-				logEvent("DONE");
 				teleport(false);
 				break;	
 			default:
@@ -233,14 +225,11 @@ loadPlayer();
 socket.on('infectResult', (data) => {
 	//console.log("infect result: " + data.sucess);
 	if (data.success) {
-		logEvent(`Host infected`);
 		location.reload()
 	}
 });
 
-socket.on('notifyInfected', (data) => {
-	logEvent(`You have been infected by ${data.by}!`);
-});
+socket.on('notifyInfected', () => {});
 
 
 //  STABILIZE
@@ -248,9 +237,6 @@ socket.on('notifyInfected', (data) => {
 
 socket.on('stabilizeResult', (data) => {
 	if (data.success) {
-		logEvent(`Fragment acquired`);
 		location.reload()
 	}
 });
-
-

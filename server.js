@@ -194,6 +194,10 @@ app.get("/api/leaderboard", (req, res) => {
 	});
 });
 
+app.get('/api/logs', (req, res) => {
+	res.json(globalLog);
+});
+
 
 // --- place details ---
 app.get('/api/place', (req, res) => {
@@ -223,8 +227,8 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 		return res.status(404).json({ ok: false, error: "dave not found" });
 	}
 
-	const placeName = place.name || "UNKNOWN NODE";
-	const daveName = dave.name || dave.icon || "A Dave";
+	const placeName = place.name;
+	const daveName = dave.name;
 
 	delete savedPlaces[placeId];
 
@@ -352,6 +356,9 @@ io.on('connection', (socket) => {
 				if (difference <= 20 * 1000) {
 					//console.log("INSTALL");
 					state.installAntivirus(daves[socket.userId]);
+					logEvent(`${daves[socket.userId].name} installed mind antivirus.`, {
+						userId: socket.userId
+					});
 				}
 			} catch (error) { //ignore
 				console.error("Error decoding base64:", error);
@@ -360,6 +367,17 @@ io.on('connection', (socket) => {
 		//console.log("update on register: " + JSON.stringify(daves, null, 2));
 		io.emit("update");
 	});	
+
+	socket.on("logEvent", (message, options = {}) => {
+		if (typeof message !== "string" || !message.trim()) {
+			return;
+		}
+
+		logEvent(message.trim(), {
+			...options,
+			userId: socket.userId
+		});
+	});
 
 	socket.on('disconnect', () => {
 		const dave = daves[socket.userId];
@@ -387,7 +405,11 @@ io.on('connection', (socket) => {
 	socket.on('setId', (name) => {
 		const dave = daves[socket.userId];
 		if (dave) {
+			const oldName = dave.name;
 			dave.name = name;
+			logEvent(`${oldName} is now known as ${dave.name}.`, {
+				userId: dave.userId
+			});
 			io.emit("update");
 		}
 	});
@@ -398,6 +420,9 @@ io.on('connection', (socket) => {
 
 		if (!me) return;
 		state.installAntivirus(me);
+		logEvent(`${me.name} installed mind antivirus.`, {
+			userId: me.userId
+		});
 	})
 
 	socket.on("spawnCluster", (sourceId, count = 10) => {
@@ -413,17 +438,18 @@ io.on('connection', (socket) => {
 			daves[bot.userId] = bot;
 		}
 
+		logEvent(`${me.name} spawned ${count} civilians.`, {
+			userId: me.userId
+		});
 		io.emit("update");
 	});
 
 
-	infect.registerHandlers(socket, daves, io);
-	stabilize.registerHandlers(socket, daves, io);
+	infect.registerHandlers(socket, daves, io, logEvent);
+	stabilize.registerHandlers(socket, daves, io, logEvent);
 	items.registerHandlers(socket, daves, io);
-	places.registerHandlers(socket, daves, savedPlaces, io);
-	ascension.registerHandlers(socket, daves, savedPlaces, io);
+	places.registerHandlers(socket, daves, savedPlaces, io, logEvent);
+	ascension.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 
 	debug.registerHandlers(socket, daves, savedPlaces, io);
 });
-
-

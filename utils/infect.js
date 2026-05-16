@@ -30,7 +30,7 @@ export function infectTarget(me, target) {
 	return false;
 }
 
-export function registerHandlers(socket, daves, io) {
+export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 	socket.on("infect", (sourceId, targetId) => {
 		//console.log("INFECT: " + JSON.stringify(socket, null, 2));
 		//console.log("recv'd infect: " + sourceId + " => " + targetId);
@@ -50,6 +50,9 @@ export function registerHandlers(socket, daves, io) {
 		});
 
 		if (success) {
+			logEvent(`${me.name} transmitted the virus to ${target.name}.`, {
+				userId: me.userId
+			});
 			io.emit("update", { daves });
 		}
 	});
