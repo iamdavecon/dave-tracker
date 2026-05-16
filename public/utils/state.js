@@ -252,6 +252,10 @@ export function isDavePrime(dave) {
 	return getIndex(dave) <= toNumber(STATES.DAVEPRIME)
 }
 
+export function canDoonShift(source, target) {
+	return hasTag(source, "doon") && [STATES.INFECTED, STATES.CORRUPTED].includes(target?.state);
+}
+
 export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
@@ -261,6 +265,7 @@ export function getUserActions(source, target) {
 		canBePatched : target.state == STATES.UNSTABLE,
 		hasFragments : canAfford(source, 1),
 		canDaveputize : hasTag(source, "mayor") && ! hasTag(target, "doon"),
+		canDoonShift : canDoonShift(source, target),
 		canGrantDavePrime : isDavePrime(source) && !isDavePrime(target),
 		davePrime:  isDavePrime(source),
 	}

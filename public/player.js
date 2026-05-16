@@ -201,6 +201,11 @@ async function loadPlayer() {
 				actionHtml += `<button data-action="daveputize">DAVEPUTIZE</button>`;
 			}
 
+			if (dave.availableActions.canDoonShift) {
+				const label = dave.state === "infected" ? "CORRUPT HOST" : "VOID HOST";
+				actionHtml += `<button data-action="doonShift">${label}</button>`;
+			}
+
 			if (dave.availableActions.canGrantDavePrime) {
 				actionHtml += `<button data-action="grantDavePrime">GRANT DAVEPRIME</button>`;
 			}

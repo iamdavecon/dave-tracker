@@ -1,5 +1,5 @@
 import { getFragmentFrom } from '../public/utils/id.js';
-import { stabilize, ascendUser, addTag, grantDavePrime, isDavePrime } from '../public/utils/state.js';
+import { stabilize, ascendUser, addTag, canDoonShift, decreaseRank, grantDavePrime, isDavePrime } from '../public/utils/state.js';
 import { getUsers } from './storage.js';
 
 export function registerHandlers(socket, daves, io, logEvent = () => {}) {
@@ -61,6 +61,26 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 
 		if (success) {
 			logEvent(`${me.name} daveputized ${target.name}.`, {
+				userId: me.userId
+			});
+		}
+
+		io.emit("update", { daves });
+	});
+
+	socket.on("doonShift", (sourceId, targetId) => {
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target || !canDoonShift(me, target)) {
+			return;
+		}
+
+		const previousState = target.state;
+		const success = decreaseRank(target);
+
+		if (success) {
+			logEvent(`${me.name} pushed ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
 				userId: me.userId
 			});
 		}
