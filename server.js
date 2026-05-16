@@ -444,6 +444,69 @@ io.on('connection', (socket) => {
 		io.emit("update");
 	});
 
+	socket.on("dodApply", (sourceId, placeId, application = {}) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const me = daves[socket.userId];
+		const place = savedPlaces[placeId];
+		const codename = typeof application.codename === "string" ? application.codename.trim() : "";
+		const optionalText = (field, maxLength) => (
+			typeof application[field] === "string" ? application[field].trim().slice(0, maxLength) : ""
+		);
+
+		if (!me || !place) {
+			socket.emit("dodApplyResult", { ok: false, error: "Application context unavailable" });
+			return;
+		}
+
+		if (me.dodLevel > 0 || me.dodApplication) {
+			socket.emit("dodApplyResult", { ok: false, error: "Application already on file" });
+			return;
+		}
+
+		if (!codename || application.oath !== true) {
+			socket.emit("dodApplyResult", { ok: false, error: "Application incomplete" });
+			return;
+		}
+
+		me.dodLevel = 1;
+		me.dodApplication = {
+			placeId,
+			nodeName: place.name,
+			codename: codename.slice(0, 32),
+			corruptionDisclosure: optionalText("corruptionDisclosure", 500),
+			operational: {
+				nodeResponse: optionalText("nodeResponse", 320),
+				operationalAptitude: optionalText("operationalAptitude", 120),
+				chainOfCommand: optionalText("chainOfCommand", 160)
+			},
+			signalIntegrity: {
+				signalEvents: Array.isArray(application.signalEvents)
+					? application.signalEvents
+						.filter((event) => typeof event === "string")
+						.map((event) => event.trim().slice(0, 120))
+						.filter(Boolean)
+					: [],
+				signalNoise: optionalText("signalNoise", 80),
+				checksum: optionalText("checksum", 160),
+				glitchSymptom: optionalText("glitchSymptom", 160)
+			},
+			voluntaryDisclosure: optionalText("voluntaryDisclosure", 80),
+			submittedAt: Date.now()
+		};
+		state.addTag(me, "dod");
+
+		logEvent(`${me.name} applied to the Department of Davefence.`, {
+			userId: me.userId,
+			placeId
+		});
+
+		socket.emit("dodApplyResult", { ok: true });
+		io.emit("update");
+	});
+
 
 	infect.registerHandlers(socket, daves, io, logEvent);
 	stabilize.registerHandlers(socket, daves, io, logEvent);

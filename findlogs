@@ -1,0 +1,1 @@
+git grep -n console.log | grep -v '\/\/'

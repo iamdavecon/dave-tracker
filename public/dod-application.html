@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Department of Davefence</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container dod-page">
+		<a id="backLink" href="/" class="back-link">< Back</a>
+
+		<header>
+			<h1>DEPARTMENT OF DAVEFENCE</h1>
+			<div class="subtitle">SIGNAL SECURITY DIVISION // FORM DOD-13B</div>
+		</header>
+
+		<section class="panel">
+			<div class="field">
+				<span class="label">Applicant</span>
+				<span id="applicantName" class="value">Loading...</span>
+			</div>
+			<div class="field">
+				<span class="label">Node</span>
+				<span id="nodeName" class="value">Loading...</span>
+			</div>
+			<div class="field">
+				<span class="label">Status</span>
+				<span id="applicationStatus" class="value">Pending input</span>
+			</div>
+		</section>
+
+		<section class="panel">
+			<form id="dodApplicationForm" class="application-form">
+				<div class="form-field">
+					<label for="codename">Callsign</label>
+					<input id="codename" name="codename" type="text" maxlength="32" required>
+				</div>
+
+				<div class="form-field">
+					<label for="corruptionDisclosure">Corruption disclosure</label>
+					<textarea id="corruptionDisclosure" name="corruptionDisclosure" rows="4" maxlength="500" placeholder="List all known corruptions, suspected corruptions, inherited corruptions, dreams containing lowercase daves, or type N/A if the box is watching."></textarea>
+				</div>
+
+				<div class="form-field question-group">
+					<div class="section-title">Operational Questions</div>
+					<label for="nodeResponse">If a node whispers your legal name, what is the approved response?</label>
+					<select id="nodeResponse" name="nodeResponse">
+						<option value="">No official memory of this scenario</option>
+						<option value="Do not answer. File Form ECHO-0.">Do not answer. File Form ECHO-0.</option>
+						<option value="Whisper a decoy name into approved foliage.">Whisper a decoy name into approved foliage.</option>
+						<option value="Thank the node and report the breach.">Thank the node and report the breach.</option>
+						<option value="Ask the node for two forms of identification.">Ask the node for two forms of identification.</option>
+						<option value="Become administratively unavailable.">Become administratively unavailable.</option>
+					</select>
+
+					<label for="operationalAptitude">OPERATIONAL APTITUDE: Select the statement most aligned with your instincts. A signal appears inside a quarantined zone. You:</label>
+					<select id="operationalAptitude" name="operationalAptitude">
+						<option value="">Decline to self-incriminate</option>
+						<option value="Investigate immediately">Investigate immediately</option>
+						<option value="Report to DOD command">Report to DOD command</option>
+						<option value="Wait for backup">Wait for backup</option>
+						<option value="Follow the strongest ping">Follow the strongest ping</option>
+						<option value="Become the signal">Become the signal</option>
+					</select>
+
+					<label for="chainOfCommand">Who do you report to if your superior officer is replaced by a better-organized duplicate?</label>
+					<input id="chainOfCommand" name="chainOfCommand" type="text" maxlength="160">
+				</div>
+
+				<div class="form-field question-group">
+					<div class="section-title">Signal Integrity Assessment</div>
+					<div class="field-note">Have you experienced any of the following within the last 72 hours?</div>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Hearing phantom pings">
+						<span>Hearing phantom pings</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Following a signal that vanished">
+						<span>Following a signal that vanished</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Spontaneous ascension urges">
+						<span>Spontaneous ascension urges</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Unscheduled taco acquisition">
+						<span>Unscheduled taco acquisition</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Seeing duplicate Daves">
+						<span>Seeing duplicate Daves</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Loss of temporal certainty">
+						<span>Loss of temporal certainty</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="signalEvents" type="checkbox" value="Desire to trust the signal">
+						<span>Desire to trust the signal</span>
+					</label>
+
+					<label for="signalNoise">How many Daves are currently audible in your peripheral thoughts?</label>
+					<input id="signalNoise" name="signalNoise" type="text" maxlength="80" placeholder="Approximate numbers are legally suspicious.">
+
+					<label for="checksum">Write the phrase you use to prove you are not a node wearing a person.</label>
+					<input id="checksum" name="checksum" type="text" maxlength="160">
+
+					<label for="glitchSymptom">Select the symptom most consistent with your current signal profile.</label>
+					<select id="glitchSymptom" name="glitchSymptom">
+						<option value="">No disclosure at this time</option>
+						<option value="Hearing modem noises in wet concrete">Hearing modem noises in wet concrete</option>
+						<option value="Seeing administrative forms in reflective surfaces">Seeing administrative forms in reflective surfaces</option>
+						<option value="Remembering meetings that have not happened yet">Remembering meetings that have not happened yet</option>
+						<option value="Unexplained confidence around locked doors">Unexplained confidence around locked doors</option>
+					</select>
+				</div>
+
+				<div class="form-field question-group">
+					<div class="section-title">Voluntary Disclosure</div>
+					<div class="field-note">Have you ever concealed corruption, spoofed your location, impersonated a DOD official, or interacted with SIGNAL GHOSTS knowingly?</div>
+					<label class="checkbox-row">
+						<input name="voluntaryDisclosure" type="radio" value="Yes">
+						<span>Yes</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="voluntaryDisclosure" type="radio" value="No">
+						<span>No</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="voluntaryDisclosure" type="radio" value="Prefer not to remember">
+						<span>Prefer not to remember</span>
+					</label>
+				</div>
+
+				<label class="checkbox-row">
+					<input id="oath" name="oath" type="checkbox" required>
+					<span>I certify that the above omissions are mostly intentional and that I will defend Dave nodes from unstable influence.</span>
+				</label>
+
+				<button type="submit">Submit Application</button>
+			</form>
+		</section>
+
+		<section class="log event-log">
+			<div class="log-title">EVENT LOG</div>
+			<ul id="logList"></ul>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="dod-application.js"></script>
+</body>
+</html>
