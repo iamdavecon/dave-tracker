@@ -15,6 +15,13 @@ if (USE_REDIS) {
 
 let savedDaves = {};
 let savedPlaces = {};
+let lastSavedUsersJson = null;
+let lastSavedPlacesJson = null;
+
+function setSavedSnapshots() {
+	lastSavedUsersJson = JSON.stringify(savedDaves, null, 2);
+	lastSavedPlacesJson = JSON.stringify(savedPlaces, null, 2);
+}
 
 export async function loadUsers() {
 	if (USE_REDIS) {
@@ -48,6 +55,7 @@ export async function loadUsers() {
 			savedPlaces = {};
 		}
 	}
+	setSavedSnapshots();
 	//console.log("LOADED: " + JSON.stringify(savedDaves, null, 2));
 	return savedDaves;
 }
@@ -57,7 +65,7 @@ export async function saveUsers(daves, places) {
 		daves = {};
 	}
 	if (!places) {
-		places = {};
+		places = savedPlaces;
 	}
 	//console.log("SAVE: " + JSON.stringify(savedDaves, null, 2));
 	//console.log("SAVE: " + JSON.stringify(places, null, 2));
@@ -68,16 +76,30 @@ export async function saveUsers(daves, places) {
 		Object.entries(mergedUsers).filter(([id, user]) => !user.isBot)
 	);
 	savedDaves = realUsers;
+	savedPlaces = places;
+
+	const usersJson = JSON.stringify(realUsers, null, 2);
+	const placesJson = JSON.stringify(places, null, 2);
+
+	if (usersJson === lastSavedUsersJson && placesJson === lastSavedPlacesJson) {
+		console.log("skipping save. nothing changed");
+		return false;
+	}
+	console.log("content changed.  save");
 
 	if (USE_REDIS) {
-		await redis.set("davecon:users", JSON.stringify(realUsers)); 
-		await redis.set("davecon:places", JSON.stringify(places)); 
+		await redis.set("davecon:users", usersJson); 
+		await redis.set("davecon:places", placesJson); 
 	} else {
-		fs.writeFileSync(USER_FILE, JSON.stringify(realUsers, null, 2)); 
-		fs.writeFileSync(PLACE_FILE, JSON.stringify(places, null, 2)); 
+		fs.writeFileSync(USER_FILE, usersJson); 
+		fs.writeFileSync(PLACE_FILE, placesJson); 
 	}
 
+	lastSavedUsersJson = usersJson;
+	lastSavedPlacesJson = placesJson;
+
 	//console.log(`[SAVE]  wrote ${JSON.stringify(realUsers, null, 2)}`);
+	return true;
 }
 
 export function getUsers(daves) {

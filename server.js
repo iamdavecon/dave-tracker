@@ -217,7 +217,7 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 	const userId = req.body.userId;
 	const place = savedPlaces[placeId];
 	const localDaves = getUsers(daves);
-	const dave = localDaves[userId];
+	const dave = daves[userId] || localDaves[userId];
 
 	if (!place) {
 		return res.status(404).json({ ok: false, error: "place not found" });
@@ -229,14 +229,26 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 
 	const placeName = place.name;
 	const daveName = dave.name;
+	const fragmentCount = Math.max(0, Number(place.level ?? 0) - 1);
+
+	if (!Array.isArray(dave.fragmentsCollected)) {
+		dave.fragmentsCollected = [];
+	}
+
+	for (let i = 0; i < fragmentCount; i++) {
+		dave.fragmentsCollected.push(crypto.randomUUID());
+	}
 
 	delete savedPlaces[placeId];
 
-	logEvent(`${daveName} deconstructed ${placeName}.`);
+	logEvent(fragmentCount > 0
+		? `${daveName} deconstructed ${placeName} and recovered ${fragmentCount} fragments.`
+		: `${daveName} deconstructed ${placeName}.`
+	);
 
 	io.emit("update");
 
-	res.json({ ok: true });
+	res.json({ ok: true, fragmentsRecovered: fragmentCount });
 });
 
 app.get('/api/places', (req, res) => {
@@ -504,6 +516,37 @@ io.on('connection', (socket) => {
 		});
 
 		socket.emit("dodApplyResult", { ok: true });
+		io.emit("update");
+	});
+
+	socket.on("dodExchangeInfections", (sourceId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const me = daves[socket.userId];
+		if (!me || (me.dodLevel ?? 0) < 1) {
+			socket.emit("dodExchangeResult", { ok: false, error: "DoD credentials required" });
+			return;
+		}
+
+		if (!Array.isArray(me.infectedUsers) || me.infectedUsers.length < 5) {
+			socket.emit("dodExchangeResult", { ok: false, error: "Insufficient infections for exchange" });
+			return;
+		}
+
+		if (!Array.isArray(me.fragmentsCollected)) {
+			me.fragmentsCollected = [];
+		}
+
+		me.infectedUsers.splice(0, 5);
+		me.fragmentsCollected.push(crypto.randomUUID());
+
+		logEvent(`${me.name} exchanged 5 infections for 1 fragment with the Department of Davefence.`, {
+			userId: me.userId
+		});
+
+		socket.emit("dodExchangeResult", { ok: true });
 		io.emit("update");
 	});
 

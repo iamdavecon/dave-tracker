@@ -91,6 +91,9 @@ function addActions(actionHtml) {
 			case "dod":
 				window.location.href = `/dod-application.html?placeId=${encodeURIComponent(placeId)}`;
 				break;
+			case "dodConsole":
+				window.location.href = "/dod.html";
+				break;
 			case "teleport":
 				teleport();
 				break;
@@ -184,7 +187,7 @@ async function loadPlace() {
 				actionHtml += `<button data-action="dod">Apply to the Department of Davefence</button>`   
 				break;
 			default:
-				actionHtml += `<button data-action="dod">Department of Davefence File</button>`   
+				actionHtml += `<button data-action="dodConsole">Department of Davefence Console</button>`   
 				break;
 		}
 	}

@@ -68,6 +68,14 @@ function svgStringToElement(svgString) {
 	return doc.documentElement;
 }
 
+function firstEmoji(value = "") {
+	return [...value].find(char => /\p{Extended_Pictographic}/u.test(char));
+}
+
+function isDavefenceNode(place) {
+	return firstEmoji(place?.name) === "🛡";
+}
+
 export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistanceList, i) {
 	const lat = place.lat;
 	const lng = place.lng; 
@@ -163,7 +171,7 @@ export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistance
 
 		li.appendChild(container);                
 
-		if (inRange(dave, place)) {
+		if (isDavefenceNode(place) || inRange(dave, place)) {
 			li.classList.add("in-range");
 			li.classList.remove("out-of-range");
 		} else {
@@ -209,10 +217,9 @@ export function getAscensionText(dave, place) {
 	const ascescion = ascendency(dave);
 	const maxState = place.level;
 	if (maxState > ascescion) {
-		const characters = [...place.name]; // Splits correctly by Unicode code points
-		const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
-		if (firstEmoji) {
-			switch (firstEmoji) {
+		const emoji = firstEmoji(place.name);
+		if (emoji) {
+			switch (emoji) {
 				case "🌮": return "CONSUME SACRED TACO";
 				case "🌭": return "CONSUME SACRED HOTDOG";
 				case "☠️": return "ESCALATE PRIVILEGES";
@@ -236,4 +243,3 @@ export function getAscensionText(dave, place) {
 	return "";
 	
 }
-
