@@ -1,5 +1,13 @@
 import { inRange } from './distance.js';
 
+const LOCATION_OPTIONS = {
+	enableHighAccuracy: true,
+	maximumAge: 2000,
+	timeout: 15000
+};
+
+const LOCATION_REFRESH_MS = 5000;
+
 export function getMapData(me, target) {
 	return {
 		viewerLat: me?.lat ?? 0,
@@ -10,6 +18,7 @@ export function getMapData(me, target) {
 
 		state: me?.state ?? "unstable",
 		name: target?.name ?? "D",
+		freeRoam: !!me?.freeRoam,
 
 		inRange: me && target ? inRange(me, target) : false,
 	};
@@ -28,7 +37,7 @@ function createPill(label, state = "neutral", isYou = false) {
 	});
 }
 
-export function addMap(mapData) {
+export function addMap(mapData, options = {}) {
 	//console.log("loading: " + JSON.stringify(mapData, null, 2));
 
 	// --- init map ---
@@ -50,12 +59,10 @@ export function addMap(mapData) {
 	//L.marker([mapData.targetLat, mapData.targetLon], { title: mapData.name }).addTo(map);
 
 
-	// --- fit bounds to both ---
 	const group = new L.featureGroup([meMarker, targetMarker]);
-	map.fitBounds(group.getBounds(), { padding: [30, 30] });
 
 	// --- draw connection line ---
-	L.polyline(
+	const connectionLine = L.polyline(
 		[
 			[mapData.viewerLat, mapData.viewerLon],
 			[mapData.targetLat, mapData.targetLon]
@@ -63,6 +70,58 @@ export function addMap(mapData) {
 		{ color: "white", opacity: 0.5 }
 	).addTo(map);
 
+	function fitMap() {
+		map.fitBounds(group.getBounds(), { padding: [30, 30] });
+	}
+
+	function updateViewerLocation(lat, lng) {
+		if (options.freeRoam || mapData.freeRoam) {
+			return;
+		}
+
+		if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) {
+			return;
+		}
+
+		mapData.viewerLat = lat;
+		mapData.viewerLon = lng;
+		meMarker.setLatLng([lat, lng]);
+		connectionLine.setLatLngs([
+			[lat, lng],
+			[mapData.targetLat, mapData.targetLon]
+		]);
+		fitMap();
+
+		options.socket?.emit("location", { lat, lng });
+		options.onLocation?.({ lat, lng });
+	}
+
+	function refreshLocation() {
+		if (!navigator.geolocation) {
+			return;
+		}
+
+		navigator.geolocation.getCurrentPosition((pos) => {
+			updateViewerLocation(pos.coords.latitude, pos.coords.longitude);
+		}, () => {}, LOCATION_OPTIONS);
+	}
+
+	if (navigator.geolocation) {
+		const watchId = navigator.geolocation.watchPosition((pos) => {
+			updateViewerLocation(pos.coords.latitude, pos.coords.longitude);
+		}, () => {}, LOCATION_OPTIONS);
+
+		const intervalId = window.setInterval(refreshLocation, LOCATION_REFRESH_MS);
+
+		window.addEventListener("beforeunload", () => {
+			navigator.geolocation.clearWatch(watchId);
+			window.clearInterval(intervalId);
+		}, { once: true });
+
+		refreshLocation();
+	}
+
+	fitMap();
+
 	return map;
 }
-

@@ -205,9 +205,8 @@ async function loadPlace() {
 	}
 	addActions(actionHtml);
 
-	map = addMap(place.mapData);
+	map = addMap(place.mapData, { socket });
 }
 
 
 loadPlace();
-
