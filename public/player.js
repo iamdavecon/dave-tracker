@@ -218,7 +218,7 @@ async function loadPlayer() {
 		}
 
 
-		map = addMap(dave.mapData);
+		map = addMap(dave.mapData, { socket });
 	}
 }
 
@@ -252,6 +252,5 @@ socket.on('stabilizeResult', (data) => {
 		location.reload()
 	}
 });
-
 
 
