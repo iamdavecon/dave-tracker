@@ -351,7 +351,7 @@ export function add(dave, item) {
 		dave[item].count += 1;
 		dave[item].lastTime = now;
 	}
-	return dave[item]; 
+	return dave[item].count; 
 	
 }
 
