@@ -13,7 +13,7 @@ function getNewPlace(dave) {
 	}
 }
 
-export function registerHandlers(socket, daves, savedPlaces, io) {
+export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
 	socket.on("dropDavePoint", (sourceId) => {
 		//console.log("dropDavePoint");
 		const dave = daves[sourceId];
@@ -25,6 +25,10 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 			//console.log("dropped: " + JSON.stringify(newPlace, null, 2));
 			//console.log("from: " + JSON.stringify(dave, null, 2));
 			savedPlaces[newPlace.id] = newPlace;
+			logEvent(`${dave.name} daveified a new node: ${newPlace.name}.`, {
+				userId: dave.userId,
+				placeId: newPlace.id
+			});
 		}
 	});
 
@@ -35,6 +39,10 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		if (dave && place) {
 			removeFragment(dave);
 			place.level = (place.level ?? 0) + 1;
+			logEvent(`${dave.name} upgraded ${place.name} to level ${place.level}.`, {
+				userId: dave.userId,
+				placeId
+			});
 		} 
 	});
 
@@ -42,7 +50,12 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
 		if (dave && place && place.owner == sourceId) {
+			const oldName = place.name;
 			place.name = newName;	
+			logEvent(`${dave.name} renamed ${oldName} to ${place.name}.`, {
+				userId: dave.userId,
+				placeId
+			});
 		}
 	});
 
@@ -83,4 +96,3 @@ export function isTooNear(me, savedPlaces) {
 	}
 	return false;
 }
-

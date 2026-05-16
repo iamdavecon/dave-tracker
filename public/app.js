@@ -3,6 +3,7 @@ import { haversineDistance } from './utils/distance.js';
 import { addStateUI } from './utils/stateUI.js';
 import { addPlayer, cullNotSeen } from './utils/playersUI.js';
 import { addPlace } from './utils/placesUI.js';
+import { bindLogEvents } from './utils/log.js';
 
 const userId = getUserId();
 const socket = io({
@@ -37,24 +38,7 @@ document.getElementById('setIdBtn').addEventListener('click', () => {
 
 const leaderboard = document.getElementById("leaderboardLink");
 leaderboard.href = `/leaderboard.html?userId=${encodeURIComponent(userId)}`;
-
-
-function logEvent(message) {
-	const logList = document.getElementById("logList");
-
-	const li = document.createElement("li");
-
-	const timestamp = new Date().toLocaleTimeString();
-
-	li.textContent = `[${timestamp}] ${message}`;
-
-	logList.prepend(li);
-
-	const maxLogs = 10;
-	while (logList.children.length > maxLogs) {
-		logList.removeChild(logList.lastChild);
-	}
-}
+bindLogEvents(socket);
 
 
 // --- Leaflet map setup ---
@@ -172,10 +156,6 @@ socket.on('update', () => {
 		lastRender = now;
 		update();
 	} 
-});
-
-socket.on("logEvent", (entry) => {
-	logEvent(entry.message);
 });
 
 socket.on('teleport', (data) => {
