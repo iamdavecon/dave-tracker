@@ -1,5 +1,5 @@
 import { getFragmentFrom } from '../public/utils/id.js';
-import { stabilize, ascendUser, addTag } from '../public/utils/state.js';
+import { stabilize, ascendUser, addTag, grantDavePrime, isDavePrime } from '../public/utils/state.js';
 import { getUsers } from './storage.js';
 
 export function registerHandlers(socket, daves, io, logEvent = () => {}) {
@@ -61,6 +61,25 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 
 		if (success) {
 			logEvent(`${me.name} daveputized ${target.name}.`, {
+				userId: me.userId
+			});
+		}
+
+		io.emit("update", { daves });
+	});
+
+	socket.on("grantDavePrime", (sourceId, targetId) => {
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target || !isDavePrime(me)) {
+			return;
+		}
+
+		const success = grantDavePrime(target);
+
+		if (success) {
+			logEvent(`${me.name} granted DAVEPRIME clearance to ${target.name}.`, {
 				userId: me.userId
 			});
 		}

@@ -445,6 +445,9 @@ io.on('connection', (socket) => {
 			return;
 		}
 
+		count = Number.isInteger(count) ? count : 10;
+		count = Math.max(1, Math.min(count, 50));
+
 		for (let i = 0; i < count; i++) {
 			const bot = spawnBot(me);
 			daves[bot.userId] = bot;

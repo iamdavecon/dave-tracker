@@ -1,4 +1,4 @@
-import { getUserId } from './utils/id.js';
+import { getUserId, isDebugId } from './utils/id.js';
 import { getValidItems, displayItems } from './utils/itemUI.js';
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
@@ -15,6 +15,7 @@ const socket = io({
 
 const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
+const isDebugUser = isDebugId(userId);
 
 let map;
 
@@ -224,7 +225,7 @@ async function loadPlace() {
 	if (place.owner == userId) {
 		actionHtml += `<button data-action="deconstructNode">Deconstruct node</button> `   
 	} 
-	if (place.availableActions.davePrime) {
+	if (isDebugUser) {
 		actionHtml += `<button data-action="teleport">Teleport</button>`;
 	}
 	addActions(actionHtml);

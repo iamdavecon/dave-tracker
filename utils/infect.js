@@ -50,7 +50,7 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 		});
 
 		if (success) {
-			logEvent(`${me.name} transmitted the virus to ${target.name}.`, {
+			logEvent(`${me.name} transmitted the mindvirus to ${target.name}.`, {
 				userId: me.userId
 			});
 			io.emit("update", { daves });

@@ -1,5 +1,5 @@
 import { inRange, getRange } from './distance.js';
-import { ascendency, maxState } from './state.js';
+import { maxState } from './state.js';
 
 
 function metersToPixels(meters, lat, zoom) {
@@ -214,9 +214,9 @@ export function bindInfluence(map, config) {
 }
 
 export function getAscensionText(dave, place) {
-	const ascescion = ascendency(dave);
-	const maxState = place.level;
-	if (maxState > ascescion) {
+	const currentMaxState = maxState(dave);
+	const hasFragment = (dave.fragmentsCollected?.length ?? 0) > 0;
+	if (hasFragment && currentMaxState < 7 && place.level > currentMaxState) {
 		const emoji = firstEmoji(place.name);
 		if (emoji) {
 			switch (emoji) {
@@ -226,18 +226,16 @@ export function getAscensionText(dave, place) {
 				case "🛡": return "REQUEST CLEARANCE";
 			}
 		} 
-		switch (ascescion) {
-			case "0": return "BECOME MORE DAVE";
-			case "1": return "REQUEST ELEVATION";
-			case "2": return "INSTALL NEW DAVEWARE";
-			case "3": return "ATTUNE TO THE FREQUENCY";
-			case "4": return "PROCEED TO HIGHER CLEARANCE";
-			case "5": return "OVERCLOCK CONSCIOUSNESS";
-			case "6": return "ACHIEVE DAVEHOOD";
+		switch (currentMaxState) {
+			case 0: return "BECOME MORE DAVE";
+			case 1: return "REQUEST ELEVATION";
+			case 2: return "INSTALL NEW DAVEWARE";
+			case 3: return "ATTUNE TO THE FREQUENCY";
+			case 4: return "PROCEED TO HIGHER CLEARANCE";
+			case 5: return "OVERCLOCK CONSCIOUSNESS";
+			case 6: return "ACHIEVE DAVEHOOD";
 		}
 		
-	} else {
-		console.log("CANT: " + ascescion + " vs " + maxState);
 	}
 
 	return "";
