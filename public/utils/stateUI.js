@@ -22,6 +22,14 @@ function updateButtons(me) {
 			window.location.href = "https://iamdavecon.github.io/bb/";
 		};
 	}
+
+	const dodBtn = document.getElementById("dod-console");
+	if (dodBtn) {
+		dodBtn.style.display = (me.dodLevel ?? 0) >= 1 ? "block" : "none";
+		dodBtn.onclick = () => {
+			window.location.href = "/dod.html";
+		};
+	}
 }
 
 export function addStateUI(me, nDaves) {

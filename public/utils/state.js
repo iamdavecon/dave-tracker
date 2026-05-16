@@ -158,11 +158,20 @@ export function installAntivirus(dave) {
 
 export function ascendUser(dave) {
 	const state = getIndex(dave);
-	if (state > 1 && state > toNumber(STATES.ASCENDED)) {
+	if (state > toNumber(STATES.DOPE)) {
 		dave.state = toState(state - 1);
 		return true;
 	}
 	return false;
+}
+
+export function grantDavePrime(dave) {
+	if (getIndex(dave) <= toNumber(STATES.DAVEPRIME)) {
+		return false;
+	}
+
+	dave.state = STATES.DAVEPRIME;
+	return true;
 }
 
 export function setImmune(dave) {
@@ -252,6 +261,7 @@ export function getUserActions(source, target) {
 		canBePatched : target.state == STATES.UNSTABLE,
 		hasFragments : canAfford(source, 1),
 		canDaveputize : hasTag(source, "mayor") && ! hasTag(target, "doon"),
+		canGrantDavePrime : isDavePrime(source) && !isDavePrime(target),
 		davePrime:  isDavePrime(source),
 	}
 }
@@ -262,10 +272,8 @@ export function maxState(dave) {
 			return 2;
 		case STATES.IMMUNE:
 			return 3;
-		case STATES.AKAKENING:
+		case STATES.AWAKENING:
 			return 4;
-		case STATES.IMMUNE:
-			return 5;
 		case STATES.ASCENDED:
 			return 6;
 		case STATES.DOPE:
@@ -363,4 +371,3 @@ export function getPlaceActions(dave, place) {
 		davePrime:  isDavePrime(dave),
 	}
 }
-

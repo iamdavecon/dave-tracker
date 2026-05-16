@@ -1,5 +1,5 @@
 import { inRange, getRange } from './distance.js';
-import { ascendency, maxState } from './state.js';
+import { maxState } from './state.js';
 
 
 function metersToPixels(meters, lat, zoom) {
@@ -66,6 +66,14 @@ function svgStringToElement(svgString) {
 	const parser = new DOMParser();
 	const doc = parser.parseFromString(svgString, "image/svg+xml");
 	return doc.documentElement;
+}
+
+function firstEmoji(value = "") {
+	return [...value].find(char => /\p{Extended_Pictographic}/u.test(char));
+}
+
+function isDavefenceNode(place) {
+	return firstEmoji(place?.name) === "🛡";
 }
 
 export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistanceList, i) {
@@ -163,7 +171,7 @@ export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistance
 
 		li.appendChild(container);                
 
-		if (inRange(dave, place)) {
+		if (isDavefenceNode(place) || inRange(dave, place)) {
 			li.classList.add("in-range");
 			li.classList.remove("out-of-range");
 		} else {
@@ -206,34 +214,30 @@ export function bindInfluence(map, config) {
 }
 
 export function getAscensionText(dave, place) {
-	const ascescion = ascendency(dave);
-	const maxState = place.level;
-	if (maxState > ascescion) {
-		const characters = [...place.name]; // Splits correctly by Unicode code points
-		const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
-		if (firstEmoji) {
-			switch (firstEmoji) {
+	const currentMaxState = maxState(dave);
+	const hasFragment = (dave.fragmentsCollected?.length ?? 0) > 0;
+	if (hasFragment && currentMaxState < 7 && place.level > currentMaxState) {
+		const emoji = firstEmoji(place.name);
+		if (emoji) {
+			switch (emoji) {
 				case "🌮": return "CONSUME SACRED TACO";
 				case "🌭": return "CONSUME SACRED HOTDOG";
 				case "☠️": return "ESCALATE PRIVILEGES";
 				case "🛡": return "REQUEST CLEARANCE";
 			}
 		} 
-		switch (ascescion) {
-			case "0": return "BECOME MORE DAVE";
-			case "1": return "REQUEST ELEVATION";
-			case "2": return "INSTALL NEW DAVEWARE";
-			case "3": return "ATTUNE TO THE FREQUENCY";
-			case "4": return "PROCEED TO HIGHER CLEARANCE";
-			case "5": return "OVERCLOCK CONSCIOUSNESS";
-			case "6": return "ACHIEVE DAVEHOOD";
+		switch (currentMaxState) {
+			case 0: return "BECOME MORE DAVE";
+			case 1: return "REQUEST ELEVATION";
+			case 2: return "INSTALL NEW DAVEWARE";
+			case 3: return "ATTUNE TO THE FREQUENCY";
+			case 4: return "PROCEED TO HIGHER CLEARANCE";
+			case 5: return "OVERCLOCK CONSCIOUSNESS";
+			case 6: return "ACHIEVE DAVEHOOD";
 		}
 		
-	} else {
-		console.log("CANT: " + ascescion + " vs " + maxState);
 	}
 
 	return "";
 	
 }
-

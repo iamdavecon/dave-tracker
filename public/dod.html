@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Department of Davefence Console</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container dod-page">
+		<a href="/" class="back-link">< Back</a>
+
+		<header>
+			<h1>DEPARTMENT OF DAVEFENCE</h1>
+			<div class="subtitle">RESOURCE CONVERSION DESK // AUTHORIZED PERSONNEL ONLY</div>
+		</header>
+
+		<section class="panel">
+			<div class="field">
+				<span class="label">Agent</span>
+				<span id="agentName" class="value">Loading...</span>
+			</div>
+			<div class="field">
+				<span class="label">Infections</span>
+				<span id="infectionCount" class="value">0</span>
+			</div>
+			<div class="field">
+				<span class="label">Fragments</span>
+				<span id="fragmentCount" class="value">0</span>
+			</div>
+			<div class="field">
+				<span class="label">Exchange Rate</span>
+				<span class="value">5 : 1</span>
+			</div>
+		</section>
+
+		<section class="panel">
+			<div class="section-title">Infection Reclassification</div>
+			<div class="field-note">Five documented infections may be administratively reclassified as one fragment. Do not ask where the paperwork goes.</div>
+			<button id="exchangeBtn" disabled>Exchange 5 Infections for 1 Fragment</button>
+			<div id="exchangeStatus" class="field-note"></div>
+		</section>
+
+		<section class="log event-log">
+			<div class="log-title">EVENT LOG</div>
+			<ul id="logList"></ul>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="dod.js"></script>
+</body>
+</html>

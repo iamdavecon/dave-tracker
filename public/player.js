@@ -13,6 +13,7 @@ const socket = io({
 
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
+const isDebugUser = isDebugId(userId);
 
 let map;
 
@@ -42,7 +43,11 @@ function renderTags(tags = []) {
 }
 
 function emit(event) {
-	socket.emit(event, userId, daveId);
+	if (event === "spawnCluster") {
+		socket.emit(event, userId, 10);
+	} else {
+		socket.emit(event, userId, daveId);
+	}
 	location.reload()
 }
 
@@ -155,14 +160,16 @@ async function loadPlayer() {
 		//  DAVEPRIME (ENABLES CHEATS)
 		if (dave.availableActions.davePrime) {
 			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
+		}
+
+		if (isDebugUser) {
 			if (dave.freeRoam) {
 				actionHtml += `<button data-action="exitFreeRoam">Exit Free Roam</button>`
 			}
-
 		}
 
 		//  DEBUG
-		if (isDebugId(daveId)) {
+		if (isDebugUser) {
 			actionHtml += `<button data-action="increaseRank">Increase Rank</button>`
 			actionHtml += `<button data-action="decreaseRank">Decrease Rank</button>`
 		}
@@ -194,13 +201,17 @@ async function loadPlayer() {
 				actionHtml += `<button data-action="daveputize">DAVEPUTIZE</button>`;
 			}
 
-			if (dave.availableActions.davePrime) {
+			if (dave.availableActions.canGrantDavePrime) {
+				actionHtml += `<button data-action="grantDavePrime">GRANT DAVEPRIME</button>`;
+			}
+
+			if (isDebugUser) {
 				actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
 			}
 
 			addActions(actionHtml);
 		} else {
-			if (dave.availableActions.davePrime) {
+			if (isDebugUser) {
 				let actionHtml = "";
 				actionHtml += `<button data-action="teleport">Teleport</button>`;
 				addActions(actionHtml);

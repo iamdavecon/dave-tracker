@@ -1,4 +1,5 @@
 import { ascendUser , maxState } from "../public/utils/state.js";
+import { removeFragment } from './players.js';
 
 export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
 	socket.on("ascend", (userId, placeId) => {
@@ -8,14 +9,20 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			return;
 		}
 
+		if ((dave.fragmentsCollected?.length ?? 0) < 1 || (place.level ?? 0) <= maxState(dave)) {
+			return;
+		}
+
 		if (!ascendUser(dave)) {
 			return;
 		}
+		removeFragment(dave);
 		const level = maxState(dave);
 
 		logEvent(`${dave.name} ascended at ${place.name} to level ${level}.`, {
 			userId: dave.userId,
 			placeId
 		});
+		io.emit("update", { daves });
 	});
 }

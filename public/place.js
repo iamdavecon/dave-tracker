@@ -1,4 +1,4 @@
-import { getUserId } from './utils/id.js';
+import { getUserId, isDebugId } from './utils/id.js';
 import { getValidItems, displayItems } from './utils/itemUI.js';
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
@@ -15,6 +15,7 @@ const socket = io({
 
 const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
+const isDebugUser = isDebugId(userId);
 
 let map;
 
@@ -90,6 +91,9 @@ function addActions(actionHtml) {
 				break;
 			case "dod":
 				window.location.href = `/dod-application.html?placeId=${encodeURIComponent(placeId)}`;
+				break;
+			case "dodConsole":
+				window.location.href = "/dod.html";
 				break;
 			case "teleport":
 				teleport();
@@ -184,7 +188,7 @@ async function loadPlace() {
 				actionHtml += `<button data-action="dod">Apply to the Department of Davefence</button>`   
 				break;
 			default:
-				actionHtml += `<button data-action="dod">Department of Davefence File</button>`   
+				actionHtml += `<button data-action="dodConsole">Department of Davefence Console</button>`   
 				break;
 		}
 	}
@@ -221,7 +225,7 @@ async function loadPlace() {
 	if (place.owner == userId) {
 		actionHtml += `<button data-action="deconstructNode">Deconstruct node</button> `   
 	} 
-	if (place.availableActions.davePrime) {
+	if (isDebugUser) {
 		actionHtml += `<button data-action="teleport">Teleport</button>`;
 	}
 	addActions(actionHtml);
