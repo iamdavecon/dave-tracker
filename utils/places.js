@@ -57,6 +57,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 	socket.on("getItem", (sourceId, item) => {
 		const dave = daves[sourceId];
 		const count = state.add(dave, item); 
+		//console.log("GETITEM: " + item + " => " + count);
 		if (item == "🌭" && count == 7) {
 			state.addTag(dave, "Timmy");
 		}
