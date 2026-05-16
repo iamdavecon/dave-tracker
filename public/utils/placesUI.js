@@ -216,7 +216,7 @@ export function bindInfluence(map, config) {
 export function getAscensionText(dave, place) {
 	const currentMaxState = maxState(dave);
 	const hasFragment = (dave.fragmentsCollected?.length ?? 0) > 0;
-	if (hasFragment && currentMaxState < 7 && place.level > currentMaxState) {
+	if (hasFragment && currentMaxState < 9 && place.level > currentMaxState) {
 		const emoji = firstEmoji(place.name);
 		if (emoji) {
 			switch (emoji) {
@@ -230,10 +230,11 @@ export function getAscensionText(dave, place) {
 			case 0: return "BECOME MORE DAVE";
 			case 1: return "REQUEST ELEVATION";
 			case 2: return "INSTALL NEW DAVEWARE";
-			case 3: return "ATTUNE TO THE FREQUENCY";
-			case 4: return "PROCEED TO HIGHER CLEARANCE";
-			case 5: return "OVERCLOCK CONSCIOUSNESS";
+			case 3: return "REQUEST AUTHORIZATION";
+			case 4: return "ATTUNE TO THE FREQUENCY";
+			case 5: return "ENTER RESONANCE";
 			case 6: return "ACHIEVE DAVEHOOD";
+			case 7: return "PROCEED TO DOPE STATUS";
 		}
 		
 	}

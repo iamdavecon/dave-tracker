@@ -2,7 +2,9 @@ const STATES = {
 	DAVEPRIME: "daveprime",
 	DOPE: "dope",
 	ASCENDED: "ascended",
+	RESONANT: "resonant",
 	AWAKENING: "awakening",
+	AUTHORIZED: "authorized",
 	IMMUNE: "immune",
 	PATCHED: "patched",
 	UNSTABLE: "unstable",
@@ -117,9 +119,11 @@ export function getAscendencyBonus(obj) {
 		// Explicit tuning overrides
 		const overrides = {
 			[STATES.DAVEPRIME]: 20,
-			[STATES.DOPE]: 10,
-			[STATES.ASCENDED]: 8,
+			[STATES.DOPE]: 12,
+			[STATES.ASCENDED]: 10,
+			[STATES.RESONANT]: 8,
 			[STATES.AWAKENING]: 6,
+			[STATES.AUTHORIZED]: 5,
 			[STATES.IMMUNE]: 4,
 			[STATES.PATCHED]: 2
 		};
@@ -277,12 +281,16 @@ export function maxState(dave) {
 			return 2;
 		case STATES.IMMUNE:
 			return 3;
-		case STATES.AWAKENING:
+		case STATES.AUTHORIZED:
 			return 4;
-		case STATES.ASCENDED:
+		case STATES.AWAKENING:
+			return 5;
+		case STATES.RESONANT:
 			return 6;
-		case STATES.DOPE:
+		case STATES.ASCENDED:
 			return 7;
+		case STATES.DOPE:
+			return 9;
 		case STATES.DAVEPRIME:
 			return 10;
 	}
