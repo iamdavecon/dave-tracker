@@ -1,5 +1,6 @@
 import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
+import { isDebugId} from "./public/utils/id.js";  
 
 import { notifyUser } from './utils/sockets.js';
 import * as infect from './utils/infect.js';
@@ -39,7 +40,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
 	console.log(`server running at http://localhost:${PORT}`);
 });
-
 
 // --- In-memory state ---
 let savedDaves = await loadUsers();
@@ -286,7 +286,7 @@ app.post('/api/teleport', (req, res) => {
 
 	const localDaves = getUsers(daves);
 	const me = localDaves[source];
-	if (state.isDavePrime(me)) {
+	if (state.isDavePrime(me) || isDebugId(source)) {
 		let target = {}	
 		if (targetType == "coords") {
 			target = { 

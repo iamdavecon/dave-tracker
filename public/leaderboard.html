@@ -53,6 +53,24 @@
     .virus { color: #ff5c5c; }
     .antivirus { color: #5cff9d; }
 
+    .name-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag-icons {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+      white-space: nowrap;
+    }
+
+    .tag-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
     .state {
       font-size: 12px;
       padding: 4px 8px;
@@ -144,6 +162,58 @@
   </div>
 
   <script>
+	  const TAG_EMOJIS = {
+		    mayor: { emoji: "🏛️", label: "Mayor" },
+		    doon: { emoji: "💀", label: "DOON" },
+		    peppercon: { emoji: "🌶️", label: "PepperCon" },
+		    toxicbbg: { emoji: "🍖", label: "Toxic BBQ" },
+		    drinks: { emoji: "🍻", label: "Cheers" },
+		    dod: { emoji: "🛡️", label: "Department of Davefence" },
+		    general: { emoji: "🎖️", label: "General" },
+		    Timmy: { emoji: "🌭", label: "Timmy" }
+	    };
+
+	  function appendTextCell(tr, text, className = "") {
+		    const td = document.createElement("td");
+		    td.textContent = text;
+		    if (className) td.className = className;
+		    tr.appendChild(td);
+	    }
+
+	  function appendNameCell(tr, row) {
+		    const td = document.createElement("td");
+		    const wrapper = document.createElement("span");
+		    wrapper.className = "name-cell";
+
+		    const name = document.createElement("span");
+		    name.textContent = row.name || "unknown";
+		    wrapper.appendChild(name);
+
+		    const tags = Array.isArray(row.tags) ? row.tags : [];
+		    const knownTags = tags
+			    .map(tag => TAG_EMOJIS[tag])
+			    .filter(Boolean);
+
+		    if (knownTags.length > 0) {
+			      const tagIcons = document.createElement("span");
+			      tagIcons.className = "tag-icons";
+
+			      knownTags.forEach(tag => {
+				        const icon = document.createElement("span");
+				        icon.className = "tag-icon";
+				        icon.textContent = tag.emoji;
+				        icon.title = tag.label;
+				        icon.setAttribute("aria-label", tag.label);
+				        tagIcons.appendChild(icon);
+			        });
+
+			      wrapper.appendChild(tagIcons);
+		      }
+
+		    td.appendChild(wrapper);
+		    tr.appendChild(td);
+	    }
+
 	  async function loadLeaderboard() {
 			    const params = new URLSearchParams(window.location.search);
 			    const myUserId = params.get("userId");
@@ -194,14 +264,18 @@
 
 					      tr.className = rowClass + " clickable-row";
 
-					      tr.innerHTML = `
-	 <td class="rank">#${row.rank}</td>
-	 <td>${row.name || "unknown"}</td>
-	 <td class="score">${row.score}</td>
-	 <td class="virus">${v}</td>
-	 <td class="antivirus">${a}</td>
-	 <td><span class="state">${row.state || "unknown"}</span></td>
-	 `;
+					      appendTextCell(tr, `#${row.rank}`, "rank");
+					      appendNameCell(tr, row);
+					      appendTextCell(tr, row.score, "score");
+					      appendTextCell(tr, v, "virus");
+					      appendTextCell(tr, a, "antivirus");
+
+					      const stateCell = document.createElement("td");
+					      const state = document.createElement("span");
+					      state.className = "state";
+					      state.textContent = row.state || "unknown";
+					      stateCell.appendChild(state);
+					      tr.appendChild(stateCell);
 
 					      tr.addEventListener("click", () => {
 								window.location.href = `/player.html?id=${encodeURIComponent(row.userId)}&viewerId=${encodeURIComponent(myUserId)}`;
@@ -223,4 +297,3 @@
 
 </body>
 </html>
-

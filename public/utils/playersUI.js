@@ -62,7 +62,7 @@ function updateRadar(map, dave, me) {
 }
 
 export function addPlayer(map, me, dave, i) {
-	if (!dave.lat || !dave.lng) {
+	if (dave.lat == null || dave.lng == null) {
 		console.log("\tinvalid user: " + dave.userId);
 		return;
 	}

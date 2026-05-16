@@ -59,11 +59,15 @@ async function teleport(freeRoam) {
 		freeRoam: freeRoam
 	});
 	//console.log("teleport: " + payload);
-	await fetch('/api/teleport', {
+	const res = await fetch('/api/teleport', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: payload
 	});
+
+	if (res.ok) {
+		location.reload();
+	}
 }
 
 function addActions(actionHtml) {
@@ -211,7 +215,7 @@ async function loadPlayer() {
 			}
 
 			if (isDebugUser) {
-				actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
+				actionHtml += `<button data-action="teleport">Teleport</button>`;
 			}
 
 			addActions(actionHtml);

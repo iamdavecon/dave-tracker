@@ -124,7 +124,7 @@ async function update() {
 
 	const seen = new Set();
 	Object.entries(daves)
-		.filter(([key, dave]) => key !== socket.userId && dave.lat != null && dave.lng != null)
+		.filter(([key, dave]) => dave.lat != null && dave.lng != null)
 		.sort(([, a], [, b]) => {
 			const distanceA = haversineDistance(
 				{ lat: me.lat, lng: me.lng },
@@ -196,7 +196,7 @@ map.on('click', async (e) => {
 // --- Geolocation ---
 function startGeolocation() {
 	if (!navigator.geolocation) {
-		stateEl.textContent = 'Geolocation not supported.';
+		document.getElementById("state").textContent = 'Geolocation not supported.';
 		return;
 	}
 	navigator.geolocation.watchPosition((pos) => {
@@ -215,7 +215,7 @@ function startGeolocation() {
 			}
 		}
 	}, (err) => {
-		stateEl.textContent = `Location error: ${err.message}`;
+		document.getElementById("state").textContent = `Location error: ${err.message}`;
 	}, {
 		enableHighAccuracy: true,
 		maximumAge: 2000,

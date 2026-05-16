@@ -27,8 +27,8 @@ function getIndex(dave) {
 }
 
 export function getAscension(state) {
-	const unstableIndex = STATE_ORDER.indexOf(STATES.UNSTABLE);
-	const stateIndex = STATE_ORDER.indexOf(state);
+	const unstableIndex = STATE_LIST.indexOf(STATES.UNSTABLE);
+	const stateIndex = STATE_LIST.indexOf(state);
 
 	if (stateIndex === -1) return 0;
 
@@ -191,7 +191,7 @@ export function canPatch(dave) {
 }
 
 export function canAscend(me, dave) {
-	if (me.fragmentsCollected.includes(dave.userId)) {
+	if (me.fragmentsCollected?.includes(dave.userId)) {
 		return false;
 	}
 
@@ -326,7 +326,7 @@ export function canGet(dave, item) {
 		return true;
 	}
 	*/
-	if (item in alcoholEmojis) {
+	if (alcoholEmojis.includes(item)) {
 		item = alcoholEmojis[0];
 	}
 
@@ -347,7 +347,7 @@ export function canGet(dave, item) {
 }
 
 export function getAmt(dave, item) {
-	if (item in alcoholEmojis) {
+	if (alcoholEmojis.includes(item)) {
 		item = alcoholEmojis[0];
 	}
 	const obj = dave[item];

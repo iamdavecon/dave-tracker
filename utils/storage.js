@@ -82,10 +82,10 @@ export async function saveUsers(daves, places) {
 	const placesJson = JSON.stringify(places, null, 2);
 
 	if (usersJson === lastSavedUsersJson && placesJson === lastSavedPlacesJson) {
-		console.log("skipping save. nothing changed");
+		//console.log("skipping save. nothing changed");
 		return false;
 	}
-	console.log("content changed.  save");
+	//console.log("content changed.  save");
 
 	if (USE_REDIS) {
 		await redis.set("davecon:users", usersJson); 
