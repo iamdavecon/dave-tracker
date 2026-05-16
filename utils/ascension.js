@@ -2,7 +2,11 @@ import { ascendUser , maxState } from "../public/utils/state.js";
 import { removeFragment } from './players.js';
 
 export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
-	socket.on("ascend", (userId, placeId) => {
+	socket.on("ascendAtNode", (userId, placeId) => {
+		if (userId !== socket.userId) {
+			return;
+		}
+
 		const dave = daves[userId];
 		const place = savedPlaces[placeId];
 		if (!dave || !place) {

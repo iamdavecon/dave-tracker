@@ -5,7 +5,9 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage"
   },
   "dependencies": {
     "@upstash/redis": "^1.37.0",

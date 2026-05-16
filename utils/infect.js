@@ -1,4 +1,5 @@
 import { infect } from "../public/utils/state.js";
+import { inRange } from "../public/utils/distance.js";
 import { getUsers } from './storage.js';
 import { notifyUser } from './sockets.js';
 
@@ -34,11 +35,21 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 	socket.on("infect", (sourceId, targetId) => {
 		//console.log("INFECT: " + JSON.stringify(socket, null, 2));
 		//console.log("recv'd infect: " + sourceId + " => " + targetId);
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		const target = localDaves[targetId];
 		if (!me || !target) {
 			console.log("missing user");
+			return;
+		}
+		if (!inRange(me, target)) {
+			socket.emit("infectResult", {
+				success: false
+			});
 			return;
 		}
 

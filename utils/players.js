@@ -24,7 +24,8 @@ export function summarizeDave(dave) {
 		score: score,
 		teamVirus: teamVirus,
 		teamAntivirus: teamAntivirus,
-		state: state.getState(dave).toUpperCase()
+		state: state.getState(dave).toUpperCase(),
+		tags: Array.isArray(dave.tags) ? dave.tags : []
 	};
 
 	return daveDetails;

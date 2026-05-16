@@ -4,7 +4,7 @@
     "state": "daveprime",
     "infectedUsers": [],
     "infectedBy": [],
-    "fragmentsCollected": ["a", "b", "c"],
+    "fragmentsCollected": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
     "tags": [],
     "updatedAt": 1777457058717,
     "range": 1000,

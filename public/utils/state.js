@@ -27,8 +27,8 @@ function getIndex(dave) {
 }
 
 export function getAscension(state) {
-	const unstableIndex = STATE_ORDER.indexOf(STATES.UNSTABLE);
-	const stateIndex = STATE_ORDER.indexOf(state);
+	const unstableIndex = STATE_LIST.indexOf(STATES.UNSTABLE);
+	const stateIndex = STATE_LIST.indexOf(state);
 
 	if (stateIndex === -1) return 0;
 
@@ -185,13 +185,21 @@ export function setImmune(dave) {
 	}
 }
 
-export function canPatch(dave) {
+export function hasPatchAbility(dave) {
 	const state = getIndex(dave);
 	return state <= toNumber(STATES.PATCHED);
 }
 
+export function canPatch(dave) {
+	return hasPatchAbility(dave);
+}
+
+export function canBePatched(dave) {
+	return dave?.state == STATES.UNSTABLE;
+}
+
 export function canAscend(me, dave) {
-	if (me.fragmentsCollected.includes(dave.userId)) {
+	if (me.fragmentsCollected?.includes(dave.userId)) {
 		return false;
 	}
 
@@ -265,8 +273,9 @@ export function getUserActions(source, target) {
 	return {
 		canInfect : target.state == STATES.UNSTABLE,
 		canAscend : canAscend(source, target),
-		canPatch : canPatch(source),
-		canBePatched : target.state == STATES.UNSTABLE,
+		hasPatchAbility : hasPatchAbility(source),
+		canPatch : hasPatchAbility(source),
+		canBePatched : canBePatched(target),
 		hasFragments : canAfford(source, 1),
 		canDaveputize : hasTag(source, "mayor") && ! hasTag(target, "doon"),
 		canDoonShift : canDoonShift(source, target),
@@ -326,7 +335,7 @@ export function canGet(dave, item) {
 		return true;
 	}
 	*/
-	if (item in alcoholEmojis) {
+	if (alcoholEmojis.includes(item)) {
 		item = alcoholEmojis[0];
 	}
 
@@ -347,7 +356,7 @@ export function canGet(dave, item) {
 }
 
 export function getAmt(dave, item) {
-	if (item in alcoholEmojis) {
+	if (alcoholEmojis.includes(item)) {
 		item = alcoholEmojis[0];
 	}
 	const obj = dave[item];

@@ -1,5 +1,6 @@
 import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
+import { isDebugId} from "./public/utils/id.js";  
 
 import { notifyUser } from './utils/sockets.js';
 import * as infect from './utils/infect.js';
@@ -39,7 +40,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
 	console.log(`server running at http://localhost:${PORT}`);
 });
-
 
 // --- In-memory state ---
 let savedDaves = await loadUsers();
@@ -227,6 +227,10 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 		return res.status(404).json({ ok: false, error: "dave not found" });
 	}
 
+	if (place.owner !== userId) {
+		return res.status(403).json({ ok: false, error: "only the node owner can deconstruct it" });
+	}
+
 	const placeName = place.name;
 	const daveName = dave.name;
 	const fragmentCount = Math.max(0, Number(place.level ?? 0) - 1);
@@ -286,7 +290,7 @@ app.post('/api/teleport', (req, res) => {
 
 	const localDaves = getUsers(daves);
 	const me = localDaves[source];
-	if (state.isDavePrime(me)) {
+	if (state.isDavePrime(me) || isDebugId(source)) {
 		let target = {}	
 		if (targetType == "coords") {
 			target = { 
@@ -427,6 +431,10 @@ io.on('connection', (socket) => {
 	});
 
 	socket.on("installAntivirus", (sourceId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 
@@ -438,10 +446,14 @@ io.on('connection', (socket) => {
 	})
 
 	socket.on("spawnCluster", (sourceId, count = 10) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		//console.log(`[SPAWN]  ` + JSON.stringify(daves, null, 2));
-		if (!me) {
+		if (!me || !state.isDavePrime(me)) {
 			return;
 		}
 

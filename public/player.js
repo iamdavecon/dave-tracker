@@ -59,11 +59,15 @@ async function teleport(freeRoam) {
 		freeRoam: freeRoam
 	});
 	//console.log("teleport: " + payload);
-	await fetch('/api/teleport', {
+	const res = await fetch('/api/teleport', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: payload
 	});
+
+	if (res.ok) {
+		location.reload();
+	}
 }
 
 function addActions(actionHtml) {
@@ -185,7 +189,7 @@ async function loadPlayer() {
 				actionHtml += `<button disabled class="disabled">TRANSMIT VIRUS</button>`;
 			}
 
-			if (dave.availableActions.canPatch) {
+			if (dave.availableActions.hasPatchAbility) {
 				if (dave.availableActions.canBePatched) {
 					actionHtml += `<button data-action="stabilize">STABILIZE HOST</button>`;
 				}
@@ -194,7 +198,7 @@ async function loadPlayer() {
 			}
 
 			if (dave.availableActions.canAscend) {
-				actionHtml += `<button data-action="ascend">ASCEND</button>`;
+				actionHtml += `<button data-action="ascendPlayer">ASCEND</button>`;
 			}
 
 			if (dave.availableActions.canDaveputize) {
@@ -211,7 +215,7 @@ async function loadPlayer() {
 			}
 
 			if (isDebugUser) {
-				actionHtml += `<button data-action="teleport">Teleport & Free Roam</button>`;
+				actionHtml += `<button data-action="teleport">Teleport</button>`;
 			}
 
 			addActions(actionHtml);

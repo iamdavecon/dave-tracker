@@ -14,7 +14,7 @@ nameInput.addEventListener('blur', () => {
 
 
 function updateButtons(me) {
-	if (state.canPatch(me)) {
+	if (state.hasPatchAbility(me)) {
 		const btn = document.getElementById("install-antivirus");
 		btn.style.display = "none";
 	} else {

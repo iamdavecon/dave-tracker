@@ -202,7 +202,7 @@ async function loadPlace() {
 
 		const stateAscension = getAscensionText(dave, place);
 		if (stateAscension != "") {
-			actionHtml += `<button data-action="ascend">${stateAscension}</button>`   
+			actionHtml += `<button data-action="ascendAtNode">${stateAscension}</button>`   
 		}
 
 
