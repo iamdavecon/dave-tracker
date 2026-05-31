@@ -10,12 +10,20 @@ import {
 	grantDavePrime,
 	hasPatchAbility,
 	hasTag,
-	isDavePrime
+	hasTerritoryRank,
+	isDavePrime,
+	syncTerritoryRank
 } from '../public/utils/state.js';
 import { inRange } from '../public/utils/distance.js';
 import { getUsers } from './storage.js';
 
-export function registerHandlers(socket, daves, io, logEvent = () => {}) {
+export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent = () => {}) {
+	if (savedPlaces && typeof savedPlaces.emit === "function") {
+		logEvent = typeof io === "function" ? io : logEvent;
+		io = savedPlaces;
+		savedPlaces = {};
+	}
+
 	socket.on("stabilize", (sourceId, targetId) => {
 		//console.log("stabilizing: " + sourceId + " => " + targetId);
 		if (sourceId !== socket.userId) {
@@ -98,7 +106,8 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 		if (!me || !target) {
 			return;
 		}
-		if (!hasTag(me, "mayor") || hasTag(target, "doon") || !inRange(me, target)) {
+		syncTerritoryRank(me, savedPlaces);
+		if (!hasTerritoryRank(me) || hasTag(target, "doon") || !inRange(me, target)) {
 			return;
 		}
 

@@ -223,7 +223,7 @@ app.get('/api/dave', (req, res) => {
 		return res.status(404).json({ error: "Dave's not here" });
 	}
 
-	let result = getInteraction(me, dave, localDaves);
+	let result = getInteraction(me, dave, localDaves, savedPlaces);
 	result.availableActions.tooNear = places.isTooNear(me, savedPlaces);
 	res.json(result);
 });
@@ -274,10 +274,10 @@ app.post('/api/link-dave', async (req, res) => {
 
 		await saveUsers(daves, savedPlaces);
 		io.emit("update");
-		return res.json({ ok: true, linked: true, target: summarizeDave(target) });
+		return res.json({ ok: true, linked: true, target: summarizeDave(target, savedPlaces) });
 	}
 
-	res.json({ ok: true, linked: false, reason: "already-linked", target: summarizeDave(target) });
+	res.json({ ok: true, linked: false, reason: "already-linked", target: summarizeDave(target, savedPlaces) });
 });
 
 // --- leaderboard ---
@@ -285,7 +285,7 @@ app.get("/api/leaderboard", (req, res) => {
 	const leaderboard = Object.entries(getUsers(daves)) 
 		.filter(([id, user]) => !user.isBot)
 		.map(([key, d], idx) => { 
-			return summarizeDave(d);
+			return summarizeDave(d, savedPlaces);
 		})
 		.sort((a, b) => b.score - a.score)  
 		.map((d, idx) => ({
@@ -360,6 +360,7 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 	}
 
 	delete savedPlaces[placeId];
+	state.syncTerritoryRank(dave, savedPlaces);
 
 	logEvent(fragmentCount > 0
 		? `${daveName} deconstructed ${placeName} and recovered ${fragmentCount} fragments.`
@@ -695,7 +696,7 @@ io.on('connection', (socket) => {
 
 
 	infect.registerHandlers(socket, daves, io, logEvent);
-	stabilize.registerHandlers(socket, daves, io, logEvent);
+	stabilize.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 	items.registerHandlers(socket, daves, io);
 	places.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 	ascension.registerHandlers(socket, daves, savedPlaces, io, logEvent);

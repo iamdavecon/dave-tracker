@@ -166,11 +166,37 @@
 }
 
 
-/* Mayor (territory control) */
-.tag-mayor {
-	background: linear-gradient(135deg, #78350f, #f59e0b);
-	color: #111;
-	border-color: #fbbf24;
+/* Territory control ranks */
+.tag-standard-user,
+.tag-admin,
+.tag-power-user,
+.tag-root,
+.tag-network-administrator {
+	background: #071018;
+	color: #9fffe0;
+	border-color: #35d6ff;
+}
+
+.tag-admin {
+	color: #b8f7ff;
+	border-color: #66f0ff;
+}
+
+.tag-power-user {
+	color: #fef08a;
+	border-color: #facc15;
+}
+
+.tag-root {
+	color: #fed7aa;
+	border-color: #fb923c;
+}
+
+.tag-network-administrator {
+	background: #111;
+	color: #ffd700;
+	border-color: #ffd700;
+	box-shadow: 0 0 10px rgba(255, 215, 0, 0.28);
 }
 
 /* Doon (chaos agent) */

@@ -45,7 +45,7 @@ test('dropDavePoint spends a fragment and creates a node only for the connected 
 	assert.equal(created.owner, 'source');
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 	assert.equal(daves.source.nodeCount, 1);
-	assert.deepEqual(daves.source.tags, ['mayor']);
+	assert.deepEqual(daves.source.tags, ['standard-user']);
 	assert.equal(ioEvents.length, 1);
 	assert.equal(logs.length, 1);
 });

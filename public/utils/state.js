@@ -11,6 +11,20 @@ const STATES = {
 	CORRUPTED: "corrupted"
 };
 const STATE_LIST = Object.values(STATES);
+const TERRITORY_TAGS = [
+	"standard-user",
+	"admin",
+	"power-user",
+	"root",
+	"network-administrator"
+];
+const TERRITORY_RANKS = [
+	{ tag: "standard-user", label: "Standard User", min: 1 },
+	{ tag: "admin", label: "Admin", min: 3 },
+	{ tag: "power-user", label: "Power User", min: 6 },
+	{ tag: "root", label: "Root", min: 10 },
+	{ tag: "network-administrator", label: "Network Administrator", min: 15 }
+];
 
 function toNumber(state) {
 	return STATE_LIST.indexOf(state);
@@ -252,6 +266,58 @@ export function addTag(dave, tag) {
 	}
 }
 
+export function isTerritoryTag(tag) {
+	return TERRITORY_TAGS.includes(tag);
+}
+
+export function getTerritoryScore(dave, places = {}) {
+	if (!dave?.userId) {
+		return 0;
+	}
+
+	return Object.values(places).reduce((score, place) => {
+		if (place?.owner !== dave.userId) {
+			return score;
+		}
+
+		return score + Math.max(1, Number(place.level ?? 0));
+	}, 0);
+}
+
+export function getTerritoryRank(score) {
+	let rank = null;
+
+	for (const candidate of TERRITORY_RANKS) {
+		if (score >= candidate.min) {
+			rank = candidate;
+		}
+	}
+
+	return rank;
+}
+
+export function syncTerritoryRank(dave, places = {}) {
+	if (!dave) {
+		return null;
+	}
+	if (!Array.isArray(dave.tags)) {
+		dave.tags = [];
+	}
+
+	const rank = getTerritoryRank(getTerritoryScore(dave, places));
+	dave.tags = dave.tags.filter(tag => !isTerritoryTag(tag));
+
+	if (rank) {
+		dave.tags.push(rank.tag);
+	}
+
+	return rank;
+}
+
+export function hasTerritoryRank(dave) {
+	return Array.isArray(dave?.tags) && dave.tags.some(tag => isTerritoryTag(tag));
+}
+
 function canAfford(dave, cost) {
 	return (dave.fragmentsCollected && dave.fragmentsCollected.length >= cost)
 }
@@ -273,7 +339,7 @@ export function getUserActions(source, target) {
 		canPatch : hasPatchAbility(source),
 		canBePatched : canBePatched(target),
 		hasFragments : canAfford(source, 1),
-		canDaveputize : hasTag(source, "mayor") && ! hasTag(target, "doon"),
+		canDaveputize : hasTerritoryRank(source) && ! hasTag(target, "doon"),
 		canDoonShift : canDoonShift(source, target),
 		canGrantDavePrime : isDavePrime(source) && !isDavePrime(target),
 		davePrime:  isDavePrime(source),

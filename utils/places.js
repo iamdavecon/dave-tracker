@@ -30,12 +30,12 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 
 		removeFragment(dave);
-		state.addTag(dave, "mayor");	
 		dave.nodeCount = (dave.nodeCount ?? 0) + 1;
 		const newPlace = getNewPlace(dave);
 		//console.log("dropped: " + JSON.stringify(newPlace, null, 2));
 		//console.log("from: " + JSON.stringify(dave, null, 2));
 		savedPlaces[newPlace.id] = newPlace;
+		state.syncTerritoryRank(dave, savedPlaces);
 		logEvent(`${dave.name} daveified a new node: ${newPlace.name}.`, {
 			userId: dave.userId,
 			placeId: newPlace.id
@@ -57,6 +57,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		removeFragment(dave);
 		place.level = (place.level ?? 0) + 1;
+		state.syncTerritoryRank(dave, savedPlaces);
 		logEvent(`${dave.name} upgraded ${place.name} to level ${place.level}.`, {
 			userId: dave.userId,
 			placeId

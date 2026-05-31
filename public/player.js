@@ -43,7 +43,11 @@ function renderTags(tags = []) {
 		el.className = `tag tag-${tag}`;
 		// Pretty label
 		const LABELS = {
-			mayor: "🏛 Mayor",
+			"standard-user": "Standard User",
+			admin: "Admin",
+			"power-user": "Power User",
+			root: "Root",
+			"network-administrator": "Network Administrator",
 			doon: "💀 DOON",
 			peppercon: "🌶️PepperCon",
 			toxicbbg: "🍖 Toxic BBQ",

@@ -63,7 +63,7 @@ test('ascension and tags drive user actions', () => {
 		userId: 'source',
 		state: 'ascended',
 		fragmentsCollected: [],
-		tags: ['mayor', 'doon']
+		tags: ['standard-user', 'doon']
 	};
 	const target = { userId: 'target', state: 'infected', tags: [] };
 
@@ -77,6 +77,23 @@ test('ascension and tags drive user actions', () => {
 
 	source.fragmentsCollected.push('target');
 	assert.equal(state.canAscend(source, target), false);
+});
+
+test('territory ranks scale by owned node count and level', () => {
+	const dave = { userId: 'source', tags: ['standard-user', 'dod'] };
+	const places = {
+		one: { owner: 'source' },
+		two: { owner: 'source', level: 2 },
+		three: { owner: 'other', level: 20 }
+	};
+
+	assert.equal(state.getTerritoryScore(dave, places), 3);
+	assert.deepEqual(state.syncTerritoryRank(dave, places), {
+		tag: 'admin',
+		label: 'Admin',
+		min: 3
+	});
+	assert.deepEqual(dave.tags, ['dod', 'admin']);
 });
 
 test('place actions require fragments and cap upgrades by player state', () => {

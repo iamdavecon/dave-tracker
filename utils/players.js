@@ -2,7 +2,20 @@ import * as state from "../public/utils/state.js";
 import { getMapData } from "../public/utils/map.js"
 
 
-export function summarizeDave(dave) {
+function getDisplayTags(dave, places = {}) {
+	const tags = Array.isArray(dave.tags)
+		? dave.tags.filter(tag => !state.isTerritoryTag(tag))
+		: [];
+	const rank = state.getTerritoryRank(state.getTerritoryScore(dave, places));
+
+	if (rank) {
+		tags.unshift(rank.tag);
+	}
+
+	return tags;
+}
+
+export function summarizeDave(dave, places = {}) {
 	let score = 0;
 	let teamVirus = 0;
 	let teamAntivirus = 0;
@@ -25,7 +38,7 @@ export function summarizeDave(dave) {
 		teamVirus: teamVirus,
 		teamAntivirus: teamAntivirus,
 		state: state.getState(dave).toUpperCase(),
-		tags: Array.isArray(dave.tags) ? dave.tags : []
+		tags: getDisplayTags(dave, places)
 	};
 
 	return daveDetails;
@@ -45,7 +58,9 @@ export function getLinkedDaveSummaries(dave, allDaves = {}) {
 }
 
 
-export function getInteraction(me, dave, allDaves = {}) {
+export function getInteraction(me, dave, allDaves = {}, places = {}) {
+	state.syncTerritoryRank(me, places);
+	state.syncTerritoryRank(dave, places);
 	let daveDetails = { ...dave };
 	daveDetails.state = state.getState(dave);
 	daveDetails.isMe = me.userId === dave.userId;

@@ -11,7 +11,10 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 		infectedUsers: ['a', 'b'],
 		fragmentsCollected: ['f1', 'f2', 'f3'],
 		nodeCount: 2,
-		tags: ['mayor', 'dod']
+		tags: ['standard-user', 'dod']
+	}, {
+		node1: { owner: 'dave-1' },
+		node2: { owner: 'dave-1', level: 2 }
 	});
 
 	assert.deepEqual(summary, {
@@ -21,7 +24,7 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 		teamVirus: 2,
 		teamAntivirus: 13,
 		state: 'RESONANT',
-		tags: ['mayor', 'dod']
+		tags: ['admin', 'dod']
 	});
 });
 
