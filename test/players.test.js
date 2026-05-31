@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { summarizeDave, removeFragment } from '../utils/players.js';
+import { summarizeDave, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
 
 test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	const summary = summarizeDave({
@@ -36,6 +36,21 @@ test('summarizeDave handles missing optional scoring fields', () => {
 	assert.equal(summary.teamAntivirus, 0);
 	assert.equal(summary.state, 'UNSTABLE');
 	assert.deepEqual(summary.tags, []);
+});
+
+test('getLinkedDaveSummaries returns linked users in saved order', () => {
+	const summary = getLinkedDaveSummaries(
+		{ linkedDaves: ['target', 'missing', 'other'] },
+		{
+			target: { userId: 'target', name: 'Target Dave', state: 'patched' },
+			other: { userId: 'other', name: 'Other Dave', state: 'voided' }
+		}
+	);
+
+	assert.deepEqual(summary, [
+		{ userId: 'target', name: 'Target Dave', state: 'PATCHED' },
+		{ userId: 'other', name: 'Other Dave', state: 'UNSTABLE' }
+	]);
 });
 
 test('removeFragment consumes the oldest collected fragment', () => {

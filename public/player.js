@@ -19,6 +19,21 @@ let map;
 
 bindLogEvents(socket);
 
+function renderQrLink(dave) {
+	const qrPanel = document.getElementById("qrPanel");
+	const qrImage = document.getElementById("playerQrCode");
+	const qrLink = document.getElementById("qrLink");
+	const qrUrl = document.getElementById("qrUrl");
+	const targetId = dave.userId || daveId;
+	const targetUrl = new URL("/link.html", window.location.origin);
+	targetUrl.searchParams.set("id", targetId);
+
+	qrLink.href = targetUrl.toString();
+	qrUrl.textContent = targetUrl.toString();
+	qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=12&data=${encodeURIComponent(targetUrl.toString())}`;
+	qrPanel.classList.remove("hidden");
+}
+
 function renderTags(tags = []) {
 	const container = document.getElementById("player-tags");
 	container.innerHTML = "";
@@ -96,6 +111,42 @@ function addActions(actionHtml) {
 	};
 }
 
+function renderLinkedDaves(linkedDaves = []) {
+	const container = document.getElementById("linkedDaves");
+	container.innerHTML = "";
+
+	if (linkedDaves.length === 0) {
+		return;
+	}
+
+	const title = document.createElement("div");
+	title.className = "section-title linked-daves-title";
+	title.textContent = "Linked Daves";
+	container.appendChild(title);
+
+	const list = document.createElement("div");
+	list.className = "linked-daves-list";
+
+	linkedDaves.forEach((linkedDave) => {
+		const link = document.createElement("a");
+		link.className = "linked-dave";
+		link.href = `/player.html?id=${encodeURIComponent(linkedDave.userId)}&viewerId=${encodeURIComponent(userId)}`;
+
+		const name = document.createElement("span");
+		name.textContent = linkedDave.name || linkedDave.userId;
+
+		const linkedState = document.createElement("span");
+		linkedState.className = `pill ${linkedDave.state.toLowerCase()}`;
+		linkedState.textContent = linkedDave.state;
+
+		link.appendChild(name);
+		link.appendChild(linkedState);
+		list.appendChild(link);
+	});
+
+	container.appendChild(list);
+}
+
 async function loadPlayer() {
 	if (!daveId) return;
 
@@ -146,6 +197,9 @@ async function loadPlayer() {
 	}
 
 	if (dave.isMe) {
+		renderQrLink(dave);
+		renderLinkedDaves(dave.linkedDaves);
+
 		let actionHtml = "";
 
 		//TODO  ??

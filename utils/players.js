@@ -31,11 +31,25 @@ export function summarizeDave(dave) {
 	return daveDetails;
 }
 
+export function getLinkedDaveSummaries(dave, allDaves = {}) {
+	const linkedIds = Array.isArray(dave?.linkedDaves) ? dave.linkedDaves : [];
 
-export function getInteraction(me, dave) {
+	return linkedIds
+		.map((id) => allDaves[id])
+		.filter(Boolean)
+		.map((linkedDave) => ({
+			userId: linkedDave.userId,
+			name: linkedDave.name,
+			state: state.getState(linkedDave).toUpperCase()
+		}));
+}
+
+
+export function getInteraction(me, dave, allDaves = {}) {
 	let daveDetails = { ...dave };
 	daveDetails.isMe = me.userId === dave.userId;
 	daveDetails.availableActions = state.getUserActions(me, dave);
+	daveDetails.linkedDaves = daveDetails.isMe ? getLinkedDaveSummaries(dave, allDaves) : [];
 
 	daveDetails.mapData = getMapData(me, dave);
 

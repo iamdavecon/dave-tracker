@@ -159,9 +159,61 @@ app.get('/api/dave', (req, res) => {
 		return res.status(404).json({ error: "Dave's not here" });
 	}
 
-	let result = getInteraction(me, dave);
+	let result = getInteraction(me, dave, localDaves);
 	result.availableActions.tooNear = places.isTooNear(me, savedPlaces);
 	res.json(result);
+});
+
+app.post('/api/link-dave', async (req, res) => {
+	const { sourceId, targetId } = req.body ?? {};
+	const localDaves = getUsers(daves);
+	let source = daves[sourceId] || localDaves[sourceId];
+	const target = localDaves[targetId];
+
+	if (!sourceId || !targetId) {
+		return res.status(400).json({ ok: false, error: "sourceId and targetId are required" });
+	}
+
+	if (!target) {
+		return res.status(404).json({ ok: false, error: "target dave not found" });
+	}
+
+	if (!source) {
+		source = {
+			userId: sourceId,
+			name: "Dave",
+			state: state.getDefaultState(),
+			infectedUsers: [],
+			infectedBy: [],
+			fragmentsCollected: [],
+			tags: [],
+			linkedDaves: []
+		};
+		daves[sourceId] = source;
+	}
+
+	if (sourceId === targetId) {
+		return res.json({ ok: true, linked: false, reason: "self" });
+	}
+
+	if (!Array.isArray(source.linkedDaves)) {
+		source.linkedDaves = [];
+	}
+
+	if (!source.linkedDaves.includes(targetId)) {
+		source.linkedDaves.push(targetId);
+		source.updatedAt = Date.now();
+
+		logEvent(`${source.name} linked with ${target.name}.`, {
+			userId: source.userId
+		});
+
+		await saveUsers(daves, savedPlaces);
+		io.emit("update");
+		return res.json({ ok: true, linked: true, target: summarizeDave(target) });
+	}
+
+	res.json({ ok: true, linked: false, reason: "already-linked", target: summarizeDave(target) });
 });
 
 // --- leaderboard ---

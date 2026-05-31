@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Dave Link</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<a href="/" class="back-link">< Back</a>
+		<section class="panel">
+			<div class="section-title">Dave Link</div>
+			<div class="field">
+				<span class="label">User ID</span>
+				<span id="linkedUserId" class="value">?</span>
+			</div>
+			<div id="linkStatus" class="field-note"></div>
+			<a id="playerLink" class="player-link" href="/">View Dave</a>
+		</section>
+	</div>
+
+	<script type="module">
+		import { getUserId } from "./utils/id.js";
+
+		const params = new URLSearchParams(window.location.search);
+		const id = params.get("id") || "";
+		const scannerId = getUserId();
+		const linkedUserId = document.getElementById("linkedUserId");
+		const playerLink = document.getElementById("playerLink");
+		const linkStatus = document.getElementById("linkStatus");
+
+		async function linkDave(targetId) {
+			const res = await fetch("/api/link-dave", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ sourceId: scannerId, targetId })
+			});
+			const result = await res.json();
+
+			if (!res.ok || !result.ok) {
+				linkStatus.textContent = result.error || "Link failed";
+				return;
+			}
+
+			if (result.reason === "self") {
+				linkStatus.textContent = "This is your own Dave link.";
+			} else if (result.reason === "already-linked") {
+				linkStatus.textContent = "Already linked.";
+			} else {
+				linkStatus.textContent = "Linked.";
+			}
+		}
+
+		if (id) {
+			linkedUserId.textContent = id;
+			playerLink.href = `/player.html?id=${encodeURIComponent(id)}&viewerId=${encodeURIComponent(scannerId)}`;
+			linkDave(id);
+		} else {
+			linkedUserId.textContent = "missing";
+			playerLink.textContent = "Return Home";
+			playerLink.href = "/";
+		}
+	</script>
+</body>
+</html>
