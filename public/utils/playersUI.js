@@ -18,7 +18,16 @@ function updateMarker(dave) {
 		iconAnchor: [0, 0]
 	});
 
-	playerMarkers[dave.userId].setIcon(icon);
+
+	const marker = playerMarkers[dave.userId];
+	marker.setIcon(icon);
+
+
+	//L.marker([dave.lat, dave.lng], { title: dave.name }).addTo(map);
+	marker.on("click", () => {
+		window.location.href = `/player.html?id=${encodeURIComponent(dave.userId)}&viewerId=${encodeURIComponent(userId)}`;
+	});
+
 }
 
 export function cullNotSeen(map, seen) {
@@ -68,15 +77,10 @@ export function addPlayer(map, me, dave, i) {
 	}
 
 	const stateString = state.getState(dave).toUpperCase();
-	let marker = {};
 	//console.log("UPDATE: " + dave.userId);
-	if (playerMarkers[dave.userId]) {
-		marker = playerMarkers[dave.userId]
-		marker.setLatLng([dave.lat, dave.lng]);
-		//console.log("\tmove marker: " + dave.lat, ", " + dave.lng);
-	} else {
+	if (!playerMarkers[dave.userId]) {
 		//console.log("\tnew marker: " + dave.userId);
-		marker = L.marker([dave.lat, dave.lng], {
+		const marker = L.marker([dave.lat, dave.lng], {
 			icon: L.divIcon({
 				className: "custom-icon", 
 				iconSize: null, 
@@ -88,15 +92,10 @@ export function addPlayer(map, me, dave, i) {
 	}
 	updateMarker(dave);
 
-	//L.marker([dave.lat, dave.lng], { title: dave.name }).addTo(map);
 
 	updateRadar(map, dave, me);
 	if (i < 12) {
 		const stateClass = state.getStateClass(dave);
-
-		marker.on("click", () => {
-			window.location.href = `/player.html?id=${encodeURIComponent(dave.userId)}&viewerId=${encodeURIComponent(userId)}`;
-		});
 
 		// --- Update distance list ---
 		const li = document.createElement("li");
