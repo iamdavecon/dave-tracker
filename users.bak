@@ -116,18 +116,7 @@
     "updatedAt": 2777376805620,
     "lat": 38.60779513038755,
     "lng": -90.50691867573762
-  },
-  "DAVE9": {
-    "userId": "DAVE9",
-    "name": "DAVE9",
-    "state": "voided",
-    "infectedUsers": [],
-    "infectedBy": [],
-    "updatedAt": 2777376805621,
-    "lat": 38.60699513038755,
-    "lng": -90.50781867573762
-  },
-  "DAVE10": {
+  },  "DAVE10": {
     "userId": "DAVE10",
     "name": "DAVE10",
     "state": "resonant",
@@ -135,17 +124,6 @@
     "infectedBy": [],
     "updatedAt": 2777376805622,
     "lat": 38.60699513038755,
-    "lng": -90.50871867573762,
-    "fragmentsCollected": []
-  },
-  "DAVE11": {
-    "userId": "DAVE11",
-    "name": "DAVE11",
-    "state": "authorized",
-    "infectedUsers": [],
-    "infectedBy": [],
-    "updatedAt": 2777376805623,
-    "lat": 38.60859513038755,
     "lng": -90.50871867573762,
     "fragmentsCollected": []
   }

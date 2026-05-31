@@ -19,9 +19,9 @@ test('rank changes stop at the top and bottom of the state ladder', () => {
 	assert.equal(state.increaseRank(dave), false);
 	assert.equal(dave.state, 'daveprime');
 
-	dave.state = 'voided';
+	dave.state = 'corrupted';
 	assert.equal(state.decreaseRank(dave), false);
-	assert.equal(dave.state, 'voided');
+	assert.equal(dave.state, 'corrupted');
 });
 
 test('infection only changes unstable daves', () => {

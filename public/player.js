@@ -260,8 +260,7 @@ async function loadPlayer() {
 			}
 
 			if (dave.availableActions.canDoonShift) {
-				const label = dave.state === "infected" ? "CORRUPT HOST" : "VOID HOST";
-				actionHtml += `<button data-action="doonShift">${label}</button>`;
+				actionHtml += `<button data-action="doonShift">CORRUPT HOST</button>`;
 			}
 
 			if (dave.availableActions.canGrantDavePrime) {

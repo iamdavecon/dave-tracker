@@ -4,13 +4,11 @@ const STATES = {
 	ASCENDED: "ascended",
 	RESONANT: "resonant",
 	AWAKENING: "awakening",
-	AUTHORIZED: "authorized",
 	IMMUNE: "immune",
 	PATCHED: "patched",
 	UNSTABLE: "unstable",
 	INFECTED: "infected",
-	CORRUPTED: "corrupted",
-	VOIDED: "voided"
+	CORRUPTED: "corrupted"
 };
 const STATE_LIST = Object.values(STATES);
 
@@ -48,8 +46,7 @@ export function getRandomState() {
 export function getRandomBotState() {
 	const outcomes = [
 		{ state: STATES.UNSTABLE, weight: 0.7 },
-		{ state: STATES.CORRUPTED, weight: 0.2 },
-		{ state: STATES.VOIDED, weight: 0.1 }
+		{ state: STATES.CORRUPTED, weight: 0.3 }
 	];
 
 	const rand = Math.random();
@@ -123,7 +120,6 @@ export function getAscendencyBonus(obj) {
 			[STATES.ASCENDED]: 10,
 			[STATES.RESONANT]: 8,
 			[STATES.AWAKENING]: 6,
-			[STATES.AUTHORIZED]: 5,
 			[STATES.IMMUNE]: 4,
 			[STATES.PATCHED]: 2
 		};
@@ -195,7 +191,7 @@ export function canPatch(dave) {
 }
 
 export function canBePatched(dave) {
-	return dave?.state == STATES.UNSTABLE;
+	return getState(dave) == STATES.UNSTABLE;
 }
 
 export function canAscend(me, dave) {
@@ -214,7 +210,7 @@ export function isInfected(dave) {
 }
 
 export function infect(dave) {
-	if (dave.state == STATES.UNSTABLE) {
+	if (getState(dave) == STATES.UNSTABLE) {
 		dave.state = STATES.INFECTED;
 		return true;
 	}
@@ -225,7 +221,7 @@ export function stabilize(dave) {
 	//console.log("stabilizing");
 	//console.log(JSON.stringify(dave, null, 2));
 
-	if (dave.state == STATES.PATCHED) {
+	if (getState(dave) == STATES.PATCHED) {
 		//console.log("\tpatched");
 		dave.patches = (dave.patches ?? 0) + 1;
 		if (dave.patches >= 2) {
@@ -265,13 +261,13 @@ export function isDavePrime(dave) {
 }
 
 export function canDoonShift(source, target) {
-	return hasTag(source, "doon") && [STATES.INFECTED, STATES.CORRUPTED].includes(target?.state);
+	return hasTag(source, "doon") && getState(target) == STATES.INFECTED;
 }
 
 export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
-		canInfect : target.state == STATES.UNSTABLE,
+		canInfect : getState(target) == STATES.UNSTABLE,
 		canAscend : canAscend(source, target),
 		hasPatchAbility : hasPatchAbility(source),
 		canPatch : hasPatchAbility(source),
@@ -285,19 +281,17 @@ export function getUserActions(source, target) {
 }
 
 export function maxState(dave) {
-	switch (dave.state) {
+	switch (getState(dave)) {
 		case STATES.PATCHED:
 			return 2;
 		case STATES.IMMUNE:
 			return 3;
-		case STATES.AUTHORIZED:
-			return 4;
 		case STATES.AWAKENING:
-			return 5;
+			return 4;
 		case STATES.RESONANT:
-			return 6;
+			return 5;
 		case STATES.ASCENDED:
-			return 7;
+			return 6;
 		case STATES.DOPE:
 			return 9;
 		case STATES.DAVEPRIME:
@@ -331,7 +325,7 @@ const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
 
 export function canGet(dave, item) {
 	/*
-	if (dave.state == STATES.DAVEPRIME) {
+	if (getState(dave) == STATES.DAVEPRIME) {
 		return true;
 	}
 	*/

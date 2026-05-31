@@ -47,6 +47,7 @@ export function getLinkedDaveSummaries(dave, allDaves = {}) {
 
 export function getInteraction(me, dave, allDaves = {}) {
 	let daveDetails = { ...dave };
+	daveDetails.state = state.getState(dave);
 	daveDetails.isMe = me.userId === dave.userId;
 	daveDetails.availableActions = state.getUserActions(me, dave);
 	daveDetails.linkedDaves = daveDetails.isMe ? getLinkedDaveSummaries(dave, allDaves) : [];

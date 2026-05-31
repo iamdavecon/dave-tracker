@@ -123,7 +123,7 @@ export function addPlayer(map, me, dave, i) {
 		const stateEl = document.createElement("span");
 		stateEl.textContent = stateString;
 		stateEl.className = stateClass;
-		if (["ascended", "resonant", "dope", "awakening", "authorized", "daveprime"].includes(stateClass)) {
+		if (["ascended", "resonant", "dope", "awakening", "daveprime"].includes(stateClass)) {
 			stateEl.style.color = "black";
 		} else {
 			stateEl.style.color = "white";
