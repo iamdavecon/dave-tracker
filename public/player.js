@@ -259,7 +259,7 @@ async function loadPlayer() {
 				actionHtml += `<button data-action="ascendPlayer">ASCEND</button>`;
 			}
 
-			if (dave.availableActions.canDaveputize) {
+			if (!dave.isBot && dave.availableActions.canDaveputize) {
 				actionHtml += `<button data-action="daveputize">DAVEPUTIZE</button>`;
 			}
 
@@ -267,7 +267,7 @@ async function loadPlayer() {
 				actionHtml += `<button data-action="doonShift">CORRUPT HOST</button>`;
 			}
 
-			if (dave.availableActions.canGrantDavePrime) {
+			if (!dave.isBot && dave.availableActions.canGrantDavePrime) {
 				actionHtml += `<button data-action="grantDavePrime">GRANT DAVEPRIME</button>`;
 			}
 

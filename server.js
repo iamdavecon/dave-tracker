@@ -1,6 +1,6 @@
 import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
-import { isDebugId} from "./public/utils/id.js";  
+import { getFragmentFrom, isDebugId} from "./public/utils/id.js";  
 import { inRange } from "./public/utils/distance.js";
 
 import { notifyUser } from './utils/sockets.js';
@@ -271,6 +271,7 @@ app.post('/api/link-dave', async (req, res) => {
 
 	if (!source.linkedDaves.includes(targetId)) {
 		source.linkedDaves.push(targetId);
+		const recoveredFragment = getFragmentFrom(source, target);
 		source.updatedAt = Date.now();
 
 		logEvent(`${source.name} linked with ${target.name}.`, {
@@ -279,7 +280,7 @@ app.post('/api/link-dave', async (req, res) => {
 
 		await saveUsers(daves, savedPlaces);
 		io.emit("update");
-		return res.json({ ok: true, linked: true, target: summarizeDave(target, savedPlaces) });
+		return res.json({ ok: true, linked: true, recoveredFragment, target: summarizeDave(target, savedPlaces) });
 	}
 
 	res.json({ ok: true, linked: false, reason: "already-linked", target: summarizeDave(target, savedPlaces) });
