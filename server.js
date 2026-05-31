@@ -117,6 +117,17 @@ setInterval(() => {
 }, 1000); // 1 second
 
 const globalLog = [];
+const DOD_REWARD_ITEMS = Object.freeze({
+	taco: "🌮",
+	hotdog: "🌭",
+	drink: "🍺"
+});
+
+const DOD_REWARD_LABELS = Object.freeze({
+	[DOD_REWARD_ITEMS.taco]: "Taco",
+	[DOD_REWARD_ITEMS.hotdog]: "Hotdog",
+	[DOD_REWARD_ITEMS.drink]: "Drink"
+});
 
 function logEvent(message, options = {}) {
 	const entry = {
@@ -143,6 +154,59 @@ function logEvent(message, options = {}) {
 	io.emit("logEvent", entry);
 
 	return entry;
+}
+
+function addItemReward(dave, item, count = 1) {
+	if (!dave[item]) {
+		dave[item] = { count: 0, lastTime: Date.now() };
+	}
+
+	dave[item].count += count;
+	dave[item].lastTime = Date.now();
+}
+
+function getDodApplicationRewards(application) {
+	const rewards = [];
+	const signalEvents = Array.isArray(application.signalEvents) ? application.signalEvents : [];
+
+	if (signalEvents.includes("Unscheduled taco acquisition")) {
+		rewards.push(DOD_REWARD_ITEMS.taco);
+	}
+
+	if (application.operationalAptitude === "Wait for backup") {
+		rewards.push(DOD_REWARD_ITEMS.drink);
+	}
+
+	if (application.operationalAptitude === "Follow the strongest ping") {
+		rewards.push(DOD_REWARD_ITEMS.taco);
+	}
+
+	if (application.borrowedBadge === "Issue a temporary badge made of tape") {
+		rewards.push(DOD_REWARD_ITEMS.hotdog);
+	}
+
+	if (application.fieldEquipment === "Two radios tuned to different futures") {
+		rewards.push(DOD_REWARD_ITEMS.drink);
+	}
+
+	if (application.fieldEquipment === "Approved flashlight, unapproved batteries") {
+		rewards.push(DOD_REWARD_ITEMS.hotdog);
+	}
+
+	if (application.reflectionPaperwork === "The reflection has been reassigned") {
+		rewards.push(DOD_REWARD_ITEMS.taco);
+	}
+
+	return rewards.reduce((summary, item) => {
+		summary[item] = (summary[item] ?? 0) + 1;
+		return summary;
+	}, {});
+}
+
+function formatItemRewards(rewards) {
+	return Object.entries(rewards)
+		.map(([item, count]) => `${count} ${DOD_REWARD_LABELS[item] ?? "Item"}${count === 1 ? "" : "s"}`)
+		.join(", ");
 }
 
 
@@ -530,7 +594,6 @@ io.on('connection', (socket) => {
 
 		const me = daves[socket.userId];
 		const place = savedPlaces[placeId];
-		const codename = typeof application.codename === "string" ? application.codename.trim() : "";
 		const optionalText = (field, maxLength) => (
 			typeof application[field] === "string" ? application[field].trim().slice(0, maxLength) : ""
 		);
@@ -545,7 +608,7 @@ io.on('connection', (socket) => {
 			return;
 		}
 
-		if (!codename || application.oath !== true) {
+		if (application.oath !== true) {
 			socket.emit("dodApplyResult", { ok: false, error: "Application incomplete" });
 			return;
 		}
@@ -554,11 +617,11 @@ io.on('connection', (socket) => {
 		me.dodApplication = {
 			placeId,
 			nodeName: place.name,
-			codename: codename.slice(0, 32),
-			corruptionDisclosure: optionalText("corruptionDisclosure", 500),
 			operational: {
 				nodeResponse: optionalText("nodeResponse", 320),
 				operationalAptitude: optionalText("operationalAptitude", 120),
+				borrowedBadge: optionalText("borrowedBadge", 160),
+				fieldEquipment: optionalText("fieldEquipment", 160),
 				chainOfCommand: optionalText("chainOfCommand", 160)
 			},
 			signalIntegrity: {
@@ -569,20 +632,33 @@ io.on('connection', (socket) => {
 						.filter(Boolean)
 					: [],
 				signalNoise: optionalText("signalNoise", 80),
-				checksum: optionalText("checksum", 160),
-				glitchSymptom: optionalText("glitchSymptom", 160)
+				glitchSymptom: optionalText("glitchSymptom", 160),
+				reflectionPaperwork: optionalText("reflectionPaperwork", 120)
 			},
 			voluntaryDisclosure: optionalText("voluntaryDisclosure", 80),
 			submittedAt: Date.now()
 		};
 		state.addTag(me, "dod");
 
+		const rewards = getDodApplicationRewards(application);
+		for (const [item, count] of Object.entries(rewards)) {
+			addItemReward(me, item, count);
+		}
+
 		logEvent(`${me.name} applied to the Department of Davefence.`, {
 			userId: me.userId,
 			placeId
 		});
 
-		socket.emit("dodApplyResult", { ok: true });
+		const rewardMessage = formatItemRewards(rewards);
+		if (rewardMessage) {
+			logEvent(`${me.name} received DoD field provisions: ${rewardMessage}.`, {
+				userId: me.userId,
+				placeId
+			});
+		}
+
+		socket.emit("dodApplyResult", { ok: true, rewards });
 		io.emit("update");
 	});
 

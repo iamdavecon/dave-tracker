@@ -17,6 +17,11 @@ const form = document.getElementById("dodApplicationForm");
 const statusEl = document.getElementById("applicationStatus");
 const applicantNameEl = document.getElementById("applicantName");
 const nodeNameEl = document.getElementById("nodeName");
+const REWARD_LABELS = {
+	"🌮": "Taco",
+	"🌭": "Hotdog",
+	"🍺": "Drink"
+};
 
 bindLogEvents(socket);
 
@@ -49,7 +54,6 @@ async function loadApplicationContext() {
 	}
 
 	statusEl.textContent = "Ready";
-	document.getElementById("codename").value = dave.name;
 }
 
 form.addEventListener("submit", (event) => {
@@ -57,15 +61,15 @@ form.addEventListener("submit", (event) => {
 
 	const formData = new FormData(form);
 	const application = {
-		codename: formData.get("codename").trim(),
-		corruptionDisclosure: formData.get("corruptionDisclosure").trim(),
 		nodeResponse: formData.get("nodeResponse"),
 		operationalAptitude: formData.get("operationalAptitude"),
+		borrowedBadge: formData.get("borrowedBadge"),
+		fieldEquipment: formData.get("fieldEquipment"),
 		chainOfCommand: formData.get("chainOfCommand").trim(),
 		signalEvents: formData.getAll("signalEvents"),
 		signalNoise: formData.get("signalNoise").trim(),
-		checksum: formData.get("checksum").trim(),
 		glitchSymptom: formData.get("glitchSymptom"),
+		reflectionPaperwork: formData.get("reflectionPaperwork"),
 		voluntaryDisclosure: formData.get("voluntaryDisclosure"),
 		oath: formData.get("oath") === "on"
 	};
@@ -79,7 +83,13 @@ socket.on("dodApplyResult", (result) => {
 		return;
 	}
 
-	statusEl.textContent = "Application accepted";
+	const rewards = Object.entries(result.rewards ?? {})
+		.map(([item, count]) => `${count} ${REWARD_LABELS[item] ?? "Item"}${count === 1 ? "" : "s"}`)
+		.join(", ");
+
+	statusEl.textContent = rewards
+		? `Application accepted. Field provisions issued: ${rewards}.`
+		: "Application accepted";
 	form.hidden = true;
 });
 

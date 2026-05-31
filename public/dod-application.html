@@ -32,16 +32,6 @@
 
 		<section class="panel">
 			<form id="dodApplicationForm" class="application-form">
-				<div class="form-field">
-					<label for="codename">Callsign</label>
-					<input id="codename" name="codename" type="text" maxlength="32" required>
-				</div>
-
-				<div class="form-field">
-					<label for="corruptionDisclosure">Corruption disclosure</label>
-					<textarea id="corruptionDisclosure" name="corruptionDisclosure" rows="4" maxlength="500" placeholder="List all known corruptions, suspected corruptions, inherited corruptions, dreams containing lowercase daves, or type N/A if the box is watching."></textarea>
-				</div>
-
 				<div class="form-field question-group">
 					<div class="section-title">Operational Questions</div>
 					<label for="nodeResponse">If a node whispers your legal name, what is the approved response?</label>
@@ -62,6 +52,24 @@
 						<option value="Wait for backup">Wait for backup</option>
 						<option value="Follow the strongest ping">Follow the strongest ping</option>
 						<option value="Become the signal">Become the signal</option>
+					</select>
+
+					<label for="borrowedBadge">If a signal asks to borrow your badge, you:</label>
+					<select id="borrowedBadge" name="borrowedBadge">
+						<option value="">Record no opinion</option>
+						<option value="Deny the request and notify command">Deny the request and notify command</option>
+						<option value="Issue a temporary badge made of tape">Issue a temporary badge made of tape</option>
+						<option value="Ask what department the signal thinks this is">Ask what department the signal thinks this is</option>
+						<option value="Trade badges to establish mutual distrust">Trade badges to establish mutual distrust</option>
+					</select>
+
+					<label for="fieldEquipment">Select your preferred field equipment.</label>
+					<select id="fieldEquipment" name="fieldEquipment">
+						<option value="">Equipment pending requisition</option>
+						<option value="Clipboard with no recorded origin">Clipboard with no recorded origin</option>
+						<option value="Two radios tuned to different futures">Two radios tuned to different futures</option>
+						<option value="Approved flashlight, unapproved batteries">Approved flashlight, unapproved batteries</option>
+						<option value="A small envelope labeled DO NOT OPEN AGAIN">A small envelope labeled DO NOT OPEN AGAIN</option>
 					</select>
 
 					<label for="chainOfCommand">Who do you report to if your superior officer is replaced by a better-organized duplicate?</label>
@@ -103,9 +111,6 @@
 					<label for="signalNoise">How many Daves are currently audible in your peripheral thoughts?</label>
 					<input id="signalNoise" name="signalNoise" type="text" maxlength="80" placeholder="Approximate numbers are legally suspicious.">
 
-					<label for="checksum">Write the phrase you use to prove you are not a node wearing a person.</label>
-					<input id="checksum" name="checksum" type="text" maxlength="160">
-
 					<label for="glitchSymptom">Select the symptom most consistent with your current signal profile.</label>
 					<select id="glitchSymptom" name="glitchSymptom">
 						<option value="">No disclosure at this time</option>
@@ -114,6 +119,20 @@
 						<option value="Remembering meetings that have not happened yet">Remembering meetings that have not happened yet</option>
 						<option value="Unexplained confidence around locked doors">Unexplained confidence around locked doors</option>
 					</select>
+
+					<div class="field-note">Has your reflection attempted to submit paperwork on your behalf?</div>
+					<label class="checkbox-row">
+						<input name="reflectionPaperwork" type="radio" value="Yes">
+						<span>Yes</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="reflectionPaperwork" type="radio" value="No">
+						<span>No</span>
+					</label>
+					<label class="checkbox-row">
+						<input name="reflectionPaperwork" type="radio" value="The reflection has been reassigned">
+						<span>The reflection has been reassigned</span>
+					</label>
 				</div>
 
 				<div class="form-field question-group">
@@ -135,7 +154,7 @@
 
 				<label class="checkbox-row">
 					<input id="oath" name="oath" type="checkbox" required>
-					<span>I certify that the above omissions are mostly intentional and that I will defend Dave nodes from unstable influence.</span>
+					<span>I certify that the above omissions are mostly intentional and that I will defend all Daves from unstable influences.</span>
 				</label>
 
 				<button type="submit">Submit Application</button>

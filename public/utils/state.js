@@ -366,6 +366,10 @@ export function getAmt(dave, item) {
 }
 
 export function add(dave, item) {
+	if (alcoholEmojis.includes(item)) {
+		item = alcoholEmojis[0];
+	}
+
 	const now = Date.now();
 	const TEN_MINUTES = 10 * 60 * 1000;
 
