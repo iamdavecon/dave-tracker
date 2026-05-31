@@ -70,7 +70,7 @@ function updateRadar(map, dave, me) {
 	}
 }
 
-export function addPlayer(map, me, dave, i) {
+export function addPlayer(map, me, dave, i, options = {}) {
 	if (dave.lat == null || dave.lng == null) {
 		console.log("\tinvalid user: " + dave.userId);
 		return;
@@ -94,7 +94,7 @@ export function addPlayer(map, me, dave, i) {
 
 
 	updateRadar(map, dave, me);
-	if (i < 12) {
+	if (options.showInList !== false && i < 12) {
 		const stateClass = state.getStateClass(dave);
 
 		// --- Update distance list ---

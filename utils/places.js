@@ -36,7 +36,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		//console.log("from: " + JSON.stringify(dave, null, 2));
 		savedPlaces[newPlace.id] = newPlace;
 		state.syncTerritoryRank(dave, savedPlaces);
-		logEvent(`${dave.name} daveified a new node: ${newPlace.name}.`, {
+		logEvent(`${dave.name} established a new node.`, {
 			userId: dave.userId,
 			placeId: newPlace.id
 		});

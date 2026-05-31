@@ -140,7 +140,11 @@ async function update() {
 		})
 		.forEach(([key, dave], idx) => {
 			seen.add(key);
-			addPlayer(map, me, dave, i++);
+			const showInList = !dave.isBot;
+			addPlayer(map, me, dave, i, { showInList });
+			if (showInList) {
+				i++;
+			}
 		});
 	//console.log("\tadded: " + i);
 	cullNotSeen(map, seen);

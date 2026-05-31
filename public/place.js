@@ -128,7 +128,7 @@ async function loadPlace() {
 
 		const button = document.createElement("button");
 		button.id = "setIdBtn";
-		button.textContent = "Set Name";
+		button.textContent = "Set Node Name";
 
 		nameElement.innerHTML = "";
 		nameElement.appendChild(input);
