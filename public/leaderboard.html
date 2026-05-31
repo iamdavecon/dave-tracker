@@ -157,6 +157,20 @@
       font-weight: bold;
     }
 
+    .row-in-range {
+      box-shadow: inset 4px 0 0 #5fced1;
+    }
+
+    .row-linked {
+      box-shadow: inset 4px 0 0 #f6c85f;
+    }
+
+    .row-in-range.row-linked {
+      box-shadow:
+        inset 4px 0 0 #5fced1,
+        inset 8px 0 0 #f6c85f;
+    }
+
   </style>
 </head>
 
@@ -312,7 +326,7 @@
 			    const params = new URLSearchParams(window.location.search);
 			    const myUserId = params.get("userId");
 
-			    const res = await fetch("/api/leaderboard");
+			    const res = await fetch(`/api/leaderboard?viewerId=${encodeURIComponent(myUserId || "")}`);
 			    const payload = await res.json();
 
 			    const { summary, leaderboard } = payload;
@@ -354,6 +368,12 @@
 					      // ?? highlight me
 					      if (row.userId === myUserId) {
 								rowClass += " row-me";
+							}
+					      if (row.inRange) {
+								rowClass += " row-in-range";
+							}
+					      if (row.linked) {
+								rowClass += " row-linked";
 							}
 
 					      tr.className = rowClass + " clickable-row";

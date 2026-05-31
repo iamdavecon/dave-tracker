@@ -1,6 +1,7 @@
 import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
 import { isDebugId} from "./public/utils/id.js";  
+import { inRange } from "./public/utils/distance.js";
 
 import { notifyUser } from './utils/sockets.js';
 import * as infect from './utils/infect.js';
@@ -286,10 +287,28 @@ app.post('/api/link-dave', async (req, res) => {
 
 // --- leaderboard ---
 app.get("/api/leaderboard", (req, res) => {
-	const leaderboard = Object.entries(getUsers(daves)) 
+	const { viewerId } = req.query;
+	const localDaves = getUsers(daves);
+	const viewer = localDaves[viewerId];
+	const linkedDaves = Array.isArray(viewer?.linkedDaves) ? viewer.linkedDaves : [];
+
+	const canCheckRange = (target) =>
+		viewer &&
+		target &&
+		target.userId !== viewer.userId &&
+		Number.isFinite(viewer.lat) &&
+		Number.isFinite(viewer.lng) &&
+		Number.isFinite(target.lat) &&
+		Number.isFinite(target.lng);
+
+	const leaderboard = Object.entries(localDaves) 
 		.filter(([id, user]) => !user.isBot)
 		.map(([key, d], idx) => { 
-			return summarizeDave(d, savedPlaces);
+			return {
+				...summarizeDave(d, savedPlaces),
+				inRange: canCheckRange(d) ? inRange(viewer, d) : false,
+				linked: linkedDaves.includes(d.userId)
+			};
 		})
 		.sort((a, b) => b.score - a.score)  
 		.map((d, idx) => ({

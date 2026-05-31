@@ -87,16 +87,6 @@
     "lat": 38.60749513038755,
     "lng": -90.50841867573762
   },
-  "DAVE6": {
-    "userId": "DAVE6",
-    "name": "DAVE6",
-    "state": "patched",
-    "infectedUsers": [],
-    "infectedBy": [],
-    "updatedAt": 2777376805618,
-    "lat": 38.60809513038755,
-    "lng": -90.50841867573762
-  },
   "DAVE7": {
     "userId": "DAVE7",
     "name": "DAVE7",
