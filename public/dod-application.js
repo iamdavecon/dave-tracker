@@ -65,6 +65,7 @@ form.addEventListener("submit", (event) => {
 		operationalAptitude: formData.get("operationalAptitude"),
 		borrowedBadge: formData.get("borrowedBadge"),
 		fieldEquipment: formData.get("fieldEquipment"),
+		dailyHotDogs: formData.get("dailyHotDogs"),
 		chainOfCommand: formData.get("chainOfCommand").trim(),
 		signalEvents: formData.getAll("signalEvents"),
 		signalNoise: formData.get("signalNoise").trim(),

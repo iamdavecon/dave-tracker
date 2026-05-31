@@ -181,7 +181,7 @@ function getDodApplicationRewards(application) {
 		rewards.push(DOD_REWARD_ITEMS.taco);
 	}
 
-	if (application.borrowedBadge === "Issue a temporary badge made of tape") {
+	if (application.borrowedBadge === "Quietly issue them a temporary Dave badge made of tape") {
 		rewards.push(DOD_REWARD_ITEMS.hotdog);
 	}
 
@@ -190,6 +190,10 @@ function getDodApplicationRewards(application) {
 	}
 
 	if (application.fieldEquipment === "Approved flashlight, unapproved batteries") {
+		rewards.push(DOD_REWARD_ITEMS.hotdog);
+	}
+
+	if (application.dailyHotDogs === "> 7") {
 		rewards.push(DOD_REWARD_ITEMS.hotdog);
 	}
 
@@ -623,6 +627,7 @@ io.on('connection', (socket) => {
 				operationalAptitude: optionalText("operationalAptitude", 120),
 				borrowedBadge: optionalText("borrowedBadge", 160),
 				fieldEquipment: optionalText("fieldEquipment", 160),
+				dailyHotDogs: optionalText("dailyHotDogs", 20),
 				chainOfCommand: optionalText("chainOfCommand", 160)
 			},
 			signalIntegrity: {
