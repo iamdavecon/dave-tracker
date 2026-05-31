@@ -25,7 +25,7 @@ test('stabilize only awards a fragment after a successful stabilization', () => 
 	const { socket, handlers, emitted } = createSocket('source');
 	const ioEvents = [];
 	const daves = {
-		source: { userId: 'source', name: 'Source', state: 'patched', fragmentsCollected: [], lat: 41, lng: -87 },
+		source: { userId: 'source', name: 'Source', state: 'immune', fragmentsCollected: [], lat: 41, lng: -87 },
 		target: { userId: 'target', name: 'Target', state: 'immune', lat: 41, lng: -87 }
 	};
 
@@ -43,8 +43,8 @@ test('stabilize only awards a fragment after a successful stabilization', () => 
 test('stabilize rejects forged source ids', () => {
 	const { socket, handlers, emitted } = createSocket('source');
 	const daves = {
-		source: { userId: 'source', name: 'Source', state: 'patched', fragmentsCollected: [], lat: 41, lng: -87 },
-		other: { userId: 'other', name: 'Other', state: 'patched', fragmentsCollected: [], lat: 41, lng: -87 },
+		source: { userId: 'source', name: 'Source', state: 'immune', fragmentsCollected: [], lat: 41, lng: -87 },
+		other: { userId: 'other', name: 'Other', state: 'immune', fragmentsCollected: [], lat: 41, lng: -87 },
 		target: { userId: 'target', name: 'Target', state: 'unstable', lat: 41, lng: -87 }
 	};
 

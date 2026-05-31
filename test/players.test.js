@@ -45,13 +45,13 @@ test('getLinkedDaveSummaries returns linked users in saved order', () => {
 	const summary = getLinkedDaveSummaries(
 		{ linkedDaves: ['target', 'missing', 'other'] },
 		{
-			target: { userId: 'target', name: 'Target Dave', state: 'patched' },
+			target: { userId: 'target', name: 'Target Dave', state: 'immune' },
 			other: { userId: 'other', name: 'Other Dave', state: 'voided' }
 		}
 	);
 
 	assert.deepEqual(summary, [
-		{ userId: 'target', name: 'Target Dave', state: 'PATCHED' },
+		{ userId: 'target', name: 'Target Dave', state: 'IMMUNE' },
 		{ userId: 'other', name: 'Other Dave', state: 'UNSTABLE' }
 	]);
 });

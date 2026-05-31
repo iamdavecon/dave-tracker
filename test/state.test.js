@@ -13,7 +13,7 @@ test('rank changes stop at the top and bottom of the state ladder', () => {
 	const dave = { state: 'unstable' };
 
 	assert.equal(state.increaseRank(dave), true);
-	assert.equal(dave.state, 'patched');
+	assert.equal(dave.state, 'immune');
 
 	dave.state = 'daveprime';
 	assert.equal(state.increaseRank(dave), false);
@@ -26,36 +26,36 @@ test('rank changes stop at the top and bottom of the state ladder', () => {
 
 test('infection only changes unstable daves', () => {
 	const unstable = { state: 'unstable' };
-	const patched = { state: 'patched' };
+	const immune = { state: 'immune' };
 
 	assert.equal(state.infect(unstable), true);
 	assert.equal(unstable.state, 'infected');
 
-	assert.equal(state.infect(patched), false);
-	assert.equal(patched.state, 'patched');
+	assert.equal(state.infect(immune), false);
+	assert.equal(immune.state, 'immune');
 });
 
-test('stabilize patches unstable daves and advances patched daves toward immune', () => {
+test('stabilize makes unstable or infected daves immune', () => {
 	const unstable = { state: 'unstable' };
-	const patched = { state: 'patched', patches: 1 };
+	const infected = { state: 'infected' };
+	const immune = { state: 'immune' };
 
 	assert.equal(state.stabilize(unstable), true);
-	assert.equal(unstable.state, 'patched');
+	assert.equal(unstable.state, 'immune');
 
-	assert.equal(state.stabilize(patched), false);
-	assert.equal(patched.state, 'immune');
+	assert.equal(state.stabilize(infected), true);
+	assert.equal(infected.state, 'immune');
+
+	assert.equal(state.stabilize(immune), false);
+	assert.equal(immune.state, 'immune');
 });
 
-test('antivirus installation uses the configured probability bands', (t) => {
-	const immuneRoll = { state: 'unstable' };
-	t.mock.method(Math, 'random', () => 0.19);
-	state.installAntivirus(immuneRoll);
-	assert.equal(immuneRoll.state, 'immune');
+test('antivirus installation makes unstable daves immune', () => {
+	const dave = { state: 'unstable' };
 
-	Math.random.mock.mockImplementation(() => 0.2);
-	const patchedRoll = { state: 'unstable' };
-	state.installAntivirus(patchedRoll);
-	assert.equal(patchedRoll.state, 'patched');
+	state.installAntivirus(dave);
+
+	assert.equal(dave.state, 'immune');
 });
 
 test('ascension and tags drive user actions', () => {
@@ -97,12 +97,12 @@ test('territory ranks scale by owned node count and level', () => {
 });
 
 test('place actions require fragments and cap upgrades by player state', () => {
-	const patchedDave = { state: 'patched', fragmentsCollected: ['fragment'] };
-	const maxedPlace = { level: 2 };
+	const immuneDave = { state: 'immune', fragmentsCollected: ['fragment'] };
+	const maxedPlace = { level: 3 };
 	const upgradeablePlace = { level: 1 };
 
-	assert.equal(state.getPlaceActions(patchedDave, upgradeablePlace).canUpgrade, true);
-	assert.equal(state.getPlaceActions(patchedDave, maxedPlace).canUpgrade, false);
+	assert.equal(state.getPlaceActions(immuneDave, upgradeablePlace).canUpgrade, true);
+	assert.equal(state.getPlaceActions(immuneDave, maxedPlace).canUpgrade, false);
 
 	const brokeDave = { state: 'daveprime', fragmentsCollected: [] };
 	assert.equal(state.getPlaceActions(brokeDave, upgradeablePlace).canUpgrade, undefined);

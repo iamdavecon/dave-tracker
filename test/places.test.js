@@ -80,7 +80,7 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 		source: {
 			userId: 'source',
 			name: 'Source',
-			state: 'patched',
+			state: 'immune',
 			lat: 41,
 			lng: -87,
 			fragmentsCollected: ['fragment']
@@ -96,7 +96,7 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 	};
 	const places = {
 		near: { id: 'near', lat: 41, lng: -87, name: 'Near', level: 1 },
-		maxed: { id: 'maxed', lat: 41, lng: -87, name: 'Maxed', level: 2 },
+		maxed: { id: 'maxed', lat: 41, lng: -87, name: 'Maxed', level: 3 },
 		far: { id: 'far', lat: 42, lng: -88, name: 'Far', level: 1 }
 	};
 
@@ -109,7 +109,7 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 	assert.equal(places.far.level, 1);
 
 	handlers.upgradeDavePoint('source', 'maxed');
-	assert.equal(places.maxed.level, 2);
+	assert.equal(places.maxed.level, 3);
 	assert.deepEqual(daves.source.fragmentsCollected, ['fragment']);
 
 	handlers.upgradeDavePoint('source', 'near');

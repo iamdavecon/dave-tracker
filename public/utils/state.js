@@ -5,7 +5,6 @@ const STATES = {
 	RESONANT: "resonant",
 	AWAKENING: "awakening",
 	IMMUNE: "immune",
-	PATCHED: "patched",
 	UNSTABLE: "unstable",
 	INFECTED: "infected",
 	CORRUPTED: "corrupted"
@@ -126,7 +125,8 @@ export function getRadarClass(dave) {
 }
 
 export function getAscendencyBonus(obj) {
-	if (obj.state) {
+	if (obj?.state) {
+		const currentState = getState(obj);
 		// Explicit tuning overrides
 		const overrides = {
 			[STATES.DAVEPRIME]: 20,
@@ -134,16 +134,15 @@ export function getAscendencyBonus(obj) {
 			[STATES.ASCENDED]: 10,
 			[STATES.RESONANT]: 8,
 			[STATES.AWAKENING]: 6,
-			[STATES.IMMUNE]: 4,
-			[STATES.PATCHED]: 2
+			[STATES.IMMUNE]: 4
 		};
-		if (overrides[obj.state] != null) {
-			return overrides[obj.state];
+		if (overrides[currentState] != null) {
+			return overrides[currentState];
 		}
 
 		// Fallback formula for future inserted states
 		const unstableIndex = toNumber(STATES.UNSTABLE);
-		const stateIndex = toNumber(obj.state);
+		const stateIndex = toNumber(currentState);
 
 		return Math.max(1, unstableIndex - stateIndex + 1);
 	} else if (obj.level) {
@@ -156,17 +155,9 @@ export function installAntivirus(dave) {
 	const state = getIndex(dave);
 	if (state < toNumber(STATES.IMMUNE)) {
 		return;
-	}  else {
-		const chance = Math.random(); 
-
-		if (chance < 0.2) {
-			// 20% chance for IMMUNE
-			dave.state = STATES.IMMUNE;
-		} else {
-			// 80% chance for PATCHED
-			dave.state = STATES.PATCHED;
-		}
 	}
+
+	dave.state = STATES.IMMUNE;
 }
 
 
@@ -197,7 +188,7 @@ export function setImmune(dave) {
 
 export function hasPatchAbility(dave) {
 	const state = getIndex(dave);
-	return state <= toNumber(STATES.PATCHED);
+	return state <= toNumber(STATES.IMMUNE);
 }
 
 export function canPatch(dave) {
@@ -235,15 +226,9 @@ export function stabilize(dave) {
 	//console.log("stabilizing");
 	//console.log(JSON.stringify(dave, null, 2));
 
-	if (getState(dave) == STATES.PATCHED) {
-		//console.log("\tpatched");
-		dave.patches = (dave.patches ?? 0) + 1;
-		if (dave.patches >= 2) {
-			dave.state = STATES.IMMUNE;
-		}
-	} if (getIndex(dave) >= toNumber(STATES.UNSTABLE)) {
+	if (getIndex(dave) >= toNumber(STATES.UNSTABLE)) {
 		//console.log("\tunstable");
-		dave.state = STATES.PATCHED;
+		dave.state = STATES.IMMUNE;
 		return true;
 	} 
 	return false;
@@ -348,8 +333,6 @@ export function getUserActions(source, target) {
 
 export function maxState(dave) {
 	switch (getState(dave)) {
-		case STATES.PATCHED:
-			return 2;
 		case STATES.IMMUNE:
 			return 3;
 		case STATES.AWAKENING:

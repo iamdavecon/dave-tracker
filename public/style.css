@@ -76,13 +76,6 @@
 	text-shadow: 0 1px 3px rgba(0,0,0,0.4);
 }
 
-.patched {
-	background: #1565c0;
-	color: #ffffff;
-	border-color: #00e5ff;
-	text-shadow: 0 1px 3px rgba(0,0,0,0.4);
-}
-
 .unstable {
 	background: #2a2a2a;
 	color: #ffffff;

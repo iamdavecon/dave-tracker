@@ -30,7 +30,7 @@ test('ascendAtNode consumes a fragment and advances when the node is high enough
 	assert.equal(handlers.ascend, undefined);
 	handlers.ascendAtNode('source', 'node');
 
-	assert.equal(daves.source.state, 'patched');
+	assert.equal(daves.source.state, 'immune');
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 	assert.equal(ioEvents.length, 1);
 	assert.equal(logs.length, 1);
@@ -45,7 +45,7 @@ test('ascendAtNode rejects forged source ids and insufficient nodes', () => {
 		}
 	};
 	const daves = {
-		source: { userId: 'source', state: 'patched', fragmentsCollected: ['fragment'] },
+		source: { userId: 'source', state: 'immune', fragmentsCollected: ['fragment'] },
 		other: { userId: 'other', state: 'unstable', fragmentsCollected: ['fragment'] }
 	};
 	const places = {
@@ -58,6 +58,6 @@ test('ascendAtNode rejects forged source ids and insufficient nodes', () => {
 	assert.equal(daves.other.state, 'unstable');
 
 	handlers.ascendAtNode('source', 'low');
-	assert.equal(daves.source.state, 'patched');
+	assert.equal(daves.source.state, 'immune');
 	assert.deepEqual(daves.source.fragmentsCollected, ['fragment']);
 });
