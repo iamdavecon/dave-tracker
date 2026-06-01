@@ -1,5 +1,5 @@
 import { getUserId, isDebugId } from './utils/id.js';
-import { getValidItems, displayItems } from './utils/itemUI.js';
+import { getItemsForSource, displayItems } from './utils/itemUI.js';
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
@@ -207,17 +207,14 @@ async function loadPlace() {
 
 
 
-		const validItems = getValidItems();
-		for (const rule of validItems) {
-			if (firstEmoji !== rule.item) continue;
-
+		for (const rule of getItemsForSource(firstEmoji)) {
 			const available = state.canGet(dave, rule.item);
+			const remaining = state.formatCooldownRemaining(state.getCooldownRemaining(dave, rule.item));
 			//console.log("canget:  " + rule.item + " avail " + available);
 
 			actionHtml += available
 					? `<button data-action="placeAction" data-item="${rule.item}"> ${rule.getLabel} </button>`
-					: `<button disabled> ${rule.getLabel} (on cooldown) </button>`;
-			break;
+					: `<button disabled> ${rule.getLabel} (${remaining}) </button>`;
 		}
 	} else {
 		actionHtml += "OUT OF RANGE";

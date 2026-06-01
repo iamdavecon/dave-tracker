@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { summarizeDave, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
+import { summarizeDave, getInteraction, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
 
 test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	const summary = summarizeDave({
@@ -54,6 +54,48 @@ test('getLinkedDaveSummaries returns linked users in saved order', () => {
 		{ userId: 'target', name: 'Target Dave', state: 'IMMUNE' },
 		{ userId: 'other', name: 'Other Dave', state: 'UNSTABLE' }
 	]);
+});
+
+test('getInteraction exposes pepper pickup for pepper-named users', () => {
+	const me = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87
+	};
+	const target = {
+		userId: 'target',
+		name: '🌶️ Pepper Dave',
+		lat: 41,
+		lng: -87
+	};
+
+	const details = getInteraction(me, target);
+
+	assert.equal(details.availableActions.hasPepper, true);
+	assert.equal(details.availableActions.canGetPepper, true);
+});
+
+test('getInteraction respects pepper pickup cooldown', () => {
+	const pepper = '🌶️';
+	const me = {
+		userId: 'source',
+		name: 'Source',
+		[pepper]: {
+			count: 1,
+			lastTime: Date.now()
+		}
+	};
+	const target = {
+		userId: 'target',
+		name: '🌶 Pepper Dave'
+	};
+
+	const details = getInteraction(me, target);
+
+	assert.equal(details.availableActions.hasPepper, true);
+	assert.equal(details.availableActions.canGetPepper, false);
+	assert.ok(details.availableActions.pepperCooldownRemaining > 0);
 });
 
 test('removeFragment consumes the oldest collected fragment', () => {

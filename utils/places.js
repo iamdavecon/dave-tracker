@@ -5,6 +5,7 @@ import { removeFragment } from './players.js';
 
 const HOTDOG_ITEM = "🌭";
 const DRINK_ITEM = "🍺";
+const PEPPER_ITEM = "🌶️";
 const TOO_MANY_ITEM_THRESHOLD = 7;
 
 function hasFragment(dave) {
@@ -110,6 +111,9 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 		if (item == DRINK_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "GDIK");
+		}
+		if (item == PEPPER_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
+			state.addTag(dave, "peppercon");
 		}
 	});
 

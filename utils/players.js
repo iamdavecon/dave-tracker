@@ -1,6 +1,8 @@
 import * as state from "../public/utils/state.js";
 import { getMapData } from "../public/utils/map.js"
 
+const PEPPER_ITEM = "🌶️";
+const PEPPER_RE = /🌶️?/u;
 
 function getDisplayTags(dave, places = {}) {
 	const tags = Array.isArray(dave.tags)
@@ -65,6 +67,11 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	daveDetails.state = state.getState(dave);
 	daveDetails.isMe = me.userId === dave.userId;
 	daveDetails.availableActions = state.getUserActions(me, dave);
+	daveDetails.availableActions.hasPepper = !daveDetails.isMe && PEPPER_RE.test(dave.name ?? "");
+	daveDetails.availableActions.canGetPepper = daveDetails.availableActions.hasPepper && state.canGet(me, PEPPER_ITEM);
+	daveDetails.availableActions.pepperCooldownRemaining = daveDetails.availableActions.hasPepper
+		? state.getCooldownRemaining(me, PEPPER_ITEM)
+		: 0;
 	daveDetails.linkedDaves = daveDetails.isMe ? getLinkedDaveSummaries(dave, allDaves) : [];
 
 	daveDetails.mapData = getMapData(me, dave);

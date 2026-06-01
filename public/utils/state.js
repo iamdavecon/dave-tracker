@@ -371,6 +371,11 @@ function canUpgrade(dave, place) {
 }
 
 const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
+const ITEM_COOLDOWN = 10 * 60 * 1000;
+
+function normalizeItem(item) {
+	return alcoholEmojis.includes(item) ? alcoholEmojis[0] : item;
+}
 
 export function canGet(dave, item) {
 	/*
@@ -378,16 +383,14 @@ export function canGet(dave, item) {
 		return true;
 	}
 	*/
-	if (alcoholEmojis.includes(item)) {
-		item = alcoholEmojis[0];
-	}
+	item = normalizeItem(item);
 
 	const obj = dave[item];
 	if (obj == null) {
 		//console.log("missing, approved: " + item);
 		return true;
 	} else {
-		const tenMinutesPastLastAcquisition =  obj.lastTime + 10 * 60 * 1000;
+		const tenMinutesPastLastAcquisition =  obj.lastTime + ITEM_COOLDOWN;
 		if (Date.now() >= tenMinutesPastLastAcquisition) {
 			//console.log(Date.now() + " is above " + tenMinutesPastLastAcquisition + " so " + item + " approved")
 			return true;
@@ -398,10 +401,30 @@ export function canGet(dave, item) {
 	}
 }
 
-export function getAmt(dave, item) {
-	if (alcoholEmojis.includes(item)) {
-		item = alcoholEmojis[0];
+export function getCooldownRemaining(dave, item) {
+	item = normalizeItem(item);
+
+	const obj = dave?.[item];
+	if (obj == null || !Number.isFinite(obj.lastTime)) {
+		return 0;
 	}
+
+	return Math.max(0, obj.lastTime + ITEM_COOLDOWN - Date.now());
+}
+
+export function formatCooldownRemaining(ms) {
+	const totalSeconds = Math.ceil(Math.max(0, ms) / 1000);
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds % 60;
+
+	if (minutes > 0) {
+		return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
+	}
+	return `${seconds}s`;
+}
+
+export function getAmt(dave, item) {
+	item = normalizeItem(item);
 	const obj = dave[item];
 	if (obj == null) {
 		return 0;
@@ -415,16 +438,12 @@ export function getAmt(dave, item) {
 }
 
 export function add(dave, item) {
-	if (alcoholEmojis.includes(item)) {
-		item = alcoholEmojis[0];
-	}
+	item = normalizeItem(item);
 
 	const now = Date.now();
-	const TEN_MINUTES = 10 * 60 * 1000;
-
 	if (dave[item] == null) {
 		dave[item] = { count: 1, lastTime: now };
-	} else if (now - dave[item].lastTime > TEN_MINUTES) {
+	} else if (now - dave[item].lastTime > ITEM_COOLDOWN) {
 		dave[item].count += 1;
 		dave[item].lastTime = now;
 	}

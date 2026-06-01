@@ -14,6 +14,7 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 const isDebugUser = isDebugId(userId);
+const PEPPER_ITEM = "🌶️";
 
 let map;
 
@@ -70,6 +71,11 @@ function emit(event) {
 	location.reload()
 }
 
+function getItemFromUser(item) {
+	socket.emit("getItemFromUser", userId, daveId, item);
+	location.reload()
+}
+
 async function teleport(freeRoam) {
 	const payload = JSON.stringify({
 		source: userId,
@@ -101,6 +107,10 @@ function addActions(actionHtml) {
 		switch (action) {
 			case "antivirus":
 				window.location.href = "https://iamdavecon.github.io/bb/";
+				break;
+
+			case "getItemFromUser":
+				getItemFromUser(e.target.dataset.item);
 				break;
 
 			case "teleport":
@@ -269,6 +279,13 @@ async function loadPlayer() {
 
 			if (!dave.isBot && dave.availableActions.canGrantDavePrime) {
 				actionHtml += `<button data-action="grantDavePrime">GRANT DAVEPRIME</button>`;
+			}
+
+			if (dave.availableActions.canGetPepper) {
+				actionHtml += `<button data-action="getItemFromUser" data-item="${PEPPER_ITEM}">Get a pepper</button>`;
+			} else if (dave.availableActions.hasPepper) {
+				const remaining = state.formatCooldownRemaining(dave.availableActions.pepperCooldownRemaining);
+				actionHtml += `<button disabled>Get a pepper (${remaining})</button>`;
 			}
 
 			if (isDebugUser) {

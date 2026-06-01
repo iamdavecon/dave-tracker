@@ -139,3 +139,26 @@ test('collecting too many drinks grants the GDIK tag', () => {
 	assert.equal(daves.source[drink].count, 7);
 	assert.deepEqual(daves.source.tags, ['GDIK']);
 });
+
+test('collecting too many peppers at a place grants the peppercon tag', () => {
+	const { socket, handlers, io } = createHarness();
+	const pepper = '🌶️';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			[pepper]: {
+				count: 6,
+				lastTime: Date.now() - 11 * 60 * 1000
+			}
+		}
+	};
+	const places = {};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', pepper);
+
+	assert.equal(daves.source[pepper].count, 7);
+	assert.deepEqual(daves.source.tags, ['peppercon']);
+});

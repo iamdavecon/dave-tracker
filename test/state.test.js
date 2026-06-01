@@ -107,3 +107,19 @@ test('place actions require fragments and cap upgrades by player state', () => {
 	const brokeDave = { state: 'daveprime', fragmentsCollected: [] };
 	assert.equal(state.getPlaceActions(brokeDave, upgradeablePlace).canUpgrade, undefined);
 });
+
+test('item cooldown remaining uses normalized item keys and formats labels', () => {
+	const dave = {
+		'🍺': {
+			count: 1,
+			lastTime: Date.now() - 8 * 60 * 1000
+		}
+	};
+
+	const remaining = state.getCooldownRemaining(dave, '🍸');
+
+	assert.ok(remaining > 119_000);
+	assert.ok(remaining <= 120_000);
+	assert.equal(state.formatCooldownRemaining(remaining), '2m 00s');
+	assert.equal(state.formatCooldownRemaining(9_500), '10s');
+});
