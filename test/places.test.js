@@ -116,3 +116,26 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 	assert.equal(places.near.level, 2);
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 });
+
+test('collecting too many drinks grants the GDIK tag', () => {
+	const { socket, handlers, io } = createHarness();
+	const drink = '🍺';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			[drink]: {
+				count: 6,
+				lastTime: Date.now() - 11 * 60 * 1000
+			}
+		}
+	};
+	const places = {};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', drink);
+
+	assert.equal(daves.source[drink].count, 7);
+	assert.deepEqual(daves.source.tags, ['GDIK']);
+});

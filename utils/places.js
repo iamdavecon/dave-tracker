@@ -3,6 +3,10 @@ import { inRange } from "../public/utils/distance.js";
 import { getMapData } from "../public/utils/map.js";
 import { removeFragment } from './players.js';
 
+const HOTDOG_ITEM = "🌭";
+const DRINK_ITEM = "🍺";
+const TOO_MANY_ITEM_THRESHOLD = 7;
+
 function hasFragment(dave) {
 	return (dave?.fragmentsCollected?.length ?? 0) > 0;
 }
@@ -101,8 +105,11 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 		const count = state.add(dave, item); 
 		//console.log("GETITEM: " + item + " => " + count);
-		if (item == "🌭" && count == 7) {
+		if (item == HOTDOG_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "Timmy");
+		}
+		if (item == DRINK_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
+			state.addTag(dave, "GDIK");
 		}
 	});
 
