@@ -12,6 +12,9 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 		fragmentsCollected: ['f1', 'f2', 'f3'],
 		nodeCount: 2,
 		daveravesStarted: 1,
+		linkedDaves: ['dave-2', 'dave-3'],
+		'ðŸŒ­': { count: 3, lastTime: Date.now() },
+		'ðŸº': { count: 1, lastTime: Date.now() },
 		tags: ['standard-user', 'dod']
 	}, {
 		node1: { owner: 'dave-1' },
@@ -21,7 +24,7 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	assert.deepEqual(summary, {
 		userId: 'dave-1',
 		name: 'Leaderboard Dave',
-		score: 38,
+		score: 46,
 		teamVirus: 2,
 		teamAntivirus: 13,
 		state: 'RESONANT',

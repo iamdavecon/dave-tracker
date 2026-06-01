@@ -6,6 +6,7 @@ import {
 	canAscend,
 	canBePatched,
 	canDoonShift,
+	canMakeBadDecision,
 	decreaseRank,
 	grantDavePrime,
 	hasPatchAbility,
@@ -16,6 +17,18 @@ import {
 } from '../public/utils/state.js';
 import { inRange } from '../public/utils/distance.js';
 import { getUsers } from './storage.js';
+
+function normalizeGrantedTag(tag) {
+	return String(tag ?? "").trim().slice(0, 40);
+}
+
+function grantBonusFragment(dave) {
+	if (!Array.isArray(dave.fragmentsCollected)) {
+		dave.fragmentsCollected = [];
+	}
+
+	dave.fragmentsCollected.push(crypto.randomUUID());
+}
 
 export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent = () => {}) {
 	if (savedPlaces && typeof savedPlaces.emit === "function") {
@@ -95,6 +108,40 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		io.emit("update", { daves });
 	});
 
+	socket.on("badDecision", (sourceId, targetId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target || !canMakeBadDecision(me, target) || !inRange(me, target)) {
+			return;
+		}
+
+		const success = ascendUser(target);
+		const recoveredFragment = success && getFragmentFrom(me, target);
+
+		if (success) {
+			me.badDecisionsMade = (me.badDecisionsMade ?? 0) + 1;
+			if (recoveredFragment) {
+				grantBonusFragment(me);
+			}
+			if (me.badDecisionsMade >= 3) {
+				addTag(me, "bad-decision");
+			}
+
+			logEvent(recoveredFragment
+				? `${me.name} made a bad decision with ${target.name} and recovered 2 fragments.`
+				: `${me.name} made a bad decision with ${target.name}.`, {
+				userId: me.userId
+			});
+		}
+
+		io.emit("update", { daves });
+	});
+
 	socket.on("daveputize", (sourceId, targetId) => {
 		if (sourceId !== socket.userId) {
 			return;
@@ -167,6 +214,29 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		}
 
 		io.emit("update", { daves });
+	});
+
+	socket.on("grantTag", (sourceId, targetId, tag) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		const normalizedTag = normalizeGrantedTag(tag);
+		if (!me || !target || target.isBot || !isDavePrime(me) || !normalizedTag || !inRange(me, target)) {
+			return;
+		}
+
+		const success = addTag(target, normalizedTag);
+
+		if (success) {
+			logEvent(`${me.name} granted ${normalizedTag} to ${target.name}.`, {
+				userId: me.userId
+			});
+			io.emit("update", { daves });
+		}
 	});
 
 }

@@ -115,7 +115,11 @@ async function update() {
 	} 
 
 	renderPlaces(places);
-	addStateUI(me, Object.keys(daves).length);
+
+	const realUsers = Object.fromEntries(
+		Object.entries(daves).filter(([id, user]) => !user.isBot)
+	);
+	addStateUI(me, Object.keys(realUsers).length);
 
 	// Build list of other Daves with distances relative to me and update map markers
 	const distanceList = document.getElementById("distanceList");

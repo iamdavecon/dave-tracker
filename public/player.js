@@ -51,6 +51,7 @@ function renderTags(tags = []) {
 			"network-administrator": "Network Administrator",
 			doon: "💀 DOON",
 			peppercon: "🌶️PepperCon",
+			"bad-decision": "🌀 Bad Decision",
 			linecon: "🚶 LineCon",
 			toxicbbg: "🍖 Toxic BBQ",
 			drinks: "🍻Cheers!",
@@ -79,6 +80,14 @@ function getItemFromUser(item) {
 
 function startDaveRave() {
 	socket.emit("startDaveRave", userId);
+}
+
+function grantTag() {
+	const tag = prompt("Grant which tag?");
+	if (tag == null) return;
+
+	socket.emit("grantTag", userId, daveId, tag);
+	location.reload();
 }
 
 function showDaveRaveAnimation() {
@@ -136,6 +145,10 @@ function addActions(actionHtml) {
 
 			case "startDaveRave":
 				startDaveRave();
+				break;
+
+			case "grantTag":
+				grantTag();
 				break;
 
 			case "teleport":
@@ -305,6 +318,10 @@ async function loadPlayer() {
 				actionHtml += `<button data-action="ascendPlayer">ASCEND</button>`;
 			}
 
+			if (dave.availableActions.canMakeBadDecision) {
+				actionHtml += `<button data-action="badDecision">Do you want to make a bad decision?</button>`;
+			}
+
 			if (!dave.isBot && dave.availableActions.canDaveputize) {
 				actionHtml += `<button data-action="daveputize">DAVEPUTIZE</button>`;
 			}
@@ -315,6 +332,10 @@ async function loadPlayer() {
 
 			if (!dave.isBot && dave.availableActions.canGrantDavePrime) {
 				actionHtml += `<button data-action="grantDavePrime">GRANT DAVEPRIME</button>`;
+			}
+
+			if (!dave.isBot && dave.availableActions.canGrantTag) {
+				actionHtml += `<button data-action="grantTag">GRANT TAG</button>`;
 			}
 
 			if (dave.availableActions.canGetPepper) {

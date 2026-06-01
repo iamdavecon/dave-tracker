@@ -20,6 +20,16 @@ function getDisplayTags(dave, places = {}) {
 	return tags;
 }
 
+function countAcquiredItems(dave) {
+	return Object.values(dave ?? {}).reduce((total, value) => {
+		if (value && Number.isFinite(value.count)) {
+			return total + value.count;
+		}
+
+		return total;
+	}, 0);
+}
+
 export function summarizeDave(dave, places = {}) {
 	let score = 0;
 	let teamVirus = 0;
@@ -38,6 +48,10 @@ export function summarizeDave(dave, places = {}) {
 	if (dave.daveravesStarted) {
 		score += (dave.daveravesStarted * 10);
 	}
+	if (Array.isArray(dave.linkedDaves)) {
+		score += (dave.linkedDaves.length * 2);
+	}
+	score += countAcquiredItems(dave);
 
 	let daveDetails = {
 		userId: dave.userId,

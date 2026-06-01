@@ -63,7 +63,7 @@ test('ascension and tags drive user actions', () => {
 		userId: 'source',
 		state: 'ascended',
 		fragmentsCollected: [],
-		tags: ['standard-user', 'doon']
+		tags: ['standard-user', 'doon', 'peppercon', 'GDIK']
 	};
 	const target = { userId: 'target', state: 'infected', tags: [] };
 
@@ -74,9 +74,15 @@ test('ascension and tags drive user actions', () => {
 	assert.equal(actions.canAscend, true);
 	assert.equal(actions.canDaveputize, true);
 	assert.equal(actions.canDoonShift, true);
+	assert.equal(actions.canGrantTag, false);
+	assert.equal(actions.canMakeBadDecision, true);
+
+	source.state = 'daveprime';
+	assert.equal(state.getUserActions(source, target).canGrantTag, true);
 
 	source.fragmentsCollected.push('target');
 	assert.equal(state.canAscend(source, target), false);
+	assert.equal(state.canMakeBadDecision(source, target), false);
 });
 
 test('territory ranks scale by owned node count and level', () => {

@@ -315,6 +315,14 @@ export function canDoonShift(source, target) {
 	return hasTag(source, "doon") && getState(target) == STATES.INFECTED;
 }
 
+export function canGrantTag(source, target) {
+	return isDavePrime(source) && source?.userId !== target?.userId;
+}
+
+export function canMakeBadDecision(source, target) {
+	return hasTag(source, "peppercon") && hasTag(source, "GDIK") && canAscend(source, target);
+}
+
 export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
@@ -327,6 +335,8 @@ export function getUserActions(source, target) {
 		canDaveputize : hasTerritoryRank(source) && ! hasTag(target, "doon"),
 		canDoonShift : canDoonShift(source, target),
 		canGrantDavePrime : isDavePrime(source) && !isDavePrime(target),
+		canGrantTag : canGrantTag(source, target),
+		canMakeBadDecision : canMakeBadDecision(source, target),
 		davePrime:  isDavePrime(source),
 	}
 }

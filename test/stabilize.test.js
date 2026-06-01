@@ -73,3 +73,153 @@ test('ascendPlayer is distinct from node ascension and enforces player eligibili
 	assert.deepEqual(daves.source.fragmentsCollected, ['target']);
 	assert.equal(logs.length, 1);
 });
+
+test('badDecision requires peppercon and GDIK, ascends target, and grants a fragment', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'ascended',
+			tags: ['peppercon', 'GDIK'],
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		},
+		target: {
+			userId: 'target',
+			name: 'Target',
+			state: 'infected',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.badDecision('source', 'target');
+
+	assert.equal(daves.target.state, 'unstable');
+	assert.equal(daves.source.fragmentsCollected.length, 2);
+	assert.equal(daves.source.fragmentsCollected[0], 'target');
+	assert.equal(daves.source.badDecisionsMade, 1);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+});
+
+test('badDecision grants the bad-decision tag after 3 successful bad decisions', () => {
+	const { socket, handlers } = createSocket('source');
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'ascended',
+			tags: ['peppercon', 'GDIK'],
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87,
+			badDecisionsMade: 2
+		},
+		target: {
+			userId: 'target',
+			name: 'Target',
+			state: 'infected',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, { emit: () => {} });
+	handlers.badDecision('source', 'target');
+
+	assert.equal(daves.source.badDecisionsMade, 3);
+	assert.equal(daves.source.tags.includes('bad-decision'), true);
+});
+
+test('badDecision rejects forged, missing-tag, ineligible, and out-of-range attempts', () => {
+	const { socket, handlers } = createSocket('source');
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'ascended',
+			tags: ['peppercon'],
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		},
+		target: {
+			userId: 'target',
+			name: 'Target',
+			state: 'infected',
+			lat: 41,
+			lng: -87
+		},
+		far: {
+			userId: 'far',
+			name: 'Far',
+			state: 'infected',
+			lat: 42,
+			lng: -88
+		}
+	};
+
+	registerHandlers(socket, daves, { emit: () => {} });
+	handlers.badDecision('other', 'target');
+	handlers.badDecision('source', 'target');
+	daves.source.tags.push('GDIK');
+	daves.source.fragmentsCollected.push('target');
+	handlers.badDecision('source', 'target');
+	daves.source.fragmentsCollected = [];
+	handlers.badDecision('source', 'far');
+
+	assert.equal(daves.target.state, 'infected');
+	assert.equal(daves.far.state, 'infected');
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+});
+
+test('grantTag lets DavePrime grant a tag to an in-range user', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', state: 'daveprime', lat: 41, lng: -87 },
+		target: { userId: 'target', name: 'Target', tags: [], lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.grantTag('source', 'target', ' general ');
+
+	assert.deepEqual(daves.target.tags, ['general']);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+});
+
+test('grantTag rejects forged, non-prime, bot, out-of-range, empty, and duplicate grants', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', state: 'immune', lat: 41, lng: -87 },
+		target: { userId: 'target', name: 'Target', tags: [], lat: 41, lng: -87 },
+		far: { userId: 'far', name: 'Far', tags: [], lat: 42, lng: -88 },
+		bot: { userId: 'bot', name: 'Bot', isBot: true, tags: [], lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.grantTag('other', 'target', 'general');
+	handlers.grantTag('source', 'target', 'general');
+	daves.source.state = 'daveprime';
+	handlers.grantTag('source', 'target', '   ');
+	handlers.grantTag('source', 'far', 'general');
+	handlers.grantTag('source', 'bot', 'general');
+	handlers.grantTag('source', 'target', 'general');
+	handlers.grantTag('source', 'target', 'general');
+
+	assert.deepEqual(daves.target.tags, ['general']);
+	assert.deepEqual(daves.far.tags, []);
+	assert.deepEqual(daves.bot.tags, []);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+});
