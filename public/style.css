@@ -458,6 +458,129 @@ button:disabled {
 	filter: grayscale(1);
 }
 
+.dave-rave-button {
+	color: #071018;
+	background: linear-gradient(90deg, #5cff9d, #35d6ff, #ffd700, #ff5c5c);
+	border-color: #9fffe0;
+	font-weight: 900;
+	letter-spacing: 0;
+	text-shadow: 0 1px 0 rgba(255,255,255,0.35);
+	box-shadow: 0 0 18px rgba(53, 214, 255, 0.35);
+	animation: raveButtonPulse 1.2s infinite ease-in-out;
+}
+
+.dave-rave-overlay {
+	position: fixed;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	pointer-events: none;
+	z-index: 9999;
+	overflow: hidden;
+	background:
+		repeating-linear-gradient(
+			90deg,
+			rgba(92, 255, 157, 0.10) 0,
+			rgba(92, 255, 157, 0.10) 8px,
+			rgba(53, 214, 255, 0.10) 8px,
+			rgba(53, 214, 255, 0.10) 16px
+		),
+		rgba(0, 0, 0, 0.72);
+}
+
+.dave-rave-overlay.raving {
+	animation: raveBackdrop 2.2s ease-out both;
+}
+
+.rave-burst {
+	position: relative;
+	z-index: 2;
+	display: grid;
+	gap: 8px;
+	justify-items: center;
+	color: #0a0a0a;
+	background: #ffd700;
+	border: 3px solid #5cff9d;
+	padding: 18px 24px;
+	font-size: 30px;
+	font-weight: 900;
+	text-align: center;
+	box-shadow:
+		0 0 0 6px rgba(53, 214, 255, 0.35),
+		0 0 40px rgba(255, 215, 0, 0.8);
+	transform: rotate(-3deg);
+}
+
+.rave-burst span:last-child {
+	font-size: 18px;
+	color: #b71c1c;
+}
+
+.rave-ring {
+	position: absolute;
+	width: 120px;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	border: 2px solid #5cff9d;
+	opacity: 0;
+}
+
+.raving .ring-one {
+	animation: raveRing 1.4s 0s ease-out both;
+}
+
+.raving .ring-two {
+	border-color: #35d6ff;
+	animation: raveRing 1.5s 0.2s ease-out both;
+}
+
+.raving .ring-three {
+	border-color: #ffd700;
+	animation: raveRing 1.6s 0.4s ease-out both;
+}
+
+.rave-confetti {
+	position: absolute;
+	width: 14px;
+	height: 36px;
+	background: #5cff9d;
+	opacity: 0;
+}
+
+.raving .rave-confetti {
+	animation: raveConfetti 1.8s ease-out both;
+}
+
+.rave-confetti.c1 { left: 12%; top: 20%; background: #5cff9d; animation-delay: 0.05s; }
+.rave-confetti.c2 { left: 24%; top: 74%; background: #35d6ff; animation-delay: 0.18s; }
+.rave-confetti.c3 { left: 45%; top: 14%; background: #ffd700; animation-delay: 0.1s; }
+.rave-confetti.c4 { left: 62%; top: 78%; background: #ff5c5c; animation-delay: 0.24s; }
+.rave-confetti.c5 { left: 76%; top: 22%; background: #9fffe0; animation-delay: 0.14s; }
+.rave-confetti.c6 { left: 88%; top: 62%; background: #facc15; animation-delay: 0.3s; }
+
+@keyframes raveButtonPulse {
+	0%, 100% { transform: scale(1); filter: saturate(1); }
+	50% { transform: scale(1.02); filter: saturate(1.55); }
+}
+
+@keyframes raveBackdrop {
+	0% { opacity: 0; filter: hue-rotate(0deg); }
+	12% { opacity: 1; }
+	70% { opacity: 1; filter: hue-rotate(160deg); }
+	100% { opacity: 0; filter: hue-rotate(260deg); }
+}
+
+@keyframes raveRing {
+	0% { transform: scale(0.4); opacity: 1; }
+	100% { transform: scale(8); opacity: 0; }
+}
+
+@keyframes raveConfetti {
+	0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+	12% { opacity: 1; }
+	100% { transform: translateY(220px) rotate(540deg); opacity: 0; }
+}
+
 /* Common styles for the sections */
 .log {
 	font-size: 12px;

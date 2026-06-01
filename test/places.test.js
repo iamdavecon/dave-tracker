@@ -117,6 +117,177 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 });
 
+test('joinLinecon grants the linecon tag at skull locations', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		skull: {
+			id: 'skull',
+			name: '☠️ DEF CON South Entrance',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.joinLinecon('source', 'skull');
+
+	assert.deepEqual(daves.source.tags, ['linecon']);
+	assert.equal(ioEvents.length, 1);
+	assert.equal(logs.length, 1);
+});
+
+test('joinLinecon rejects forged, repeated, non-skull, and out-of-range joins', () => {
+	const { socket, handlers, io } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		plain: {
+			id: 'plain',
+			name: 'Plain Place',
+			lat: 41,
+			lng: -87
+		},
+		farSkull: {
+			id: 'farSkull',
+			name: '☠️ Far Line',
+			lat: 42,
+			lng: -88
+		},
+		skull: {
+			id: 'skull',
+			name: '☠️ Near Line',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.joinLinecon('other', 'skull');
+	handlers.joinLinecon('source', 'plain');
+	handlers.joinLinecon('source', 'farSkull');
+	assert.deepEqual(daves.source.tags, []);
+
+	handlers.joinLinecon('source', 'skull');
+	handlers.joinLinecon('source', 'skull');
+	assert.deepEqual(daves.source.tags, ['linecon']);
+});
+
+test('circusCircusParking grants a drink at Circus Circus locations', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const drink = '🍺';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		circus: {
+			id: 'circus',
+			name: 'Circus Circus',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.circusCircusParking('source', 'circus');
+
+	assert.equal(daves.source[drink].count, 1);
+	assert.equal(ioEvents.length, 1);
+	assert.equal(logs.length, 1);
+});
+
+test('circusCircusParking uses the standard drink cooldown', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const drink = '🍺';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		circus: {
+			id: 'circus',
+			name: 'Circus Circus',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.circusCircusParking('source', 'circus');
+	handlers.circusCircusParking('source', 'circus');
+
+	assert.equal(daves.source[drink].count, 1);
+	assert.equal(ioEvents.length, 1);
+	assert.equal(logs.length, 1);
+});
+
+test('circusCircusParking rejects forged, non-circus, and out-of-range drink grants', () => {
+	const { socket, handlers, io } = createHarness();
+	const drink = '🍺';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		plain: {
+			id: 'plain',
+			name: 'Plain Place',
+			lat: 41,
+			lng: -87
+		},
+		farCircus: {
+			id: 'farCircus',
+			name: 'Circus Circus',
+			lat: 42,
+			lng: -88
+		},
+		circus: {
+			id: 'circus',
+			name: 'Circus Circus',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.circusCircusParking('other', 'circus');
+	handlers.circusCircusParking('source', 'plain');
+	handlers.circusCircusParking('source', 'farCircus');
+
+	assert.equal(daves.source[drink], undefined);
+});
+
 test('collecting too many drinks grants the GDIK tag', () => {
 	const { socket, handlers, io } = createHarness();
 	const drink = '🍺';

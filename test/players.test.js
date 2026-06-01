@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { summarizeDave, getInteraction, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
+import { canStartDaveRave, countDavesInArea, summarizeDave, getInteraction, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
 
 test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	const summary = summarizeDave({
@@ -11,6 +11,7 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 		infectedUsers: ['a', 'b'],
 		fragmentsCollected: ['f1', 'f2', 'f3'],
 		nodeCount: 2,
+		daveravesStarted: 1,
 		tags: ['standard-user', 'dod']
 	}, {
 		node1: { owner: 'dave-1' },
@@ -20,7 +21,7 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	assert.deepEqual(summary, {
 		userId: 'dave-1',
 		name: 'Leaderboard Dave',
-		score: 28,
+		score: 38,
 		teamVirus: 2,
 		teamAntivirus: 13,
 		state: 'RESONANT',
@@ -96,6 +97,82 @@ test('getInteraction respects pepper pickup cooldown', () => {
 	assert.equal(details.availableActions.hasPepper, true);
 	assert.equal(details.availableActions.canGetPepper, false);
 	assert.ok(details.availableActions.pepperCooldownRemaining > 0);
+});
+
+test('countDavesInArea counts non-bot daves in range and enables Dave Raves above ten players', () => {
+	const source = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87
+	};
+	const daves = { source };
+
+	for (let i = 0; i < 10; i++) {
+		daves[`near-${i}`] = {
+			userId: `near-${i}`,
+			name: `Near ${i}`,
+			lat: 41,
+			lng: -87
+		};
+	}
+	daves.bot = {
+		userId: 'bot',
+		name: 'Bot',
+		isBot: true,
+		lat: 41,
+		lng: -87
+	};
+	daves.far = {
+		userId: 'far',
+		name: 'Far',
+		lat: 42,
+		lng: -88
+	};
+
+	assert.equal(countDavesInArea(source, daves), 11);
+	assert.equal(canStartDaveRave(source, daves), true);
+
+	source.lastDaveRaveTime = Date.now();
+	assert.equal(canStartDaveRave(source, daves), false);
+	delete source.lastDaveRaveTime;
+
+	delete daves['near-9'];
+	assert.equal(countDavesInArea(source, daves), 10);
+	assert.equal(canStartDaveRave(source, daves), false);
+});
+
+test('getInteraction exposes Dave Rave availability only on your own page', () => {
+	const source = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87
+	};
+	const target = {
+		userId: 'target',
+		name: 'Target',
+		lat: 41,
+		lng: -87
+	};
+	const daves = { source, target };
+
+	for (let i = 0; i < 9; i++) {
+		daves[`near-${i}`] = {
+			userId: `near-${i}`,
+			name: `Near ${i}`,
+			lat: 41,
+			lng: -87
+		};
+	}
+
+	assert.equal(getInteraction(source, source, daves).availableActions.canStartDaveRave, true);
+	assert.equal(getInteraction(source, target, daves).availableActions.canStartDaveRave, false);
+
+	source.lastDaveRaveTime = Date.now();
+	const details = getInteraction(source, source, daves);
+	assert.equal(details.availableActions.canStartDaveRave, false);
+	assert.ok(details.availableActions.daveRaveCooldownRemaining > 0);
 });
 
 test('removeFragment consumes the oldest collected fragment', () => {

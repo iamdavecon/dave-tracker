@@ -51,6 +51,7 @@ function renderTags(tags = []) {
 			"network-administrator": "Network Administrator",
 			doon: "💀 DOON",
 			peppercon: "🌶️PepperCon",
+			linecon: "🚶 LineCon",
 			toxicbbg: "🍖 Toxic BBQ",
 			drinks: "🍻Cheers!",
 			dod: "🛡 DoD",
@@ -74,6 +75,26 @@ function emit(event) {
 function getItemFromUser(item) {
 	socket.emit("getItemFromUser", userId, daveId, item);
 	location.reload()
+}
+
+function startDaveRave() {
+	socket.emit("startDaveRave", userId);
+}
+
+function showDaveRaveAnimation() {
+	const overlay = document.getElementById("daveRaveOverlay");
+	if (!overlay) return;
+
+	overlay.classList.remove("hidden");
+	overlay.classList.remove("raving");
+	void overlay.offsetWidth;
+	overlay.classList.add("raving");
+
+	setTimeout(() => {
+		overlay.classList.add("hidden");
+		overlay.classList.remove("raving");
+		location.reload();
+	}, 2200);
 }
 
 async function teleport(freeRoam) {
@@ -111,6 +132,10 @@ function addActions(actionHtml) {
 
 			case "getItemFromUser":
 				getItemFromUser(e.target.dataset.item);
+				break;
+
+			case "startDaveRave":
+				startDaveRave();
 				break;
 
 			case "teleport":
@@ -205,6 +230,10 @@ async function loadPlayer() {
 				<span class="label">🏙️ Nodes</span>
 				<span>${nodes}</span>
 			</div>
+			<div class="field">
+				<span class="label">▧ Dave Raves</span>
+				<span>${dave.daveravesStarted ?? 0}</span>
+			</div>
 		`;
 		statHtml += displayItems(dave);
 		document.getElementById("stats").innerHTML = statHtml;
@@ -232,6 +261,13 @@ async function loadPlayer() {
 		//  DAVEPRIME (ENABLES CHEATS)
 		if (dave.availableActions.davePrime) {
 			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
+		}
+
+		if (dave.availableActions.canStartDaveRave) {
+			actionHtml += `<button class="dave-rave-button" data-action="startDaveRave">START A DAVE RAVE</button>`;
+		} else if (dave.availableActions.davesInArea > 10 && dave.availableActions.daveRaveCooldownRemaining > 0) {
+			const remaining = state.formatCooldownRemaining(dave.availableActions.daveRaveCooldownRemaining);
+			actionHtml += `<button class="dave-rave-button" disabled>START A DAVE RAVE (${remaining})</button>`;
 		}
 
 		if (isDebugUser) {
@@ -332,5 +368,17 @@ socket.on('notifyInfected', () => {});
 socket.on('stabilizeResult', (data) => {
 	if (data.success) {
 		location.reload()
+	}
+});
+
+socket.on("daveRaveResult", (data) => {
+	if (data.ok) {
+		showDaveRaveAnimation();
+	}
+});
+
+socket.on("daveRave", (data) => {
+	if (data.userId !== userId) {
+		showDaveRaveAnimation();
 	}
 });

@@ -16,6 +16,7 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
 const isDebugUser = isDebugId(userId);
+const DRINK_ITEM = "🍺";
 
 let map;
 
@@ -194,6 +195,18 @@ async function loadPlace() {
 	}
 
 	if (place.mapData.inRange) {
+		if (firstEmoji == '☠' && !state.hasTag(dave, "linecon")) {
+			actionHtml += `<button data-action="joinLinecon">Join linecon</button>`;
+		}
+
+		if (place.name?.includes("Circus Circus")) {
+			const available = state.canGet(dave, DRINK_ITEM);
+			const remaining = state.formatCooldownRemaining(state.getCooldownRemaining(dave, DRINK_ITEM));
+			actionHtml += available
+				? `<button data-action="circusCircusParking">Is this not a reasonable place to park?</button>`
+				: `<button disabled>Is this not a reasonable place to park? (${remaining})</button>`;
+		}
+
 		if (place.availableActions.canUpgrade) {
 			actionHtml += `<button data-action="upgradeDavePoint">Daveify This Spot</button> `   
 		} else {

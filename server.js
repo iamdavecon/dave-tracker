@@ -8,6 +8,7 @@ import * as infect from './utils/infect.js';
 import * as stabilize from './utils/stabilize.js';
 import * as items from './utils/items.js';
 import * as places from './utils/places.js';
+import * as raves from './utils/raves.js';
 import * as ascension from './utils/ascension.js';
 import * as debug from './utils/debug.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
@@ -724,6 +725,7 @@ io.on('connection', (socket) => {
 	stabilize.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 	items.registerHandlers(socket, daves, io);
 	places.registerHandlers(socket, daves, savedPlaces, io, logEvent);
+	raves.registerHandlers(socket, daves, io, logEvent);
 	ascension.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 
 	debug.registerHandlers(socket, daves, savedPlaces, io);

@@ -1,0 +1,35 @@
+import { canStartDaveRave, countDavesInArea } from "./players.js";
+
+export function registerHandlers(socket, daves, io, logEvent = () => {}) {
+	socket.on("startDaveRave", (sourceId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const dave = daves[sourceId];
+		if (!dave || !canStartDaveRave(dave, daves)) {
+			socket.emit("daveRaveResult", {
+				ok: false,
+				davesInArea: countDavesInArea(dave, daves)
+			});
+			return;
+		}
+
+		dave.daveravesStarted = (dave.daveravesStarted ?? 0) + 1;
+		dave.lastDaveRaveTime = Date.now();
+		logEvent(`${dave.name} started a Dave Rave.`, {
+			userId: dave.userId
+		});
+		socket.emit("daveRaveResult", {
+			ok: true,
+			daveravesStarted: dave.daveravesStarted,
+			davesInArea: countDavesInArea(dave, daves)
+		});
+		io.emit("daveRave", {
+			userId: dave.userId,
+			name: dave.name,
+			daveravesStarted: dave.daveravesStarted
+		});
+		io.emit("update");
+	});
+}

@@ -6,6 +6,7 @@ import { removeFragment } from './players.js';
 const HOTDOG_ITEM = "🌭";
 const DRINK_ITEM = "🍺";
 const PEPPER_ITEM = "🌶️";
+const LINECON_TAG = "linecon";
 const TOO_MANY_ITEM_THRESHOLD = 7;
 
 function hasFragment(dave) {
@@ -93,6 +94,52 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 	socket.on("visitDavePoint", (sourceId, placeId) => {
 		console.log("visitDavePoint");
+	});
+
+	socket.on("joinLinecon", (sourceId, placeId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		if (!dave || !place || !inRange(dave, place) || state.hasTag(dave, LINECON_TAG) || !place.name?.includes("☠")) {
+			return;
+		}
+
+		if (state.addTag(dave, LINECON_TAG)) {
+			logEvent(`${dave.name} joined linecon.`, {
+				userId: dave.userId,
+				placeId
+			});
+			io.emit("update");
+		}
+	});
+
+	socket.on("circusCircusParking", (sourceId, placeId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		if (!dave || !place || !inRange(dave, place) || !place.name?.includes("Circus Circus")) {
+			return;
+		}
+		if (!state.canGet(dave, DRINK_ITEM)) {
+			return;
+		}
+
+		const count = state.add(dave, DRINK_ITEM);
+		if (count >= TOO_MANY_ITEM_THRESHOLD) {
+			state.addTag(dave, "GDIK");
+		}
+
+		logEvent(`${dave.name} just parked on the sidewalk.`, {
+			userId: dave.userId,
+			placeId
+		});
+		io.emit("update");
 	});
 
 	socket.on("getItem", (sourceId, item) => {
