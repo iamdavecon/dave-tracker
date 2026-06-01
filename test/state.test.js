@@ -108,6 +108,19 @@ test('place actions require fragments and cap upgrades by player state', () => {
 	assert.equal(state.getPlaceActions(brokeDave, upgradeablePlace).canUpgrade, undefined);
 });
 
+test('doon place upgrade actions require the doon tag and respect cooldown', () => {
+	const dave = { state: 'immune', tags: ['doon'] };
+
+	assert.equal(state.getPlaceActions(dave, { level: 2 }).canDoonUpgrade, true);
+	assert.equal(state.getPlaceActions(dave, { level: 3 }).canDoonUpgrade, false);
+
+	dave.lastDoonPlaceUpgradeTime = Date.now();
+	assert.equal(state.getPlaceActions(dave, { level: 2 }).canDoonUpgrade, false);
+	assert.ok(state.getPlaceActions(dave, { level: 2 }).doonUpgradeCooldownRemaining > 0);
+
+	assert.equal(state.getPlaceActions({ tags: [] }, {}).canDoonUpgrade, false);
+});
+
 test('item cooldown remaining uses normalized item keys and formats labels', () => {
 	const dave = {
 		'🍺': {

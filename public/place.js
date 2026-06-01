@@ -213,6 +213,15 @@ async function loadPlace() {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
 
+		if (state.hasTag(dave, "doon")) {
+			if (place.availableActions.canDoonUpgrade) {
+				actionHtml += `<button data-action="doonUpgradePlace">Doonify This Spot</button>`;
+			} else {
+				const remaining = state.formatCooldownRemaining(place.availableActions.doonUpgradeCooldownRemaining);
+				actionHtml += `<button disabled>Doonify This Spot (${remaining})</button>`;
+			}
+		}
+
 		const stateAscension = getAscensionText(dave, place);
 		if (stateAscension != "") {
 			actionHtml += `<button data-action="ascendAtNode">${stateAscension}</button>`   

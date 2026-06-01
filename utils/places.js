@@ -71,6 +71,27 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		io.emit("update");
 	});
 
+	socket.on("doonUpgradePlace", (sourceId, placeId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		if (!dave || !place || !inRange(dave, place) || !state.canDoonUpgradePlace(dave, place)) {
+			return;
+		}
+
+		place.level = (place.level ?? 0) + 1;
+		dave.lastDoonPlaceUpgradeTime = Date.now();
+		state.syncTerritoryRank(dave, savedPlaces);
+		logEvent(`${dave.name} doonified ${place.name} to level ${place.level}.`, {
+			userId: dave.userId,
+			placeId
+		});
+		io.emit("update");
+	});
+
 	socket.on("setPlaceName", (sourceId, placeId, newName) => {
 		if (sourceId !== socket.userId) {
 			return;

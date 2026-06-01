@@ -117,6 +117,64 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 });
 
+test('doonUpgradePlace lets doon users upgrade a place once per hour', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'immune',
+			tags: ['doon'],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		near: { id: 'near', lat: 41, lng: -87, name: 'Near', level: 1 }
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.doonUpgradePlace('source', 'near');
+	handlers.doonUpgradePlace('source', 'near');
+
+	assert.equal(places.near.level, 2);
+	assert.equal(Number.isFinite(daves.source.lastDoonPlaceUpgradeTime), true);
+	assert.equal(ioEvents.length, 1);
+	assert.equal(logs.length, 1);
+});
+
+test('doonUpgradePlace rejects forged, non-doon, out-of-range, and cooling down attempts', () => {
+	const { socket, handlers, io } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'immune',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		near: { id: 'near', lat: 41, lng: -87, name: 'Near', level: 1 },
+		far: { id: 'far', lat: 42, lng: -88, name: 'Far', level: 1 },
+		maxed: { id: 'maxed', lat: 41, lng: -87, name: 'Maxed', level: 3 }
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.doonUpgradePlace('other', 'near');
+	handlers.doonUpgradePlace('source', 'near');
+	daves.source.tags.push('doon');
+	handlers.doonUpgradePlace('source', 'far');
+	handlers.doonUpgradePlace('source', 'maxed');
+	daves.source.lastDoonPlaceUpgradeTime = Date.now();
+	handlers.doonUpgradePlace('source', 'near');
+
+	assert.equal(places.near.level, 1);
+	assert.equal(places.far.level, 1);
+	assert.equal(places.maxed.level, 3);
+});
+
 test('joinLinecon grants the linecon tag at skull locations', () => {
 	const { socket, handlers, io, ioEvents, logs } = createHarness();
 	const daves = {

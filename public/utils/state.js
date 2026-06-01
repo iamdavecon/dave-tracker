@@ -372,6 +372,7 @@ function canUpgrade(dave, place) {
 
 const alcoholEmojis = ["🍺", "🍸", "🍷", "🥂", "🍹", "🍾", "🫖"];
 const ITEM_COOLDOWN = 10 * 60 * 1000;
+const DOON_PLACE_UPGRADE_COOLDOWN = 60 * 60 * 1000;
 
 function normalizeItem(item) {
 	return alcoholEmojis.includes(item) ? alcoholEmojis[0] : item;
@@ -423,6 +424,22 @@ export function formatCooldownRemaining(ms) {
 	return `${seconds}s`;
 }
 
+export function getDoonPlaceUpgradeCooldownRemaining(dave) {
+	if (!Number.isFinite(dave?.lastDoonPlaceUpgradeTime)) {
+		return 0;
+	}
+
+	return Math.max(0, dave.lastDoonPlaceUpgradeTime + DOON_PLACE_UPGRADE_COOLDOWN - Date.now());
+}
+
+export function canDoonUpgradePlace(dave, place) {
+	if (!hasTag(dave, "doon") || getDoonPlaceUpgradeCooldownRemaining(dave) !== 0) {
+		return false;
+	}
+
+	return !place?.level || place.level < maxState(dave);
+}
+
 export function getAmt(dave, item) {
 	item = normalizeItem(item);
 	const obj = dave[item];
@@ -456,6 +473,8 @@ export function getPlaceActions(dave, place) {
 	return {
 		hasFragments : canAfford(dave, 1),
 		canUpgrade : canUpgrade(dave, place),
+		canDoonUpgrade : canDoonUpgradePlace(dave, place),
+		doonUpgradeCooldownRemaining : getDoonPlaceUpgradeCooldownRemaining(dave),
 		davePrime:  isDavePrime(dave),
 	}
 }
