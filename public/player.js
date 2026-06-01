@@ -2,6 +2,7 @@ import { getUserId, isDebugId} from './utils/id.js';
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import { displayItems } from './utils/itemUI.js';
+import { getRecognizedTags, getTagPlayerLabel } from './utils/tags.js';
 import * as state from "./utils/state.js";
 
 const userId = getUserId();
@@ -42,24 +43,7 @@ function renderTags(tags = []) {
 	tags.forEach(tag => {
 		const el = document.createElement("span");
 		el.className = `tag tag-${tag}`;
-		// Pretty label
-		const LABELS = {
-			"standard-user": "Standard User",
-			admin: "Admin",
-			"power-user": "Power User",
-			root: "Root",
-			"network-administrator": "Network Administrator",
-			doon: "💀 DOON",
-			peppercon: "🌶️PepperCon",
-			"bad-decision": "🌀 Bad Decision",
-			linecon: "🚶 LineCon",
-			toxicbbg: "🍖 Toxic BBQ",
-			drinks: "🍻Cheers!",
-			dod: "🛡 DoD",
-			general: "🎖️General"
-		};
-
-		el.textContent = LABELS[tag] || tag;
+		el.textContent = getTagPlayerLabel(tag);
 		container.appendChild(el);
 	});
 }
@@ -83,11 +67,26 @@ function startDaveRave() {
 }
 
 function grantTag() {
-	const tag = prompt("Grant which tag?");
-	if (tag == null) return;
+	const tag = document.getElementById("grantTagSelect")?.value;
+	if (!tag) return;
 
 	socket.emit("grantTag", userId, daveId, tag);
 	location.reload();
+}
+
+function getGrantTagControlHtml() {
+	const options = getRecognizedTags()
+		.map(({ tag }) => `<option value="${tag}">${getTagPlayerLabel(tag)}</option>`)
+		.join("");
+
+	return `
+		<div class="grant-tag-control">
+			<select id="grantTagSelect" aria-label="Tag to grant">
+				${options}
+			</select>
+			<button data-action="grantTag">GRANT TAG</button>
+		</div>
+	`;
 }
 
 function showDaveRaveAnimation() {
@@ -335,7 +334,7 @@ async function loadPlayer() {
 			}
 
 			if (!dave.isBot && dave.availableActions.canGrantTag) {
-				actionHtml += `<button data-action="grantTag">GRANT TAG</button>`;
+				actionHtml += getGrantTagControlHtml();
 			}
 
 			if (dave.availableActions.canGetPepper) {

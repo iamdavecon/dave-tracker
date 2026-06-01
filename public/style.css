@@ -458,6 +458,34 @@ button:disabled {
 	filter: grayscale(1);
 }
 
+.grant-tag-control {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.grant-tag-control select,
+.grant-tag-control button {
+	min-width: 0;
+	margin-bottom: 0;
+}
+
+.grant-tag-control select {
+	width: 100%;
+	padding: 12px;
+	color: #fff;
+	background: #0a0a0a;
+	border: 1px solid #333;
+	font-family: "Courier New", monospace;
+	font-size: 14px;
+}
+
+.grant-tag-control button {
+	width: auto;
+	white-space: nowrap;
+}
+
 .dave-rave-button {
 	color: #071018;
 	background: linear-gradient(90deg, #5cff9d, #35d6ff, #ffd700, #ff5c5c);

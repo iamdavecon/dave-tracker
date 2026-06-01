@@ -206,7 +206,9 @@
 
   </div>
 
-  <script>
+  <script type="module">
+	  import { getTagMetadata } from "/utils/tags.js";
+
 	  const STATE_ORDER = [
 		    "DAVEPRIME",
 		    "DOPE",
@@ -219,22 +221,6 @@
 		    "CORRUPTED"
 	    ];
 
-	  const TAG_EMOJIS = {
-		    "standard-user": { emoji: "⌁", label: "Standard User" },
-		    admin: { emoji: "⌬", label: "Admin" },
-		    "power-user": { emoji: "◆", label: "Power User" },
-		    root: { emoji: "#", label: "Root" },
-		    "network-administrator": { emoji: "⌘", label: "Network Administrator" },
-		    doon: { emoji: "💀", label: "DOON" },
-		    peppercon: { emoji: "🌶️", label: "PepperCon" },
-		    "bad-decision": { emoji: "🌀", label: "Bad Decision" },
-		    linecon: { emoji: "🚶", label: "LineCon" },
-		    toxicbbg: { emoji: "🍖", label: "Toxic BBQ" },
-		    drinks: { emoji: "🍻", label: "Cheers" },
-		    dod: { emoji: "🛡️", label: "Department of Davefence" },
-		    general: { emoji: "🎖️", label: "General" },
-		    Timmy: { emoji: "🌭", label: "Timmy" }
-	    };
 
 	  function appendTextCell(tr, text, className = "") {
 		    const td = document.createElement("td");
@@ -254,7 +240,7 @@
 
 		    const tags = Array.isArray(row.tags) ? row.tags : [];
 		    const knownTags = tags
-			    .map(tag => TAG_EMOJIS[tag])
+			    .map(tag => getTagMetadata(tag))
 			    .filter(Boolean);
 
 		    if (knownTags.length > 0) {
@@ -265,8 +251,8 @@
 				        const icon = document.createElement("span");
 				        icon.className = "tag-icon";
 				        icon.textContent = tag.emoji;
-				        icon.title = tag.label;
-				        icon.setAttribute("aria-label", tag.label);
+				        icon.title = tag.title ?? tag.label;
+				        icon.setAttribute("aria-label", tag.title ?? tag.label);
 				        tagIcons.appendChild(icon);
 			        });
 
