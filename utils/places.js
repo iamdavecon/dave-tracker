@@ -1,6 +1,13 @@
 import * as state from "../public/utils/state.js";
 import { inRange } from "../public/utils/distance.js";
 import { getMapData } from "../public/utils/map.js";
+import {
+	canAttemptPlaceFragmentChallenge,
+	getPlaceChallengeQuestion,
+	getPlaceFragmentChallengeForAction,
+	getPlaceFragmentChallengeForEmoji,
+	isCorrectPlaceFragmentAnswer
+} from "../public/utils/placeChallenges.js";
 import { removeFragment } from './players.js';
 
 const HOTDOG_ITEM = "🌭";
@@ -21,6 +28,45 @@ function getNewPlace(dave) {
 		name : dave.name,
 		owner : dave.userId,
 	}
+}
+
+function firstEmoji(value = "") {
+	return [...value].find(char => /\p{Extended_Pictographic}/u.test(char));
+}
+
+function grantFragment(dave) {
+	if (!Array.isArray(dave.fragmentsCollected)) {
+		dave.fragmentsCollected = [];
+	}
+
+	dave.fragmentsCollected.push(crypto.randomUUID());
+}
+
+function grantItemReward(dave, item, count = 1) {
+	if (!dave[item]) {
+		dave[item] = { count: 0, lastTime: Date.now() };
+	}
+
+	dave[item].count += count;
+	dave[item].lastTime = Date.now();
+	return dave[item].count;
+}
+
+function grantChallengeReward(dave, reward) {
+	if (reward?.type === "item") {
+		const item = reward.item;
+		const count = grantItemReward(dave, item);
+		if (item === DRINK_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
+			state.addTag(dave, "GDIK");
+		}
+		if (item === HOTDOG_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
+			state.addTag(dave, "Timmy");
+		}
+		return reward.label ?? "an item";
+	}
+
+	grantFragment(dave);
+	return reward?.label ?? "a fragment";
 }
 
 export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
@@ -157,6 +203,34 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 
 		logEvent(`${dave.name} just parked on the sidewalk.`, {
+			userId: dave.userId,
+			placeId
+		});
+		io.emit("update");
+	});
+
+	socket.on("claimPlaceFragmentChallenge", (sourceId, placeId, action, questionId, answer) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		const challenge = getPlaceFragmentChallengeForAction(action);
+		if (!dave || !place || !challenge || !inRange(dave, place)) {
+			return;
+		}
+		if (getPlaceFragmentChallengeForEmoji(firstEmoji(place.name))?.action !== challenge.action) {
+			return;
+		}
+		const question = getPlaceChallengeQuestion(action, questionId);
+		if (!question || !canAttemptPlaceFragmentChallenge(dave, challenge) || !isCorrectPlaceFragmentAnswer(action, answer, questionId)) {
+			return;
+		}
+
+		const rewardLabel = grantChallengeReward(dave, question.reward ?? challenge.reward);
+		dave[challenge.cooldownKey] = Date.now();
+		logEvent(`${dave.name} completed ${challenge.label} at ${place.name} and recovered ${rewardLabel}.`, {
 			userId: dave.userId,
 			placeId
 		});

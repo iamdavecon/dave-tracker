@@ -1,5 +1,14 @@
 import { getUserId, isDebugId } from './utils/id.js';
 import { getItemsForSource, displayItems } from './utils/itemUI.js';
+import {
+	canAttemptPlaceFragmentChallenge,
+	formatPlaceChallengePrompt,
+	getPlaceFragmentChallengeCooldownRemaining,
+	getPlaceFragmentChallengeForEmoji,
+	getPlaceFragmentChallengeForAction,
+	getRandomPlaceChallengeQuestion,
+	shufflePlaceChallengeOptions
+} from './utils/placeChallenges.js';
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
@@ -66,13 +75,26 @@ async function deconstructPlace() {
 }
 
 function getItem(item) {
-	const payload = JSON.stringify({
-		source: userId,
-		item: item,
-	});
-
 	socket.emit("getItem", userId, item);
 	location.reload()
+}
+
+function claimPlaceFragmentChallenge(action) {
+	const challenge = getPlaceFragmentChallengeForAction(action);
+	const question = getRandomPlaceChallengeQuestion(challenge);
+	if (!challenge || !question) return;
+
+	const options = shufflePlaceChallengeOptions(question);
+	const answer = prompt(formatPlaceChallengePrompt(challenge, question, options));
+	if (answer == null) return;
+
+	const selectedIndex = Number.parseInt(answer.trim(), 10) - 1;
+	const selectedAnswer = Number.isInteger(selectedIndex) && options[selectedIndex]
+		? options[selectedIndex]
+		: answer;
+
+	socket.emit("claimPlaceFragmentChallenge", userId, placeId, action, question.id, selectedAnswer);
+	location.reload();
 }
 
 function addActions(actionHtml) {
@@ -89,6 +111,9 @@ function addActions(actionHtml) {
 			case "placeAction":
 				const item = e.target.dataset.item;
 				getItem(item);
+				break;
+			case "placeFragmentChallenge":
+				claimPlaceFragmentChallenge(e.target.dataset.challengeAction);
 				break;
 			case "dod":
 				window.location.href = `/dod-application.html?placeId=${encodeURIComponent(placeId)}`;
@@ -205,6 +230,15 @@ async function loadPlace() {
 			actionHtml += available
 				? `<button data-action="circusCircusParking">Is this not a reasonable place to park?</button>`
 				: `<button disabled>Is this not a reasonable place to park? (${remaining})</button>`;
+		}
+
+		const fragmentChallenge = getPlaceFragmentChallengeForEmoji(firstEmoji);
+		if (fragmentChallenge) {
+			const available = canAttemptPlaceFragmentChallenge(dave, fragmentChallenge);
+			const remaining = state.formatCooldownRemaining(getPlaceFragmentChallengeCooldownRemaining(dave, fragmentChallenge));
+			actionHtml += available
+				? `<button data-action="placeFragmentChallenge" data-challenge-action="${fragmentChallenge.action}">${fragmentChallenge.label}</button>`
+				: `<button disabled>${fragmentChallenge.label} (${remaining})</button>`;
 		}
 
 		if (place.availableActions.canUpgrade) {

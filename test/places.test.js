@@ -346,6 +346,138 @@ test('circusCircusParking rejects forged, non-circus, and out-of-range drink gra
 	assert.equal(daves.source[drink], undefined);
 });
 
+test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker Jeopardy answers', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const drink = '🍺';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		jeopardy: {
+			id: 'jeopardy',
+			name: '🙅 Hacker Jeopardy',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'malort', 'What is Malort?');
+
+	assert.equal(daves.source[drink].count, 1);
+	assert.equal(Number.isFinite(daves.source.lastHackerJeopardyTime), true);
+	assert.equal(ioEvents.length, 1);
+	assert.equal(logs.length, 1);
+});
+
+test('claimPlaceFragmentChallenge grants question-specific Hacker Jeopardy rewards', () => {
+	const { socket, handlers, io } = createHarness();
+	const hotdog = '🌭';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		jeopardy: {
+			id: 'jeopardy',
+			name: '🙅 Hacker Jeopardy',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'beef-thief', 'Who is beef thief?');
+	daves.source.lastHackerJeopardyTime = Date.now() - 61 * 60 * 1000;
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
+
+	assert.equal(daves.source[hotdog].count, 1);
+	assert.equal(daves.source.fragmentsCollected.length, 1);
+	assert.equal(daves.source['🍺'], undefined);
+});
+
+test('claimPlaceFragmentChallenge grants fragments for correct hardware and vetcon answers', () => {
+	const { socket, handlers, io } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		hardware: {
+			id: 'hardware',
+			name: '⚙️ Hardware Hacking',
+			lat: 41,
+			lng: -87
+		},
+		vets: {
+			id: 'vets',
+			name: '🎖️ VetCon',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.claimPlaceFragmentChallenge('source', 'hardware', 'hardwareHacking', 'multimeter', 'multi meter');
+	daves.source.lastHardwareHackingTime = Date.now() - 61 * 60 * 1000;
+	handlers.claimPlaceFragmentChallenge('source', 'vets', 'vetcon', '1900', '7:00 PM');
+
+	assert.equal(daves.source.fragmentsCollected.length, 2);
+});
+
+test('claimPlaceFragmentChallenge rejects bad source, range, action, answer, and cooldown', () => {
+	const { socket, handlers, io } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		jeopardy: {
+			id: 'jeopardy',
+			name: '🙅 Hacker Jeopardy',
+			lat: 41,
+			lng: -87
+		},
+		farHardware: {
+			id: 'farHardware',
+			name: '⚙️ Hardware Hacking',
+			lat: 42,
+			lng: -88
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.claimPlaceFragmentChallenge('other', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
+	handlers.claimPlaceFragmentChallenge('source', 'farHardware', 'hardwareHacking', 'multimeter', 'multimeter');
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hardwareHacking', 'multimeter', 'multimeter');
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is ls?');
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
+	assert.equal(daves.source.fragmentsCollected.length, 1);
+	assert.equal(daves.source['🍺'], undefined);
+});
+
 test('collecting too many drinks grants the GDIK tag', () => {
 	const { socket, handlers, io } = createHarness();
 	const drink = '🍺';
