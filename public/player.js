@@ -15,6 +15,7 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 const isDebugUser = isDebugId(userId);
+const DAVE_RAVE_MIN_PLAYERS = 10;
 const PEPPER_ITEM = "🌶️";
 
 let map;
@@ -63,6 +64,10 @@ function getItemFromUser(item) {
 }
 
 function startDaveRave() {
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		statusEl.textContent = "Submitting Dave Rave permit...";
+	}
 	socket.emit("startDaveRave", userId);
 }
 
@@ -126,8 +131,12 @@ async function teleport(freeRoam) {
 
 function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
+	const statusEl = document.getElementById("actionStatus");
 
 	actionsContainer.innerHTML = actionHtml;
+	if (statusEl) {
+		statusEl.textContent = "";
+	}
 
 	actionsContainer.onclick = (e) => {
 		const action = e.target.dataset.action;
@@ -205,13 +214,21 @@ async function loadPlayer() {
 	const dave = await res.json();
 	//console.log("loading: " + JSON.stringify(dave, null, 2));
 
+	if (!res.ok) {
+		document.getElementById("playerName").textContent = "Dave unavailable";
+		document.getElementById("actions").innerHTML = "";
+		document.getElementById("actionStatus").textContent = dave.error ?? "Unable to load this Dave.";
+		return;
+	}
+
 
 	// --- Populate fields ---
 	document.getElementById("playerName").textContent = dave.name;
 
 	const stateEl = document.getElementById("playerState");
-	stateEl.textContent = dave.state.toUpperCase();
-	stateEl.className = "state-pill " + dave.state.toLowerCase();
+	const stateValue = state.getState(dave);
+	stateEl.textContent = stateValue.toUpperCase();
+	stateEl.className = "state-pill " + stateValue.toLowerCase();
 
 	if (dave.tags) {
 		renderTags(dave.tags);
@@ -277,9 +294,12 @@ async function loadPlayer() {
 
 		if (dave.availableActions.canStartDaveRave) {
 			actionHtml += `<button class="dave-rave-button" data-action="startDaveRave">START A DAVE RAVE</button>`;
-		} else if (dave.availableActions.davesInArea > 10 && dave.availableActions.daveRaveCooldownRemaining > 0) {
+		} else if (dave.availableActions.davesInArea >= DAVE_RAVE_MIN_PLAYERS && dave.availableActions.daveRaveCooldownRemaining > 0) {
 			const remaining = state.formatCooldownRemaining(dave.availableActions.daveRaveCooldownRemaining);
 			actionHtml += `<button class="dave-rave-button" disabled>START A DAVE RAVE (${remaining})</button>`;
+		} else {
+			const needed = Math.max(0, DAVE_RAVE_MIN_PLAYERS - (dave.availableActions.davesInArea ?? 0));
+			actionHtml += `<button class="dave-rave-button" disabled>START A DAVE RAVE (${needed} MORE DAVES)</button>`;
 		}
 
 		if (isDebugUser) {
@@ -398,6 +418,17 @@ socket.on('stabilizeResult', (data) => {
 socket.on("daveRaveResult", (data) => {
 	if (data.ok) {
 		showDaveRaveAnimation();
+		return;
+	}
+
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		const davesInArea = data?.davesInArea ?? 0;
+		const cooldownRemaining = data?.cooldownRemaining ?? 0;
+		const needed = Math.max(0, DAVE_RAVE_MIN_PLAYERS - davesInArea);
+		statusEl.textContent = needed > 0
+			? `${needed} more Daves required to start a Dave Rave.`
+			: `Dave Rave cooldown active: ${state.formatCooldownRemaining(cooldownRemaining)}.`;
 	}
 });
 

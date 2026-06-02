@@ -77,7 +77,8 @@ test('startDaveRave rejects forged, underpopulated, and cooling down starts', ()
 		event: 'daveRaveResult',
 		payload: {
 			ok: false,
-			davesInArea: 9
+			davesInArea: 9,
+			cooldownRemaining: 0
 		}
 	}]);
 
@@ -91,4 +92,5 @@ test('startDaveRave rejects forged, underpopulated, and cooling down starts', ()
 	assert.equal(cooldownHarness.socketEvents[0].event, 'daveRaveResult');
 	assert.equal(cooldownHarness.socketEvents[0].payload.ok, false);
 	assert.equal(cooldownHarness.socketEvents[0].payload.davesInArea, 10);
+	assert.ok(cooldownHarness.socketEvents[0].payload.cooldownRemaining > 0);
 });

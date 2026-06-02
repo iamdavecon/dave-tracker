@@ -1,4 +1,4 @@
-import { canStartDaveRave, countDavesInArea } from "./players.js";
+import { canStartDaveRave, countDavesInArea, getDaveRaveCooldownRemaining } from "./players.js";
 
 export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	socket.on("startDaveRave", (sourceId) => {
@@ -10,7 +10,8 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDo
 		if (!dave || !canStartDaveRave(dave, daves)) {
 			socket.emit("daveRaveResult", {
 				ok: false,
-				davesInArea: countDavesInArea(dave, daves)
+				davesInArea: countDavesInArea(dave, daves),
+				cooldownRemaining: getDaveRaveCooldownRemaining(dave)
 			});
 			return;
 		}
