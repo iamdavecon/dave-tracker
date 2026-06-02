@@ -13,6 +13,7 @@ import { removeFragment } from './players.js';
 const HOTDOG_ITEM = "🌭";
 const DRINK_ITEM = "🍺";
 const PEPPER_ITEM = "🌶️";
+const BABY_ITEM = "👶";
 const LINECON_TAG = "linecon";
 const TOO_MANY_ITEM_THRESHOLD = 7;
 
@@ -241,6 +242,9 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 
 		const rewardLabel = grantChallengeReward(dave, question.reward ?? challenge.reward);
+		if (action === "hackerJeopardy") {
+			grantItemReward(dave, BABY_ITEM);
+		}
 		dave[challenge.cooldownKey] = Date.now();
 		logEvent(`${dave.name} completed ${challenge.label} at ${place.name} and recovered ${rewardLabel}.`, {
 			userId: dave.userId,

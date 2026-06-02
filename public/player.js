@@ -17,6 +17,7 @@ const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 const isDebugUser = isDebugId(userId);
 const PEPPER_ITEM = "🌶️";
+const BABY_ITEM = "👶";
 
 let map;
 let preserveActionStatusUntil = 0;
@@ -246,6 +247,7 @@ async function loadPlayer() {
 			fragments = dave.fragmentsCollected.length; 
 		}
 		const nodes = dave.nodeCount ?? 0;
+		const babies = state.getAmt(dave, BABY_ITEM);
 
 		let statHtml = "";
 		statHtml = `
@@ -260,6 +262,10 @@ async function loadPlayer() {
 			<div class="field">
 				<span class="label">🏙️ Nodes</span>
 				<span>${nodes}</span>
+			</div>
+			<div class="field">
+				<span class="label">👶 Babies</span>
+				<span>${babies}</span>
 			</div>
 			<div class="field">
 				<span class="label">▧ Dave Raves</span>

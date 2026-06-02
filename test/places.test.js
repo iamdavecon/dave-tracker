@@ -349,6 +349,7 @@ test('circusCircusParking rejects forged, non-circus, and out-of-range drink gra
 test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker Jeopardy answers', () => {
 	const { socket, handlers, io, ioEvents, logs } = createHarness();
 	const drink = '🍺';
+	const baby = '👶';
 	const daves = {
 		source: {
 			userId: 'source',
@@ -370,6 +371,7 @@ test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker 
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'malort', 'What is Malort?');
 
 	assert.equal(daves.source[drink].count, 1);
+	assert.equal(daves.source[baby].count, 1);
 	assert.equal(Number.isFinite(daves.source.lastHackerJeopardyTime), true);
 	assert.equal(ioEvents.length, 1);
 	assert.equal(logs.length, 1);
@@ -378,6 +380,7 @@ test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker 
 test('claimPlaceFragmentChallenge grants question-specific Hacker Jeopardy rewards', () => {
 	const { socket, handlers, io } = createHarness();
 	const hotdog = '🌭';
+	const baby = '👶';
 	const daves = {
 		source: {
 			userId: 'source',
@@ -402,6 +405,7 @@ test('claimPlaceFragmentChallenge grants question-specific Hacker Jeopardy rewar
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 
 	assert.equal(daves.source[hotdog].count, 1);
+	assert.equal(daves.source[baby].count, 2);
 	assert.equal(daves.source.fragmentsCollected.length, 1);
 	assert.equal(daves.source['🍺'], undefined);
 });
@@ -441,6 +445,7 @@ test('claimPlaceFragmentChallenge grants fragments for correct hardware and vetc
 
 test('claimPlaceFragmentChallenge rejects bad source, range, action, answer, and cooldown', () => {
 	const { socket, handlers, io } = createHarness();
+	const baby = '👶';
 	const daves = {
 		source: {
 			userId: 'source',
@@ -475,6 +480,7 @@ test('claimPlaceFragmentChallenge rejects bad source, range, action, answer, and
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 	assert.equal(daves.source.fragmentsCollected.length, 1);
+	assert.equal(daves.source[baby].count, 1);
 	assert.equal(daves.source['🍺'], undefined);
 });
 
