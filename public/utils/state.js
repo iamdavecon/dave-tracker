@@ -321,6 +321,15 @@ export function canMakeBadDecision(source, target) {
 	return hasTag(source, "peppercon") && hasTag(source, "GDIK") && canAscend(source, target);
 }
 
+export function canDecreaseStatus(source, target) {
+	const sourceState = getState(source);
+	return (
+		source?.userId !== target?.userId &&
+		(sourceState === STATES.INFECTED || sourceState === STATES.CORRUPTED) &&
+		getIndex(target) < toNumber(STATES.CORRUPTED)
+	);
+}
+
 export function getUserActions(source, target) {
 	const state = getIndex(source);
 	return {
@@ -335,6 +344,7 @@ export function getUserActions(source, target) {
 		canGrantDavePrime : isDavePrime(source) && !isDavePrime(target),
 		canGrantTag : canGrantTag(source, target),
 		canMakeBadDecision : canMakeBadDecision(source, target),
+		canDecreaseStatus : canDecreaseStatus(source, target),
 		davePrime:  isDavePrime(source),
 	}
 }

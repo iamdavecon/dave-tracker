@@ -85,6 +85,20 @@ test('ascension and tags drive user actions', () => {
 	assert.equal(state.canMakeBadDecision(source, target), false);
 });
 
+test('infected and corrupted daves can decrease another user status', () => {
+	const source = { userId: 'source', state: 'infected' };
+	const corruptedSource = { userId: 'corrupted-source', state: 'corrupted' };
+	const target = { userId: 'target', state: 'immune' };
+	const maxedTarget = { userId: 'maxed-target', state: 'corrupted' };
+
+	assert.equal(state.canDecreaseStatus(source, target), true);
+	assert.equal(state.getUserActions(source, target).canDecreaseStatus, true);
+	assert.equal(state.canDecreaseStatus(corruptedSource, target), true);
+	assert.equal(state.canDecreaseStatus({ userId: 'stable', state: 'immune' }, target), false);
+	assert.equal(state.canDecreaseStatus(source, source), false);
+	assert.equal(state.canDecreaseStatus(source, maxedTarget), false);
+});
+
 test('territory ranks scale by owned node count and level', () => {
 	const dave = { userId: 'source', tags: ['standard-user', 'dod'] };
 	const places = {

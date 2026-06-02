@@ -5,6 +5,7 @@ import {
 	addTag,
 	canAscend,
 	canBePatched,
+	canDecreaseStatus,
 	canDoonShift,
 	canMakeBadDecision,
 	decreaseRank,
@@ -191,6 +192,29 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		}
 
 		io.emit("update", { daves });
+	});
+
+	socket.on("decreaseStatus", (sourceId, targetId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target || !canDecreaseStatus(me, target) || !inRange(me, target)) {
+			return;
+		}
+
+		const previousState = target.state;
+		const success = decreaseRank(target);
+
+		if (success) {
+			logEvent(`${me.name} decreased ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
+				userId: me.userId
+			});
+			io.emit("update", { daves });
+		}
 	});
 
 	socket.on("grantDavePrime", (sourceId, targetId) => {

@@ -179,6 +179,50 @@ test('badDecision rejects forged, missing-tag, ineligible, and out-of-range atte
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 });
 
+test('decreaseStatus lets infected users lower another in-range user status', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', state: 'infected', lat: 41, lng: -87 },
+		target: { userId: 'target', name: 'Target', state: 'immune', lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.decreaseStatus('source', 'target');
+
+	assert.equal(daves.target.state, 'unstable');
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+});
+
+test('decreaseStatus rejects forged, stable, self, maxed, and out-of-range attempts', () => {
+	const { socket, handlers } = createSocket('source');
+	const ioEvents = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', state: 'infected', lat: 41, lng: -87 },
+		stable: { userId: 'stable', name: 'Stable', state: 'immune', lat: 41, lng: -87 },
+		target: { userId: 'target', name: 'Target', state: 'immune', lat: 41, lng: -87 },
+		maxed: { userId: 'maxed', name: 'Maxed', state: 'corrupted', lat: 41, lng: -87 },
+		far: { userId: 'far', name: 'Far', state: 'immune', lat: 42, lng: -88 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) });
+	handlers.decreaseStatus('other', 'target');
+	daves.source.state = 'immune';
+	handlers.decreaseStatus('source', 'target');
+	daves.source.state = 'infected';
+	handlers.decreaseStatus('source', 'source');
+	handlers.decreaseStatus('source', 'maxed');
+	handlers.decreaseStatus('source', 'far');
+
+	assert.equal(daves.source.state, 'infected');
+	assert.equal(daves.target.state, 'immune');
+	assert.equal(daves.maxed.state, 'corrupted');
+	assert.equal(daves.far.state, 'immune');
+	assert.deepEqual(ioEvents, []);
+});
+
 test('grantTag lets DavePrime grant a tag to an in-range user', () => {
 	const { socket, handlers } = createSocket('source');
 	const logs = [];

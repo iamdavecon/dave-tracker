@@ -329,6 +329,10 @@ async function loadPlayer() {
 				actionHtml += `<button data-action="doonShift">CORRUPT HOST</button>`;
 			}
 
+			if (dave.availableActions.canDecreaseStatus) {
+				actionHtml += `<button data-action="decreaseStatus">CORRUPT HOST</button>`;
+			}
+
 			if (!dave.isBot && dave.availableActions.canGrantDavePrime) {
 				actionHtml += `<button data-action="grantDavePrime">GRANT DAVEPRIME</button>`;
 			}
