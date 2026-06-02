@@ -336,10 +336,11 @@ export function canMakeBadDecision(source, target) {
 
 export function canDecreaseStatus(source, target) {
 	const sourceState = getState(source);
+	console.log(getIndex(target) + " vs " + toNumber(STATES.CORRUPTED));
 	return (
 		source?.userId !== target?.userId &&
 		(sourceState === STATES.INFECTED || sourceState === STATES.CORRUPTED) &&
-		getIndex(target) < toNumber(STATES.CORRUPTED)
+		getIndex(target) > toNumber(STATES.CORRUPTED)
 	);
 }
 

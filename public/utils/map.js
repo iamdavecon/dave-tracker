@@ -7,6 +7,8 @@ const LOCATION_OPTIONS = {
 };
 
 const LOCATION_REFRESH_MS = 5000;
+const MAP_REFIT_MS = 10000;
+const activeMapStates = new Map();
 
 export function getMapData(me, target) {
 	return {
@@ -37,11 +39,56 @@ function createPill(label, state = "neutral", isYou = false) {
 	});
 }
 
+function normalizeCoordinate(value, fallback = 0) {
+	return Number.isFinite(value) ? value : fallback;
+}
+
+function fitMapBounds(state, force = false) {
+	const now = Date.now();
+	if (!force && now - state.lastFitAt < MAP_REFIT_MS) {
+		return;
+	}
+
+	state.map.fitBounds(state.group.getBounds(), { padding: [30, 30], animate: true, duration: 0.5 });
+	state.lastFitAt = now;
+}
+
+function updateMapState(state, mapData, shouldFit = false) {
+	state.mapData = mapData;
+	state.meMarker.setLatLng([mapData.viewerLat, mapData.viewerLon]);
+	state.targetMarker.setLatLng([mapData.targetLat, mapData.targetLon]);
+	state.targetMarker.setIcon(createPill(mapData.name, mapData.state?.toLowerCase()));
+	state.connectionLine.setLatLngs([
+		[mapData.viewerLat, mapData.viewerLon],
+		[mapData.targetLat, mapData.targetLon]
+	]);
+	fitMapBounds(state, shouldFit);
+}
+
 export function addMap(mapData, options = {}) {
 	//console.log("loading: " + JSON.stringify(mapData, null, 2));
+	mapData = {
+		...mapData,
+		viewerLat: normalizeCoordinate(mapData?.viewerLat),
+		viewerLon: normalizeCoordinate(mapData?.viewerLon),
+		targetLat: normalizeCoordinate(mapData?.targetLat, normalizeCoordinate(mapData?.viewerLat)),
+		targetLon: normalizeCoordinate(mapData?.targetLon, normalizeCoordinate(mapData?.viewerLon))
+	};
 
 	// --- init map ---
-	const map = L.map("map");
+	const container = document.getElementById("map");
+	if (!container) {
+		return null;
+	}
+
+	const activeState = activeMapStates.get(container);
+	if (activeState) {
+		activeState.options = options;
+		updateMapState(activeState, mapData);
+		return activeState.map;
+	}
+
+	const map = L.map(container);
 
 	L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 		attribution: "© OpenStreetMap"
@@ -70,12 +117,21 @@ export function addMap(mapData, options = {}) {
 		{ color: "white", opacity: 0.5 }
 	).addTo(map);
 
-	function fitMap() {
-		map.fitBounds(group.getBounds(), { padding: [30, 30] });
-	}
+	const mapState = {
+		map,
+		meMarker,
+		targetMarker,
+		group,
+		connectionLine,
+		mapData,
+		options,
+		lastFitAt: 0
+	};
+
+	activeMapStates.set(container, mapState);
 
 	function updateViewerLocation(lat, lng) {
-		if (options.freeRoam || mapData.freeRoam) {
+		if (mapState.options.freeRoam || mapState.mapData.freeRoam) {
 			return;
 		}
 
@@ -83,17 +139,17 @@ export function addMap(mapData, options = {}) {
 			return;
 		}
 
-		mapData.viewerLat = lat;
-		mapData.viewerLon = lng;
+		mapState.mapData.viewerLat = lat;
+		mapState.mapData.viewerLon = lng;
 		meMarker.setLatLng([lat, lng]);
 		connectionLine.setLatLngs([
 			[lat, lng],
-			[mapData.targetLat, mapData.targetLon]
+			[mapState.mapData.targetLat, mapState.mapData.targetLon]
 		]);
-		fitMap();
+		fitMapBounds(mapState);
 
-		options.socket?.emit("location", { lat, lng });
-		options.onLocation?.({ lat, lng });
+		mapState.options.socket?.emit("location", { lat, lng });
+		mapState.options.onLocation?.({ lat, lng });
 	}
 
 	function refreshLocation() {
@@ -113,15 +169,19 @@ export function addMap(mapData, options = {}) {
 
 		const intervalId = window.setInterval(refreshLocation, LOCATION_REFRESH_MS);
 
-		window.addEventListener("beforeunload", () => {
+		const cleanup = () => {
 			navigator.geolocation.clearWatch(watchId);
 			window.clearInterval(intervalId);
-		}, { once: true });
+			activeMapStates.delete(container);
+		};
+
+		mapState.cleanup = cleanup;
+		window.addEventListener("beforeunload", cleanup, { once: true });
 
 		refreshLocation();
 	}
 
-	fitMap();
+	fitMapBounds(mapState, true);
 
 	return map;
 }
