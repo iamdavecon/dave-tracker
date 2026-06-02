@@ -145,6 +145,29 @@ test('countDavesInArea counts non-bot daves in range and enables Dave Raves at t
 	assert.equal(canStartDaveRave(source, daves), false);
 });
 
+test('countDavesInArea uses the fixed Dave Rave crowd radius', () => {
+	const source = {
+		userId: 'source',
+		name: 'Source',
+		state: 'immune',
+		lat: 41,
+		lng: -87
+	};
+	const daves = { source };
+
+	for (let i = 0; i < 9; i++) {
+		daves[`near-${i}`] = {
+			userId: `near-${i}`,
+			name: `Near ${i}`,
+			lat: 41,
+			lng: -87 + 0.0025
+		};
+	}
+
+	assert.equal(countDavesInArea(source, daves), 10);
+	assert.equal(canStartDaveRave(source, daves), true);
+});
+
 test('getInteraction exposes Dave Rave availability only on your own page', () => {
 	const source = {
 		userId: 'source',

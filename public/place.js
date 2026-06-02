@@ -79,6 +79,33 @@ function getItem(item) {
 	location.reload()
 }
 
+function getLineconUrl() {
+	return `/linecon.html?placeId=${encodeURIComponent(placeId)}`;
+}
+
+function openLinecon() {
+	window.location.href = getLineconUrl();
+}
+
+function joinLinecon() {
+	let handled = false;
+
+	socket.emit("joinLinecon", userId, placeId, (result) => {
+		handled = true;
+		if (!result?.ok) {
+			alert(result?.error || "LineCon is not available here");
+			return;
+		}
+		openLinecon();
+	});
+
+	setTimeout(() => {
+		if (!handled) {
+			openLinecon();
+		}
+	}, 500);
+}
+
 function claimPlaceFragmentChallenge(action) {
 	const challenge = getPlaceFragmentChallengeForAction(action);
 	const question = getRandomPlaceChallengeQuestion(challenge);
@@ -126,6 +153,12 @@ function addActions(actionHtml) {
 				break;
 			case "deconstructNode":
 				deconstructPlace();
+				break;
+			case "joinLinecon":
+				joinLinecon();
+				break;
+			case "playLinecon":
+				openLinecon();
 				break;
 			default:
 				emit(action);
@@ -220,8 +253,11 @@ async function loadPlace() {
 	}
 
 	if (place.mapData.inRange) {
-		if (firstEmoji == '☠' && !state.hasTag(dave, "linecon")) {
-			actionHtml += `<button data-action="joinLinecon">Join linecon</button>`;
+		const isLineconNode = firstEmoji == '☠' || /def\s*con|line\s*con|linecon/i.test(place.name ?? "");
+		if (isLineconNode) {
+			actionHtml += state.hasTag(dave, "linecon")
+				? `<button data-action="playLinecon">Play LineCon</button>`
+				: `<button data-action="joinLinecon">Join LineCon</button>`;
 		}
 
 		if (place.name?.includes("Circus Circus")) {

@@ -3,6 +3,7 @@ import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import { displayItems } from './utils/itemUI.js';
 import { getRecognizedTags, getTagPlayerLabel } from './utils/tags.js';
+import { DAVE_RAVE_DEBUG_ENABLED, DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from './utils/raves.js';
 import * as state from "./utils/state.js";
 
 const userId = getUserId();
@@ -15,10 +16,11 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 const isDebugUser = isDebugId(userId);
-const DAVE_RAVE_MIN_PLAYERS = 10;
 const PEPPER_ITEM = "🌶️";
 
 let map;
+let preserveActionStatusUntil = 0;
+let pendingPlayerLoad = null;
 
 bindLogEvents(socket);
 
@@ -134,7 +136,7 @@ function addActions(actionHtml) {
 	const statusEl = document.getElementById("actionStatus");
 
 	actionsContainer.innerHTML = actionHtml;
-	if (statusEl) {
+	if (statusEl && Date.now() >= preserveActionStatusUntil) {
 		statusEl.textContent = "";
 	}
 
@@ -292,6 +294,26 @@ async function loadPlayer() {
 			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
 		}
 
+		const eligibleDaves = Array.isArray(dave.availableActions.daveRaveEligibleDaves)
+			? dave.availableActions.daveRaveEligibleDaves
+			: [];
+		const excludedDaves = Array.isArray(dave.availableActions.daveRaveExcludedDaves)
+			? dave.availableActions.daveRaveExcludedDaves
+			: [];
+		const eligibleNames = eligibleDaves
+			.map((dave) => `${dave.name}${Number.isFinite(dave.distanceMeters) ? ` (${dave.distanceMeters}m)` : ""}`)
+			.join(", ");
+		const excludedNames = excludedDaves
+			.map((dave) => `${dave.name}${Number.isFinite(dave.distanceMeters) ? ` (${dave.distanceMeters}m)` : ""}: ${dave.reason}`)
+			.join(", ");
+		actionHtml += `
+			<div class="field-note">
+				Dave Rave eligible: ${dave.availableActions.davesInArea ?? 0}/${DAVE_RAVE_MIN_PLAYERS} within ${DAVE_RAVE_RADIUS_METERS}m.
+				${DAVE_RAVE_DEBUG_ENABLED && eligibleNames ? `Counted: ${eligibleNames}.` : ""}
+				${DAVE_RAVE_DEBUG_ENABLED && excludedNames ? `Excluded nearby: ${excludedNames}.` : ""}
+			</div>
+		`;
+
 		if (dave.availableActions.canStartDaveRave) {
 			actionHtml += `<button class="dave-rave-button" data-action="startDaveRave">START A DAVE RAVE</button>`;
 		} else if (dave.availableActions.davesInArea >= DAVE_RAVE_MIN_PLAYERS && dave.availableActions.daveRaveCooldownRemaining > 0) {
@@ -390,6 +412,17 @@ async function loadPlayer() {
 
 loadPlayer();
 
+function schedulePlayerRefresh() {
+	if (pendingPlayerLoad) {
+		clearTimeout(pendingPlayerLoad);
+	}
+
+	pendingPlayerLoad = setTimeout(() => {
+		pendingPlayerLoad = null;
+		loadPlayer();
+	}, 250);
+}
+
 
 
 
@@ -404,6 +437,10 @@ socket.on('infectResult', (data) => {
 });
 
 socket.on('notifyInfected', () => {});
+
+socket.on("update", () => {
+	schedulePlayerRefresh();
+});
 
 
 //  STABILIZE
@@ -421,14 +458,35 @@ socket.on("daveRaveResult", (data) => {
 		return;
 	}
 
+	preserveActionStatusUntil = Date.now() + 5000;
 	const statusEl = document.getElementById("actionStatus");
 	if (statusEl) {
 		const davesInArea = data?.davesInArea ?? 0;
 		const cooldownRemaining = data?.cooldownRemaining ?? 0;
-		const needed = Math.max(0, DAVE_RAVE_MIN_PLAYERS - davesInArea);
-		statusEl.textContent = needed > 0
-			? `${needed} more Daves required to start a Dave Rave.`
-			: `Dave Rave cooldown active: ${state.formatCooldownRemaining(cooldownRemaining)}.`;
+		const requiredDaves = data?.debug?.requiredDaves ?? DAVE_RAVE_MIN_PLAYERS;
+		const radiusMeters = data?.debug?.radiusMeters;
+		const eligibleNames = Array.isArray(data?.debug?.eligibleDaves)
+			? data.debug.eligibleDaves.map((dave) => `${dave.name}${Number.isFinite(dave.distanceMeters) ? ` (${dave.distanceMeters}m)` : ""}`).join(", ")
+			: "";
+		const excludedNames = Array.isArray(data?.debug?.excludedDaves)
+			? data.debug.excludedDaves.map((dave) => `${dave.name}${Number.isFinite(dave.distanceMeters) ? ` (${dave.distanceMeters}m)` : ""}: ${dave.reason}`).join(", ")
+			: "";
+		const needed = Math.max(0, requiredDaves - davesInArea);
+		const sourceLocation = Number.isFinite(data?.debug?.sourceLat) && Number.isFinite(data?.debug?.sourceLng)
+			? ` Source: ${data.debug.sourceLat.toFixed(6)}, ${data.debug.sourceLng.toFixed(6)}.`
+			: "";
+		const debugText = DAVE_RAVE_DEBUG_ENABLED
+			? ` Server counted ${davesInArea}/${requiredDaves}${radiusMeters ? ` within ${radiusMeters}m` : ""}.${sourceLocation}${eligibleNames ? ` Counted: ${eligibleNames}.` : ""}${excludedNames ? ` Excluded nearby: ${excludedNames}.` : ""}`
+			: "";
+		if (data?.reason === "cooldown" && cooldownRemaining > 0) {
+			statusEl.textContent = `Dave Rave cooldown active: ${state.formatCooldownRemaining(cooldownRemaining)}.${debugText}`;
+		} else if (data?.reason === "not-enough-daves" || needed > 0) {
+			statusEl.textContent = `${needed} more nearby Daves required to start a Dave Rave.${debugText}`;
+		} else if (data?.reason === "unavailable") {
+			statusEl.textContent = `Dave Rave request denied. Your Dave session is not active yet.${debugText}`;
+		} else {
+			statusEl.textContent = `Dave Rave request denied. Make sure your location is current and try again.${debugText}`;
+		}
 	}
 });
 

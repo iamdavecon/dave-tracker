@@ -569,6 +569,23 @@ io.on('connection', (socket) => {
 		});
 	});
 
+	socket.on("lineconBump", (sourceId, placeId = null, callback = () => {}) => {
+		if (sourceId !== socket.userId) {
+			callback({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const me = daves[socket.userId];
+		if (!me) {
+			callback({ ok: false, error: "Dave's not here" });
+			return;
+		}
+
+		me.lineconBumps = Math.max(0, Number(me.lineconBumps ?? 0)) + 1;
+		me.updatedAt = Date.now();
+		callback({ ok: true, bumps: me.lineconBumps, placeId });
+	});
+
 	socket.on('disconnect', () => {
 		const dave = daves[socket.userId];
 		if (dave) {

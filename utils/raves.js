@@ -1,4 +1,6 @@
-import { canStartDaveRave, countDavesInArea, getDaveRaveCooldownRemaining } from "./players.js";
+import { DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from "../public/utils/raves.js";
+import { canStartDaveRave, getDaveRaveDebug, getDaveRaveCooldownRemaining } from "./players.js";
+import { getUsers } from "./storage.js";
 
 export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	socket.on("startDaveRave", (sourceId) => {
@@ -6,12 +8,33 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDo
 			return;
 		}
 
-		const dave = daves[sourceId];
-		if (!dave || !canStartDaveRave(dave, daves)) {
+		const localDaves = getUsers(daves);
+		const dave = daves[sourceId] || localDaves[sourceId];
+		const raveDebug = getDaveRaveDebug(dave, localDaves);
+		const davesInArea = raveDebug.eligibleDaves.length;
+		const cooldownRemaining = getDaveRaveCooldownRemaining(dave);
+		const debug = {
+			requiredDaves: DAVE_RAVE_MIN_PLAYERS,
+			radiusMeters: DAVE_RAVE_RADIUS_METERS,
+			sourceId,
+			sourceName: dave?.name ?? null,
+			sourceLat: Number.isFinite(dave?.lat) ? dave.lat : null,
+			sourceLng: Number.isFinite(dave?.lng) ? dave.lng : null,
+			eligibleDaves: raveDebug.eligibleDaves,
+			excludedDaves: raveDebug.excludedDaves
+		};
+		const reason = !dave
+			? "unavailable"
+			: cooldownRemaining > 0
+				? "cooldown"
+				: "not-enough-daves";
+		if (!dave || !canStartDaveRave(dave, localDaves)) {
 			socket.emit("daveRaveResult", {
 				ok: false,
-				davesInArea: countDavesInArea(dave, daves),
-				cooldownRemaining: getDaveRaveCooldownRemaining(dave)
+				reason,
+				davesInArea,
+				cooldownRemaining,
+				debug
 			});
 			return;
 		}
@@ -28,7 +51,8 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDo
 		socket.emit("daveRaveResult", {
 			ok: true,
 			daveravesStarted: dave.daveravesStarted,
-			davesInArea: countDavesInArea(dave, daves)
+			davesInArea,
+			debug
 		});
 		io.emit("daveRave", {
 			userId: dave.userId,

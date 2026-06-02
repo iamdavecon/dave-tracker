@@ -1,10 +1,10 @@
 import * as state from "../public/utils/state.js";
+import { DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from "../public/utils/raves.js";
 import { getMapData } from "../public/utils/map.js"
-import { inRange } from "../public/utils/distance.js";
+import { haversineDistance, inRange } from "../public/utils/distance.js";
 
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
-const DAVE_RAVE_MIN_PLAYERS = 10;
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
 
 function getDisplayTags(dave, places = {}) {
@@ -82,8 +82,12 @@ export function getLinkedDaveSummaries(dave, allDaves = {}) {
 }
 
 export function countDavesInArea(me, allDaves = {}) {
+	return getDavesInArea(me, allDaves).length;
+}
+
+export function getDavesInArea(me, allDaves = {}) {
 	if (!me || !Number.isFinite(me.lat) || !Number.isFinite(me.lng)) {
-		return 0;
+		return [];
 	}
 
 	return Object.values(allDaves).filter((dave) => {
@@ -91,8 +95,71 @@ export function countDavesInArea(me, allDaves = {}) {
 			return false;
 		}
 
-		return dave.userId === me.userId || inRange(me, dave);
-	}).length;
+		return dave.userId === me.userId || haversineDistance(me, dave) < DAVE_RAVE_RADIUS_METERS;
+	});
+}
+
+export function getDaveRaveDebug(me, allDaves = {}) {
+	if (!me || !Number.isFinite(me.lat) || !Number.isFinite(me.lng)) {
+		return {
+			eligibleDaves: [],
+			excludedDaves: []
+		};
+	}
+
+	const eligibleDaves = [];
+	const excludedDaves = [];
+
+	for (const dave of Object.values(allDaves)) {
+		if (!dave) {
+			continue;
+		}
+
+		if (dave.isBot) {
+			if (Number.isFinite(dave.lat) && Number.isFinite(dave.lng)) {
+				const distanceMeters = Math.round(haversineDistance(me, dave));
+				if (distanceMeters < DAVE_RAVE_RADIUS_METERS) {
+					excludedDaves.push({
+						userId: dave.userId,
+						name: dave.name ?? dave.userId,
+						reason: "bot",
+						distanceMeters
+					});
+				}
+			}
+			continue;
+		}
+
+		if (!Number.isFinite(dave.lat) || !Number.isFinite(dave.lng)) {
+			excludedDaves.push({
+				userId: dave.userId,
+				name: dave.name ?? dave.userId,
+				reason: "missing-coordinates"
+			});
+			continue;
+		}
+
+		const distanceMeters = dave.userId === me.userId ? 0 : Math.round(haversineDistance(me, dave));
+		if (dave.userId === me.userId || distanceMeters < DAVE_RAVE_RADIUS_METERS) {
+			eligibleDaves.push({
+				userId: dave.userId,
+				name: dave.name ?? dave.userId,
+				distanceMeters
+			});
+		} else if (distanceMeters < DAVE_RAVE_RADIUS_METERS + 100) {
+			excludedDaves.push({
+				userId: dave.userId,
+				name: dave.name ?? dave.userId,
+				reason: "outside-radius",
+				distanceMeters
+			});
+		}
+	}
+
+	return {
+		eligibleDaves,
+		excludedDaves
+	};
 }
 
 export function canStartDaveRave(me, allDaves = {}) {
@@ -119,7 +186,10 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	daveDetails.availableActions.pepperCooldownRemaining = daveDetails.availableActions.hasPepper
 		? state.getCooldownRemaining(me, PEPPER_ITEM)
 		: 0;
-	daveDetails.availableActions.davesInArea = countDavesInArea(me, allDaves);
+	const daveRaveDebug = getDaveRaveDebug(me, allDaves);
+	daveDetails.availableActions.davesInArea = daveRaveDebug.eligibleDaves.length;
+	daveDetails.availableActions.daveRaveEligibleDaves = daveRaveDebug.eligibleDaves;
+	daveDetails.availableActions.daveRaveExcludedDaves = daveRaveDebug.excludedDaves;
 	daveDetails.availableActions.daveRaveCooldownRemaining = getDaveRaveCooldownRemaining(me);
 	daveDetails.availableActions.canStartDaveRave = daveDetails.isMe && canStartDaveRave(me, allDaves);
 	daveDetails.linkedDaves = daveDetails.isMe ? getLinkedDaveSummaries(dave, allDaves) : [];

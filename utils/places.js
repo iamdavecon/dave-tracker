@@ -172,14 +172,16 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		console.log("visitDavePoint");
 	});
 
-	socket.on("joinLinecon", (sourceId, placeId) => {
+	socket.on("joinLinecon", (sourceId, placeId, callback = () => {}) => {
 		if (sourceId !== socket.userId) {
+			callback({ ok: false, error: "source mismatch" });
 			return;
 		}
 
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
 		if (!dave || !place || !inRange(dave, place) || state.hasTag(dave, LINECON_TAG) || !place.name?.includes("☠")) {
+			callback({ ok: false, error: "linecon unavailable" });
 			return;
 		}
 
@@ -189,6 +191,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 				placeId
 			});
 			io.emit("update");
+			callback({ ok: true, joined: true });
 		}
 	});
 
