@@ -18,7 +18,8 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 		dave.daveravesStarted = (dave.daveravesStarted ?? 0) + 1;
 		dave.lastDaveRaveTime = Date.now();
 		logEvent(`${dave.name} started a Dave Rave.`, {
-			userId: dave.userId
+			userId: dave.userId,
+			important: true
 		});
 		socket.emit("daveRaveResult", {
 			ok: true,

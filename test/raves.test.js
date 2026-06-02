@@ -26,7 +26,7 @@ function createHarness(userId = 'source') {
 	return { socket, handlers, socketEvents, io, ioEvents, logs };
 }
 
-function createRaveDaves(count = 11) {
+function createRaveDaves(count = 10) {
 	const daves = {};
 
 	for (let i = 0; i < count; i++) {
@@ -42,7 +42,7 @@ function createRaveDaves(count = 11) {
 	return daves;
 }
 
-test('startDaveRave increments the counter when more than ten daves are in range', () => {
+test('startDaveRave increments the counter when ten daves are in range', () => {
 	const { socket, handlers, socketEvents, io, ioEvents, logs } = createHarness();
 	const daves = createRaveDaves();
 
@@ -56,7 +56,7 @@ test('startDaveRave increments the counter when more than ten daves are in range
 		payload: {
 			ok: true,
 			daveravesStarted: 1,
-			davesInArea: 11
+			davesInArea: 10
 		}
 	}]);
 	assert.equal(ioEvents.map(event => event.event).includes('daveRave'), true);
@@ -66,7 +66,7 @@ test('startDaveRave increments the counter when more than ten daves are in range
 
 test('startDaveRave rejects forged, underpopulated, and cooling down starts', () => {
 	const { socket, handlers, socketEvents, io } = createHarness();
-	const daves = createRaveDaves(10);
+	const daves = createRaveDaves(9);
 
 	registerHandlers(socket, daves, io);
 	handlers.startDaveRave('other');
@@ -77,11 +77,11 @@ test('startDaveRave rejects forged, underpopulated, and cooling down starts', ()
 		event: 'daveRaveResult',
 		payload: {
 			ok: false,
-			davesInArea: 10
+			davesInArea: 9
 		}
 	}]);
 
-	const readyDaves = createRaveDaves(11);
+	const readyDaves = createRaveDaves(10);
 	readyDaves.source.lastDaveRaveTime = Date.now();
 	const cooldownHarness = createHarness();
 	registerHandlers(cooldownHarness.socket, readyDaves, cooldownHarness.io);
@@ -90,5 +90,5 @@ test('startDaveRave rejects forged, underpopulated, and cooling down starts', ()
 	assert.equal(readyDaves.source.daveravesStarted, undefined);
 	assert.equal(cooldownHarness.socketEvents[0].event, 'daveRaveResult');
 	assert.equal(cooldownHarness.socketEvents[0].payload.ok, false);
-	assert.equal(cooldownHarness.socketEvents[0].payload.davesInArea, 11);
+	assert.equal(cooldownHarness.socketEvents[0].payload.davesInArea, 10);
 });

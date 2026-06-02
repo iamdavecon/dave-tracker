@@ -11,6 +11,7 @@ import * as places from './utils/places.js';
 import * as raves from './utils/raves.js';
 import * as ascension from './utils/ascension.js';
 import * as debug from './utils/debug.js';
+import { postImportantLogToDiscord } from './utils/discord.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
 
@@ -154,6 +155,10 @@ function logEvent(message, options = {}) {
 
 	// broadcast to all connected clients
 	io.emit("logEvent", entry);
+
+	postImportantLogToDiscord(entry, options).catch((error) => {
+		console.error("Discord webhook error:", error);
+	});
 
 	return entry;
 }
@@ -389,8 +394,11 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 
 	logEvent(fragmentCount > 0
 		? `${daveName} deconstructed ${placeName} and recovered ${fragmentCount} fragments.`
-		: `${daveName} deconstructed ${placeName}.`
-	);
+		: `${daveName} deconstructed ${placeName}.`, {
+		userId: dave.userId,
+		placeId,
+		important: true
+	});
 
 	io.emit("update");
 
@@ -674,7 +682,8 @@ io.on('connection', (socket) => {
 
 		logEvent(`${me.name} applied to the Department of Davefence.`, {
 			userId: me.userId,
-			placeId
+			placeId,
+			important: true
 		});
 
 		const rewardMessage = formatItemRewards(rewards);

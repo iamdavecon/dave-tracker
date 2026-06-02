@@ -209,7 +209,8 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 
 		if (success) {
 			logEvent(`${me.name} granted DAVEPRIME clearance to ${target.name}.`, {
-				userId: me.userId
+				userId: me.userId,
+				important: true
 			});
 		}
 

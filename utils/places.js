@@ -90,7 +90,8 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		state.syncTerritoryRank(dave, savedPlaces);
 		logEvent(`${dave.name} established a new node.`, {
 			userId: dave.userId,
-			placeId: newPlace.id
+			placeId: newPlace.id,
+			important: true
 		});
 		io.emit("update");
 	});
@@ -112,7 +113,8 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		state.syncTerritoryRank(dave, savedPlaces);
 		logEvent(`${dave.name} upgraded ${place.name} to level ${place.level}.`, {
 			userId: dave.userId,
-			placeId
+			placeId,
+			important: true
 		});
 		io.emit("update");
 	});
@@ -133,7 +135,8 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		state.syncTerritoryRank(dave, savedPlaces);
 		logEvent(`${dave.name} doonified ${place.name} to level ${place.level}.`, {
 			userId: dave.userId,
-			placeId
+			placeId,
+			important: true
 		});
 		io.emit("update");
 	});

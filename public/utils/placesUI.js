@@ -230,8 +230,7 @@ export function getAscensionText(dave, place) {
 			case 0: return "BECOME MORE DAVE";
 			case 1: return "REQUEST ELEVATION";
 			case 2: return "INSTALL NEW DAVEWARE";
-			case 3: return "BEGIN AWAKENING";
-			case 4: return "ENTER RESONANCE";
+			case 3: return "ENTER RESONANCE";
 			case 5: return "ACHIEVE DAVEHOOD";
 			case 6: return "PROCEED TO DOPE STATUS";
 		}

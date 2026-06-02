@@ -3,7 +3,6 @@ const STATES = {
 	DOPE: "dope",
 	ASCENDED: "ascended",
 	RESONANT: "resonant",
-	AWAKENING: "awakening",
 	IMMUNE: "immune",
 	UNSTABLE: "unstable",
 	INFECTED: "infected",
@@ -58,8 +57,8 @@ export function getRandomState() {
 
 export function getRandomBotState() {
 	const outcomes = [
-		{ state: STATES.UNSTABLE, weight: 0.7 },
-		{ state: STATES.CORRUPTED, weight: 0.3 }
+		{ state: STATES.UNSTABLE, weight: 0.9 },
+		{ state: STATES.CORRUPTED, weight: 0.1 }
 	];
 
 	const rand = Math.random();
@@ -133,7 +132,6 @@ export function getAscendencyBonus(obj) {
 			[STATES.DOPE]: 12,
 			[STATES.ASCENDED]: 10,
 			[STATES.RESONANT]: 8,
-			[STATES.AWAKENING]: 6,
 			[STATES.IMMUNE]: 4
 		};
 		if (overrides[currentState] != null) {
@@ -345,12 +343,10 @@ export function maxState(dave) {
 	switch (getState(dave)) {
 		case STATES.IMMUNE:
 			return 3;
-		case STATES.AWAKENING:
-			return 4;
 		case STATES.RESONANT:
 			return 5;
 		case STATES.ASCENDED:
-			return 6;
+			return 7;
 		case STATES.DOPE:
 			return 9;
 		case STATES.DAVEPRIME:

@@ -25,7 +25,8 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		logEvent(`${dave.name} ascended at ${place.name} to level ${level}.`, {
 			userId: dave.userId,
-			placeId
+			placeId,
+			important: true
 		});
 		io.emit("update", { daves });
 	});

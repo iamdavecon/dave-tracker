@@ -1,4 +1,5 @@
 set_redis.sh
+discord-webhook.txt
 users.json
 places.json
 *~

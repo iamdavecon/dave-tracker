@@ -102,7 +102,7 @@ test('getInteraction respects pepper pickup cooldown', () => {
 	assert.ok(details.availableActions.pepperCooldownRemaining > 0);
 });
 
-test('countDavesInArea counts non-bot daves in range and enables Dave Raves above ten players', () => {
+test('countDavesInArea counts non-bot daves in range and enables Dave Raves at ten players', () => {
 	const source = {
 		userId: 'source',
 		name: 'Source',
@@ -111,7 +111,7 @@ test('countDavesInArea counts non-bot daves in range and enables Dave Raves abov
 	};
 	const daves = { source };
 
-	for (let i = 0; i < 10; i++) {
+	for (let i = 0; i < 9; i++) {
 		daves[`near-${i}`] = {
 			userId: `near-${i}`,
 			name: `Near ${i}`,
@@ -133,15 +133,15 @@ test('countDavesInArea counts non-bot daves in range and enables Dave Raves abov
 		lng: -88
 	};
 
-	assert.equal(countDavesInArea(source, daves), 11);
+	assert.equal(countDavesInArea(source, daves), 10);
 	assert.equal(canStartDaveRave(source, daves), true);
 
 	source.lastDaveRaveTime = Date.now();
 	assert.equal(canStartDaveRave(source, daves), false);
 	delete source.lastDaveRaveTime;
 
-	delete daves['near-9'];
-	assert.equal(countDavesInArea(source, daves), 10);
+	delete daves['near-8'];
+	assert.equal(countDavesInArea(source, daves), 9);
 	assert.equal(canStartDaveRave(source, daves), false);
 });
 
