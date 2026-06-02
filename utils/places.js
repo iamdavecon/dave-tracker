@@ -287,6 +287,10 @@ export function getInteraction(me, place) {
 }
 
 export function isTooNear(me, savedPlaces) {
+	if (state.canBypassNodeDistanceRestriction(me)) {
+		return false;
+	}
+
 	for (const place of Object.values(savedPlaces)) {
 		//console.log("\tconsidering : " + place.name + " is " + inRange(place, me));
 		if (inRange(place, me)) {

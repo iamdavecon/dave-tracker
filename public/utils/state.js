@@ -309,6 +309,11 @@ export function isDavePrime(dave) {
 	return getIndex(dave) <= toNumber(STATES.DAVEPRIME)
 }
 
+export function canBypassNodeDistanceRestriction(dave) {
+	const currentState = getState(dave);
+	return currentState === STATES.DOPE || currentState === STATES.DAVEPRIME;
+}
+
 export function canDoonShift(source, target) {
 	return hasTag(source, "doon") && getState(target) == STATES.INFECTED;
 }

@@ -128,6 +128,14 @@ test('place actions require fragments and cap upgrades by player state', () => {
 	assert.equal(state.getPlaceActions(brokeDave, upgradeablePlace).canUpgrade, undefined);
 });
 
+test('DOPE and DAVEPRIME bypass node distance restrictions', () => {
+	assert.equal(state.canBypassNodeDistanceRestriction({ state: 'daveprime' }), true);
+	assert.equal(state.canBypassNodeDistanceRestriction({ state: 'dope' }), true);
+	assert.equal(state.canBypassNodeDistanceRestriction({ state: 'ascended' }), false);
+	assert.equal(state.canBypassNodeDistanceRestriction({ state: 'immune' }), false);
+	assert.equal(state.canBypassNodeDistanceRestriction({}), false);
+});
+
 test('doon place upgrade actions require the doon tag and respect cooldown', () => {
 	const dave = { state: 'immune', tags: ['doon'] };
 

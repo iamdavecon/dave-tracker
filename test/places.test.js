@@ -74,6 +74,32 @@ test('dropDavePoint refuses free or too-near node creation', () => {
 	assert.deepEqual(daves.source.fragmentsCollected, ['fragment']);
 });
 
+test('dropDavePoint lets DOPE and DAVEPRIME users ignore nearby node restriction', () => {
+	for (const daveState of ['dope', 'daveprime']) {
+		const { socket, handlers, io } = createHarness();
+		const daves = {
+			source: {
+				userId: 'source',
+				name: 'Source',
+				state: daveState,
+				lat: 41,
+				lng: -87,
+				fragmentsCollected: ['fragment'],
+				tags: []
+			}
+		};
+		const places = {
+			existing: { id: 'existing', lat: 41, lng: -87, name: 'Existing' }
+		};
+
+		registerHandlers(socket, daves, places, io);
+		handlers.dropDavePoint('source');
+
+		assert.equal(Object.keys(places).length, 2);
+		assert.deepEqual(daves.source.fragmentsCollected, []);
+	}
+});
+
 test('upgradeDavePoint enforces source, range, fragments, and max level', () => {
 	const { socket, handlers, io } = createHarness();
 	const daves = {
