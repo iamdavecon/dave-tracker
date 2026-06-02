@@ -4,7 +4,7 @@ import { inRange } from "../public/utils/distance.js";
 
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
-const DAVE_RAVE_MIN_PLAYERS = 11;
+const DAVE_RAVE_MIN_PLAYERS = 10;
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
 
 function getDisplayTags(dave, places = {}) {
@@ -34,6 +34,7 @@ export function summarizeDave(dave, places = {}) {
 	let score = 0;
 	let teamVirus = 0;
 	let teamAntivirus = 0;
+	const tags = getDisplayTags(dave, places);
 
 	if (dave.infectedUsers) {
 		teamVirus += dave.infectedUsers.length; 
@@ -52,6 +53,7 @@ export function summarizeDave(dave, places = {}) {
 		score += (dave.linkedDaves.length * 2);
 	}
 	score += countAcquiredItems(dave);
+	score += tags.length * 5;
 
 	let daveDetails = {
 		userId: dave.userId,
@@ -60,7 +62,7 @@ export function summarizeDave(dave, places = {}) {
 		teamVirus: teamVirus,
 		teamAntivirus: teamAntivirus,
 		state: state.getState(dave).toUpperCase(),
-		tags: getDisplayTags(dave, places)
+		tags
 	};
 
 	return daveDetails;

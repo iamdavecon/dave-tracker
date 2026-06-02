@@ -24,7 +24,7 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	assert.deepEqual(summary, {
 		userId: 'dave-1',
 		name: 'Leaderboard Dave',
-		score: 46,
+		score: 56,
 		teamVirus: 2,
 		teamAntivirus: 13,
 		state: 'RESONANT',
