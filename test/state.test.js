@@ -85,6 +85,29 @@ test('ascension and tags drive user actions', () => {
 	assert.equal(state.canMakeBadDecision(source, target), false);
 });
 
+test('DavePrime QR scan bonus raises source state only up to DOPE', () => {
+	const target = { userId: 'target', state: 'daveprime' };
+	const ordinaryTarget = { userId: 'ordinary', state: 'immune' };
+	const source = { userId: 'source', state: 'unstable' };
+
+	assert.equal(state.grantDavePrimeScanBonus(source, ordinaryTarget), false);
+	assert.equal(source.state, 'unstable');
+
+	assert.equal(state.grantDavePrimeScanBonus(source, target), true);
+	assert.equal(source.state, 'immune');
+
+	source.state = 'ascended';
+	assert.equal(state.grantDavePrimeScanBonus(source, target), true);
+	assert.equal(source.state, 'dope');
+
+	assert.equal(state.grantDavePrimeScanBonus(source, target), false);
+	assert.equal(source.state, 'dope');
+
+	source.state = 'daveprime';
+	assert.equal(state.grantDavePrimeScanBonus(source, target), false);
+	assert.equal(source.state, 'daveprime');
+});
+
 test('infected and corrupted daves can decrease another user status', () => {
 	const source = { userId: 'source', state: 'infected' };
 	const corruptedSource = { userId: 'corrupted-source', state: 'corrupted' };

@@ -177,6 +177,14 @@ export function grantDavePrime(dave) {
 	return true;
 }
 
+export function grantDavePrimeScanBonus(source, target) {
+	if (!isDavePrime(target)) {
+		return false;
+	}
+
+	return ascendUser(source);
+}
+
 export function setImmune(dave) {
 	const state = getIndex(dave);
 	if (state > toNumber(STATES.IMMUNE)) {

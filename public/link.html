@@ -47,6 +47,10 @@
 				linkStatus.textContent = "This is your own Dave link.";
 			} else if (result.reason === "already-linked") {
 				linkStatus.textContent = "Already linked.";
+			} else if (result.recoveredFragment && result.gainedDavePrimeScanState) {
+				linkStatus.textContent = "Linked. Fragment recovered. State gained.";
+			} else if (result.gainedDavePrimeScanState) {
+				linkStatus.textContent = "Linked. State gained.";
 			} else if (result.recoveredFragment) {
 				linkStatus.textContent = "Linked. Fragment recovered.";
 			} else {

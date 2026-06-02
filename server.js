@@ -301,16 +301,22 @@ app.post('/api/link-dave', async (req, res) => {
 	if (!source.linkedDaves.includes(targetId)) {
 		source.linkedDaves.push(targetId);
 		const recoveredFragment = getFragmentFrom(source, target);
+		const gainedDavePrimeScanState = state.grantDavePrimeScanBonus(source, target);
 		source.updatedAt = Date.now();
 
 		logEvent(`${source.name} linked with ${target.name}.`, {
 			userId: source.userId
 		});
+		if (gainedDavePrimeScanState) {
+			logEvent(`${source.name} gained state from scanning ${target.name}'s DavePrime QR code.`, {
+				userId: source.userId
+			});
+		}
 		awardDodCommendations(source, 1, "linking a new Dave");
 
 		await saveUsers(daves, savedPlaces);
 		io.emit("update");
-		return res.json({ ok: true, linked: true, recoveredFragment, target: summarizeDave(target, savedPlaces) });
+		return res.json({ ok: true, linked: true, recoveredFragment, gainedDavePrimeScanState, target: summarizeDave(target, savedPlaces) });
 	}
 
 	res.json({ ok: true, linked: false, reason: "already-linked", target: summarizeDave(target, savedPlaces) });
