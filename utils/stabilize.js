@@ -31,7 +31,7 @@ function grantBonusFragment(dave) {
 	dave.fragmentsCollected.push(crypto.randomUUID());
 }
 
-export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent = () => {}) {
+export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	if (savedPlaces && typeof savedPlaces.emit === "function") {
 		logEvent = typeof io === "function" ? io : logEvent;
 		io = savedPlaces;
@@ -73,6 +73,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 				: `${me.name} stabilized ${target.name}.`, {
 				userId: me.userId
 			});
+			awardDodCommendations(me, 2, "field stabilization");
 		}
 
 		io.emit("update", { daves });

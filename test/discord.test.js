@@ -33,8 +33,8 @@ test('only important log events are posted to Discord', () => {
 	assert.equal(shouldPostToDiscord({}, { important: true }), false);
 });
 
-test('discord messages include the Dave Tracker source label', () => {
-	assert.equal(formatDiscordLogMessage({ message: 'Source started a Dave Rave.' }), '**Dave Tracker**\nSource started a Dave Rave.');
+test('discord messages use the event message directly', () => {
+	assert.equal(formatDiscordLogMessage({ message: 'Source started a Dave Rave.' }), 'Source started a Dave Rave.');
 });
 
 test('postDiscordMessage sends Discord JSON without using the real network', async () => {

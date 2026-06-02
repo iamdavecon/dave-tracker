@@ -14,6 +14,7 @@ import * as debug from './utils/debug.js';
 import { postImportantLogToDiscord } from './utils/discord.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
+import { addCommendations } from "./public/utils/dod.js";
 
 
 // --- HTTP server ---
@@ -220,6 +221,28 @@ function formatItemRewards(rewards) {
 		.join(", ");
 }
 
+function awardDodCommendations(dave, points, reason, options = {}) {
+	const result = addCommendations(dave, points);
+	if (!result.awarded) {
+		return result;
+	}
+
+	logEvent(`${dave.name} received ${points} DoD commendation${points === 1 ? "" : "s"} for ${reason}.`, {
+		userId: dave.userId,
+		...options
+	});
+
+	if (result.promoted) {
+		logEvent(`${dave.name} was promoted to General by the Department of Davefence.`, {
+			userId: dave.userId,
+			important: true,
+			...options
+		});
+	}
+
+	return result;
+}
+
 
 // --- dave details ---
 app.get('/api/dave', (req, res) => {
@@ -283,6 +306,7 @@ app.post('/api/link-dave', async (req, res) => {
 		logEvent(`${source.name} linked with ${target.name}.`, {
 			userId: source.userId
 		});
+		awardDodCommendations(source, 1, "linking a new Dave");
 
 		await saveUsers(daves, savedPlaces);
 		io.emit("update");
@@ -724,6 +748,7 @@ io.on('connection', (socket) => {
 		logEvent(`${me.name} exchanged 5 infections for 1 fragment with the Department of Davefence.`, {
 			userId: me.userId
 		});
+		awardDodCommendations(me, 1, "infection reclassification");
 
 		socket.emit("dodExchangeResult", { ok: true });
 		io.emit("update");
@@ -731,10 +756,10 @@ io.on('connection', (socket) => {
 
 
 	infect.registerHandlers(socket, daves, io, logEvent);
-	stabilize.registerHandlers(socket, daves, savedPlaces, io, logEvent);
+	stabilize.registerHandlers(socket, daves, savedPlaces, io, logEvent, awardDodCommendations);
 	items.registerHandlers(socket, daves, io);
-	places.registerHandlers(socket, daves, savedPlaces, io, logEvent);
-	raves.registerHandlers(socket, daves, io, logEvent);
+	places.registerHandlers(socket, daves, savedPlaces, io, logEvent, awardDodCommendations);
+	raves.registerHandlers(socket, daves, io, logEvent, awardDodCommendations);
 	ascension.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 
 	debug.registerHandlers(socket, daves, savedPlaces, io);

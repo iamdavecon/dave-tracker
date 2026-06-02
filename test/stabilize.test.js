@@ -56,6 +56,35 @@ test('stabilize rejects forged source ids', () => {
 	assert.deepEqual(emitted, []);
 });
 
+test('stabilize can award DoD commendations and grant general', () => {
+	const { socket, handlers } = createSocket('source');
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'immune',
+			dodLevel: 1,
+			dodCommendations: 8,
+			tags: ['dod'],
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		},
+		target: { userId: 'target', name: 'Target', state: 'unstable', lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, {}, { emit: () => {} }, () => {}, (dave, points) => {
+		dave.dodCommendations = (dave.dodCommendations ?? 0) + points;
+		if (dave.dodCommendations >= 10) {
+			dave.tags.push('general');
+		}
+	});
+	handlers.stabilize('source', 'target');
+
+	assert.equal(daves.source.dodCommendations, 10);
+	assert.deepEqual(daves.source.tags, ['dod', 'general']);
+});
+
 test('ascendPlayer is distinct from node ascension and enforces player eligibility', () => {
 	const { socket, handlers } = createSocket('source');
 	const logs = [];

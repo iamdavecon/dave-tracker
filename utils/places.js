@@ -69,7 +69,7 @@ function grantChallengeReward(dave, reward) {
 	return reward?.label ?? "a fragment";
 }
 
-export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
+export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	socket.on("dropDavePoint", (sourceId) => {
 		//console.log("dropDavePoint");
 		if (sourceId !== socket.userId) {
@@ -93,6 +93,9 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			placeId: newPlace.id,
 			important: true
 		});
+		awardDodCommendations(dave, 2, "node establishment", {
+			placeId: newPlace.id
+		});
 		io.emit("update");
 	});
 
@@ -115,6 +118,9 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			userId: dave.userId,
 			placeId,
 			important: true
+		});
+		awardDodCommendations(dave, 2, "node upgrade", {
+			placeId
 		});
 		io.emit("update");
 	});

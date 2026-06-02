@@ -1,6 +1,6 @@
 import { canStartDaveRave, countDavesInArea } from "./players.js";
 
-export function registerHandlers(socket, daves, io, logEvent = () => {}) {
+export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	socket.on("startDaveRave", (sourceId) => {
 		if (sourceId !== socket.userId) {
 			return;
@@ -19,6 +19,9 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 		dave.lastDaveRaveTime = Date.now();
 		logEvent(`${dave.name} started a Dave Rave.`, {
 			userId: dave.userId,
+			important: true
+		});
+		awardDodCommendations(dave, 3, "Dave Rave command", {
 			important: true
 		});
 		socket.emit("daveRaveResult", {
