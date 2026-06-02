@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>LineCon Beachball</title>
+	<link rel="stylesheet" href="/style.css">
+	<style>
+		:root {
+			color-scheme: dark;
+			--asphalt: #090b0d;
+			--panel: #10161a;
+			--rail: #242c31;
+			--ink: #eef5f1;
+			--muted: #9aa7a1;
+			--lime: #79ff9b;
+			--cyan: #55d7ff;
+			--sun: #ffd84d;
+			--hot: #ff5a67;
+		}
+
+		body {
+			min-height: 100vh;
+			background:
+				linear-gradient(180deg, rgba(85, 215, 255, 0.12), transparent 28%),
+				repeating-linear-gradient(
+					90deg,
+					rgba(255, 255, 255, 0.035) 0,
+					rgba(255, 255, 255, 0.035) 1px,
+					transparent 1px,
+					transparent 84px
+				),
+				var(--asphalt);
+		}
+
+		.linecon-shell {
+			width: min(100%, 760px);
+			min-height: 100vh;
+			margin: 0 auto;
+			padding: 18px;
+			display: grid;
+			grid-template-rows: auto auto 1fr auto;
+			gap: 14px;
+		}
+
+		.linecon-top {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+		}
+
+		.linecon-title {
+			margin: 0;
+			font-size: clamp(24px, 6vw, 42px);
+			line-height: 0.95;
+			text-transform: uppercase;
+			color: var(--ink);
+		}
+
+		.linecon-kicker {
+			margin: 5px 0 0;
+			color: var(--muted);
+			font-size: 12px;
+			text-transform: uppercase;
+		}
+
+		.scoreboard {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 8px;
+		}
+
+		.score-card {
+			min-width: 0;
+			padding: 10px;
+			background: rgba(16, 22, 26, 0.92);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+			border-radius: 8px;
+		}
+
+		.score-card span {
+			display: block;
+			color: var(--muted);
+			font-size: 11px;
+			text-transform: uppercase;
+		}
+
+		.score-card strong {
+			display: block;
+			margin-top: 3px;
+			color: var(--ink);
+			font-size: clamp(22px, 7vw, 34px);
+			line-height: 1;
+		}
+
+		.game-stage {
+			position: relative;
+			min-height: 360px;
+			height: min(52vh, 560px);
+			overflow: hidden;
+			border: 1px solid rgba(255, 255, 255, 0.16);
+			border-radius: 8px;
+			background:
+				linear-gradient(180deg, rgba(85, 215, 255, 0.18), transparent 46%),
+				linear-gradient(180deg, transparent 0 72%, rgba(121, 255, 155, 0.08) 72%),
+				#0d1114;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
+			touch-action: manipulation;
+			user-select: none;
+		}
+
+		.game-stage:focus-visible {
+			outline: 2px solid var(--cyan);
+			outline-offset: 3px;
+		}
+
+		.queue-rail {
+			position: absolute;
+			left: 18px;
+			right: 18px;
+			bottom: 86px;
+			height: 8px;
+			background: repeating-linear-gradient(90deg, var(--rail) 0 32px, #3c464b 32px 42px);
+			border-radius: 999px;
+			box-shadow: 0 18px 0 rgba(255, 255, 255, 0.04);
+		}
+
+		.crowd {
+			position: absolute;
+			left: 18px;
+			right: 18px;
+			bottom: 96px;
+			display: grid;
+			grid-template-columns: repeat(9, 1fr);
+			align-items: end;
+			gap: clamp(6px, 2vw, 14px);
+		}
+
+		.person {
+			position: relative;
+			height: clamp(54px, 10vw, 78px);
+			border-radius: 999px 999px 8px 8px;
+			background: linear-gradient(180deg, #d7e0de 0 26%, #20282d 26%);
+			box-shadow: inset 0 -18px 0 rgba(0, 0, 0, 0.2);
+			opacity: 0.92;
+		}
+
+		.person:nth-child(2n) {
+			height: clamp(46px, 9vw, 66px);
+			background: linear-gradient(180deg, #ffd8a8 0 28%, #1c363d 28%);
+		}
+
+		.person:nth-child(3n) {
+			background: linear-gradient(180deg, #c9a27f 0 25%, #3a2634 25%);
+		}
+
+		.person::after {
+			content: "";
+			position: absolute;
+			left: 50%;
+			top: 12%;
+			width: 8px;
+			height: 3px;
+			transform: translateX(-50%);
+			border-radius: 999px;
+			background: rgba(0, 0, 0, 0.45);
+		}
+
+		.bump-zone {
+			position: absolute;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			height: 92px;
+			display: grid;
+			place-items: center;
+			background:
+				linear-gradient(90deg, transparent, rgba(121, 255, 155, 0.12), transparent),
+				#11181b;
+			border-top: 1px solid rgba(121, 255, 155, 0.3);
+			color: var(--muted);
+			font-size: 12px;
+			text-transform: uppercase;
+		}
+
+		.beachball {
+			position: absolute;
+			width: clamp(62px, 14vw, 92px);
+			aspect-ratio: 1;
+			left: 50%;
+			bottom: 124px;
+			border: 4px solid #101010;
+			border-radius: 50%;
+			background:
+				radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.9) 0 8%, transparent 9%),
+				conic-gradient(from 18deg, var(--hot) 0 25%, var(--sun) 25% 50%, var(--cyan) 50% 75%, var(--lime) 75% 100%);
+			box-shadow: 0 14px 28px rgba(0, 0, 0, 0.34);
+			transform: translate(-50%, 0) rotate(0deg);
+			will-change: transform, bottom, left;
+		}
+
+		.beachball.bumped {
+			animation: pop 150ms ease-out;
+		}
+
+		.status-strip {
+			min-height: 22px;
+			color: var(--muted);
+			font-size: 13px;
+			text-align: center;
+		}
+
+		.linecon-actions {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 8px;
+		}
+
+		.linecon-actions button,
+		.linecon-actions a {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 46px;
+			margin: 0;
+			padding: 10px 12px;
+			border-radius: 8px;
+			text-align: center;
+			font-family: "Courier New", monospace;
+			font-weight: 700;
+		}
+
+		.primary-action {
+			color: #06100b;
+			background: var(--lime);
+			border-color: var(--lime);
+		}
+
+		.secondary-action {
+			color: var(--ink);
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid rgba(255, 255, 255, 0.14);
+		}
+
+		@keyframes pop {
+			0% { filter: brightness(1); }
+			50% { filter: brightness(1.45); }
+			100% { filter: brightness(1); }
+		}
+
+		@media (max-width: 560px) {
+			.linecon-shell {
+				padding: 12px;
+			}
+
+			.linecon-top {
+				align-items: flex-start;
+				flex-direction: column;
+			}
+
+			.scoreboard {
+				grid-template-columns: 1fr;
+			}
+
+			.game-stage {
+				min-height: 340px;
+				height: 48vh;
+			}
+		}
+	</style>
+</head>
+<body>
+	<main class="linecon-shell">
+		<div class="linecon-top">
+			<div>
+				<h1 class="linecon-title">LineCon</h1>
+				<p class="linecon-kicker">Keep the beachball above the queue</p>
+			</div>
+			<a id="backLink" href="/" class="back-link">< Back</a>
+		</div>
+
+		<section class="scoreboard" aria-label="LineCon scores">
+			<div class="score-card">
+				<span>Session bumps</span>
+				<strong id="sessionBumps">0</strong>
+			</div>
+			<div class="score-card">
+				<span>Total bumps</span>
+				<strong id="totalBumps">0</strong>
+			</div>
+			<div class="score-card">
+				<span>Best streak</span>
+				<strong id="bestBumps">0</strong>
+			</div>
+		</section>
+
+		<section id="gameStage" class="game-stage" tabindex="0" aria-label="LineCon beachball game">
+			<div class="crowd" aria-hidden="true">
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+				<div class="person"></div>
+			</div>
+			<div class="queue-rail" aria-hidden="true"></div>
+			<div id="beachball" class="beachball" aria-hidden="true"></div>
+			<div class="bump-zone">Tap, click, or press space</div>
+		</section>
+
+		<div id="statusStrip" class="status-strip" role="status">Waiting for the first bump.</div>
+
+		<div class="linecon-actions">
+			<button id="bumpButton" class="primary-action" type="button">Bump</button>
+			<a id="homeLink" class="secondary-action" href="/">Tracker</a>
+		</div>
+	</main>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module">
+		import { getUserId } from "./utils/id.js";
+
+		if ("scrollRestoration" in history) {
+			history.scrollRestoration = "manual";
+		}
+
+		const userId = getUserId();
+		const params = new URLSearchParams(window.location.search);
+		const placeId = params.get("placeId");
+		const socket = io({ auth: { userId } });
+
+		const stage = document.getElementById("gameStage");
+		const ball = document.getElementById("beachball");
+		const bumpButton = document.getElementById("bumpButton");
+		const sessionEl = document.getElementById("sessionBumps");
+		const totalEl = document.getElementById("totalBumps");
+		const bestEl = document.getElementById("bestBumps");
+		const statusEl = document.getElementById("statusStrip");
+		const backLink = document.getElementById("backLink");
+
+		if (placeId) {
+			backLink.href = `/place.html?id=${encodeURIComponent(placeId)}&viewerId=${encodeURIComponent(userId)}`;
+		}
+
+		const bestKey = `lineconBest:${userId}`;
+		let sessionBumps = 0;
+		let totalBumps = 0;
+		let bestBumps = Number(localStorage.getItem(bestKey) ?? 0);
+		let lastFrame = performance.now();
+		let landed = false;
+		let x = 0.5;
+		let y = 138;
+		let vx = 0;
+		let vy = 0;
+		let rotation = 0;
+
+		function renderScores() {
+			sessionEl.textContent = sessionBumps.toString();
+			totalEl.textContent = totalBumps.toString();
+			bestEl.textContent = bestBumps.toString();
+		}
+
+		async function loadTotalBumps() {
+			try {
+				const res = await fetch(`/api/dave?id=${encodeURIComponent(userId)}&viewerId=${encodeURIComponent(userId)}`);
+				if (!res.ok) return;
+
+				const dave = await res.json();
+				totalBumps = Math.max(0, Number(dave.lineconBumps ?? 0));
+				renderScores();
+			} catch {
+				statusEl.textContent = "Totals will sync after the next bump.";
+			}
+		}
+
+		function syncBump() {
+			socket.emit("lineconBump", userId, placeId, (result) => {
+				if (result?.ok) {
+					totalBumps = result.bumps;
+					renderScores();
+					return;
+				}
+
+				statusEl.textContent = result?.error || "That bump did not sync.";
+			});
+		}
+
+		function resetBall() {
+			const rect = stage.getBoundingClientRect();
+			x = 0.5;
+			y = Math.max(124, rect.height * 0.38);
+			vx = 0;
+			vy = 360;
+			rotation = 0;
+			landed = false;
+			statusEl.textContent = "Back in the air.";
+		}
+
+		function bump() {
+			if (landed) {
+				resetBall();
+			}
+
+			const rect = stage.getBoundingClientRect();
+			const side = x < 0.5 ? 1 : -1;
+			vy = Math.max(vy, 650);
+			vx += side * (0.07 + Math.random() * 0.04);
+			vx = Math.max(-0.28, Math.min(0.28, vx));
+			y = Math.max(y, Math.min(150, rect.height * 0.3));
+
+			sessionBumps += 1;
+			totalBumps += 1;
+			bestBumps = Math.max(bestBumps, sessionBumps);
+			localStorage.setItem(bestKey, bestBumps.toString());
+			statusEl.textContent = sessionBumps === 1 ? "Nice. Keep it moving." : `${sessionBumps} in this run.`;
+			ball.classList.remove("bumped");
+			void ball.offsetWidth;
+			ball.classList.add("bumped");
+			renderScores();
+			syncBump();
+		}
+
+		function updateBall(now) {
+			const rect = stage.getBoundingClientRect();
+			const ballSize = ball.offsetWidth || 78;
+			const floor = 96;
+			const ceiling = rect.height - ballSize - 16;
+			const dt = Math.min(0.032, (now - lastFrame) / 1000);
+			lastFrame = now;
+
+			if (!landed) {
+				vy -= 930 * dt;
+				y += vy * dt;
+				x += vx * dt;
+				rotation += (vx * 420 + 95) * dt;
+
+				if (x < 0.08) {
+					x = 0.08;
+					vx = Math.abs(vx) * 0.82;
+				} else if (x > 0.92) {
+					x = 0.92;
+					vx = -Math.abs(vx) * 0.82;
+				}
+
+				if (y > ceiling) {
+					y = ceiling;
+					vy = -Math.abs(vy) * 0.45;
+				}
+
+				if (y <= floor) {
+					y = floor;
+					vy = 0;
+					vx = 0;
+					landed = true;
+					if (sessionBumps > 0) {
+						statusEl.textContent = `Run ended at ${sessionBumps}. Bump to restart.`;
+					}
+					sessionBumps = 0;
+					renderScores();
+				}
+			}
+
+			ball.style.left = `${x * 100}%`;
+			ball.style.bottom = `${y}px`;
+			ball.style.transform = `translate(-50%, 0) rotate(${rotation}deg)`;
+			requestAnimationFrame(updateBall);
+		}
+
+		stage.addEventListener("pointerdown", bump);
+		bumpButton.addEventListener("click", bump);
+		document.addEventListener("keydown", (event) => {
+			if (event.code !== "Space") return;
+			event.preventDefault();
+			bump();
+		});
+
+		renderScores();
+		loadTotalBumps();
+		resetBall();
+		requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0 }));
+		setTimeout(() => window.scrollTo({ top: 0, left: 0 }), 0);
+		requestAnimationFrame(updateBall);
+	</script>
+</body>
+</html>
