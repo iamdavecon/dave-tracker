@@ -213,7 +213,7 @@ test('decreaseStatus lets infected users lower another in-range user status', ()
 	const logs = [];
 	const ioEvents = [];
 	const daves = {
-		source: { userId: 'source', name: 'Source', state: 'infected', lat: 41, lng: -87 },
+		source: { userId: 'source', name: 'Source', state: 'infected', fragmentsCollected: [], lat: 41, lng: -87 },
 		target: { userId: 'target', name: 'Target', state: 'immune', lat: 41, lng: -87 }
 	};
 
@@ -221,8 +221,71 @@ test('decreaseStatus lets infected users lower another in-range user status', ()
 	handlers.decreaseStatus('source', 'target');
 
 	assert.equal(daves.target.state, 'unstable');
+	assert.equal(daves.source.fragmentsCollected.length, 2);
+	assert.equal(daves.source.fragmentsCollected[0], 'target');
 	assert.equal(logs.length, 1);
 	assert.equal(ioEvents.length, 1);
+
+	daves.target.state = 'immune';
+	handlers.decreaseStatus('source', 'target');
+
+	assert.equal(daves.target.state, 'immune');
+	assert.equal(daves.source.fragmentsCollected.length, 2);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+
+	daves.source.fragmentsCollected.shift();
+	handlers.decreaseStatus('source', 'target');
+
+	assert.equal(daves.target.state, 'unstable');
+	assert.equal(daves.source.fragmentsCollected.length, 3);
+	assert.equal(daves.source.fragmentsCollected.includes('target'), true);
+	assert.equal(logs.length, 2);
+	assert.equal(ioEvents.length, 2);
+});
+
+test('doonShift corrupts infected hosts once and grants two fragments', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'immune',
+			tags: ['doon'],
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		},
+		target: { userId: 'target', name: 'Target', state: 'infected', lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.doonShift('source', 'target');
+
+	assert.equal(daves.target.state, 'corrupted');
+	assert.equal(daves.source.fragmentsCollected.length, 2);
+	assert.equal(daves.source.fragmentsCollected[0], 'target');
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+
+	daves.target.state = 'infected';
+	handlers.doonShift('source', 'target');
+
+	assert.equal(daves.target.state, 'infected');
+	assert.equal(daves.source.fragmentsCollected.length, 2);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+
+	daves.source.fragmentsCollected.shift();
+	handlers.doonShift('source', 'target');
+
+	assert.equal(daves.target.state, 'corrupted');
+	assert.equal(daves.source.fragmentsCollected.length, 3);
+	assert.equal(daves.source.fragmentsCollected.includes('target'), true);
+	assert.equal(logs.length, 2);
+	assert.equal(ioEvents.length, 2);
 });
 
 test('decreaseStatus rejects forged, stable, self, maxed, and out-of-range attempts', () => {

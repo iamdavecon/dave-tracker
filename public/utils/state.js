@@ -323,7 +323,7 @@ export function canBypassNodeDistanceRestriction(dave) {
 }
 
 export function canDoonShift(source, target) {
-	return hasTag(source, "doon") && getState(target) == STATES.INFECTED;
+	return hasTag(source, "doon") && getState(target) == STATES.INFECTED && !hasFragmentFrom(source, target);
 }
 
 export function canGrantTag(source, target) {
@@ -336,12 +336,16 @@ export function canMakeBadDecision(source, target) {
 
 export function canDecreaseStatus(source, target) {
 	const sourceState = getState(source);
-	console.log(getIndex(target) + " vs " + toNumber(STATES.CORRUPTED));
 	return (
 		source?.userId !== target?.userId &&
 		(sourceState === STATES.INFECTED || sourceState === STATES.CORRUPTED) &&
-		getIndex(target) > toNumber(STATES.CORRUPTED)
+		getIndex(target) < toNumber(STATES.CORRUPTED) &&
+		!hasFragmentFrom(source, target)
 	);
+}
+
+export function hasFragmentFrom(source, target) {
+	return Array.isArray(source?.fragmentsCollected) && source.fragmentsCollected.includes(target?.userId);
 }
 
 export function getUserActions(source, target) {

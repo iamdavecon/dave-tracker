@@ -31,6 +31,16 @@ function grantBonusFragment(dave) {
 	dave.fragmentsCollected.push(crypto.randomUUID());
 }
 
+function grantCorruptHostFragments(source, target) {
+	const recoveredFragment = getFragmentFrom(source, target);
+	if (!recoveredFragment) {
+		return false;
+	}
+
+	grantBonusFragment(source);
+	return true;
+}
+
 export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	if (savedPlaces && typeof savedPlaces.emit === "function") {
 		logEvent = typeof io === "function" ? io : logEvent;
@@ -187,7 +197,10 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = decreaseRank(target);
 
 		if (success) {
-			logEvent(`${me.name} pushed ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
+			const recoveredFragments = grantCorruptHostFragments(me, target);
+			logEvent(recoveredFragments
+				? `${me.name} pushed ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()} and recovered 2 fragments.`
+				: `${me.name} pushed ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
 				userId: me.userId
 			});
 		}
@@ -211,7 +224,10 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = decreaseRank(target);
 
 		if (success) {
-			logEvent(`${me.name} decreased ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
+			const recoveredFragments = grantCorruptHostFragments(me, target);
+			logEvent(recoveredFragments
+				? `${me.name} decreased ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()} and recovered 2 fragments.`
+				: `${me.name} decreased ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
 				userId: me.userId
 			});
 			io.emit("update", { daves });

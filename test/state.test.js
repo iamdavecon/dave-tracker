@@ -83,6 +83,8 @@ test('ascension and tags drive user actions', () => {
 	source.fragmentsCollected.push('target');
 	assert.equal(state.canAscend(source, target), false);
 	assert.equal(state.canMakeBadDecision(source, target), false);
+
+	assert.equal(state.canDoonShift(source, target), false);
 });
 
 test('DavePrime QR scan bonus raises source state only up to DOPE', () => {
@@ -117,6 +119,9 @@ test('infected and corrupted daves can decrease another user status', () => {
 	assert.equal(state.canDecreaseStatus(source, target), true);
 	assert.equal(state.getUserActions(source, target).canDecreaseStatus, true);
 	assert.equal(state.canDecreaseStatus(corruptedSource, target), true);
+	source.fragmentsCollected = ['target'];
+	assert.equal(state.canDecreaseStatus(source, target), false);
+	source.fragmentsCollected = [];
 	assert.equal(state.canDecreaseStatus({ userId: 'stable', state: 'immune' }, target), false);
 	assert.equal(state.canDecreaseStatus(source, source), false);
 	assert.equal(state.canDecreaseStatus(source, maxedTarget), false);
