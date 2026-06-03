@@ -8,6 +8,7 @@ export const TAGS = {
 	peppercon: { emoji: "\u{1f336}\ufe0f", label: "PepperCon", playerLabel: "\u{1f336}\ufe0fPepperCon" },
 	"bad-decision": { emoji: "\u{1f300}", label: "Bad Decision" },
 	linecon: { emoji: "\u{1f6b6}", label: "LineCon" },
+	"ball-master": { emoji: "\u{1f3d0}", label: "BALL MASTER" },
 	toxicbbg: { emoji: "\u{1f356}", label: "Toxic BBQ" },
 	drinks: { emoji: "\u{1f37b}", label: "Cheers", playerLabel: "\u{1f37b}Cheers!" },
 	dod: { emoji: "\u{1f6e1}\ufe0f", label: "DoD", title: "Department of Davefence" },

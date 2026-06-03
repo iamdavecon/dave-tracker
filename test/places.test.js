@@ -502,7 +502,14 @@ test('claimPlaceFragmentChallenge rejects bad source, range, action, answer, and
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hardwareHacking', 'multimeter', 'multimeter');
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is ls?');
 	assert.deepEqual(daves.source.fragmentsCollected, []);
+	assert.equal(daves.source[baby], undefined);
+	assert.equal(Number.isFinite(daves.source.lastHackerJeopardyTime), true);
 
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+	assert.equal(daves.source[baby], undefined);
+
+	daves.source.lastHackerJeopardyTime = Date.now() - 61 * 60 * 1000;
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 	assert.equal(daves.source.fragmentsCollected.length, 1);
@@ -554,4 +561,83 @@ test('collecting too many peppers at a place grants the peppercon tag', () => {
 
 	assert.equal(daves.source[pepper].count, 7);
 	assert.deepEqual(daves.source.tags, ['peppercon']);
+});
+
+test('claimTacoGame grants bonus tacos at an in-range taco place', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const taco = '🌮';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		tacoPlace: {
+			id: 'tacoPlace',
+			name: '🌮 Taco Node',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.claimTacoGame('source', 'tacoPlace', 'shell-integrity', 'Meat or beans');
+
+	assert.equal(daves.source[taco].count, 2);
+	assert.ok(daves.source.lastTacoCalibrationTime > 0);
+	assert.deepEqual(ioEvents, [{ event: 'update', payload: undefined }]);
+	assert.match(logs[0].message, /completed Taco Calibration/);
+});
+
+test('claimTacoGame rejects forged, non-taco, out-of-range, wrong, and cooldown attempts', () => {
+	const { socket, handlers, ioEvents } = createHarness();
+	const taco = '🌮';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		tacoPlace: {
+			id: 'tacoPlace',
+			name: '🌮 Taco Node',
+			lat: 41,
+			lng: -87
+		},
+		hotdogPlace: {
+			id: 'hotdogPlace',
+			name: '🌭 Hotdog Node',
+			lat: 41,
+			lng: -87
+		},
+		farTacoPlace: {
+			id: 'farTacoPlace',
+			name: '🌮 Far Taco Node',
+			lat: 42,
+			lng: -88
+		}
+	};
+
+	registerHandlers(socket, daves, places, { emit: (...args) => ioEvents.push(args) });
+	handlers.claimTacoGame('other', 'tacoPlace', 'shell-integrity', 'Meat or beans');
+	handlers.claimTacoGame('source', 'hotdogPlace', 'shell-integrity', 'Meat or beans');
+	handlers.claimTacoGame('source', 'farTacoPlace', 'shell-integrity', 'Meat or beans');
+	handlers.claimTacoGame('source', 'tacoPlace', 'shell-integrity', 'Salsa');
+	assert.equal(daves.source[taco], undefined);
+	assert.equal(Number.isFinite(daves.source.lastTacoCalibrationTime), true);
+
+	handlers.claimTacoGame('source', 'tacoPlace', 'shell-integrity', 'Meat or beans');
+	assert.equal(daves.source[taco], undefined);
+
+	daves.source.lastTacoCalibrationTime = Date.now() - 6 * 60 * 1000;
+	handlers.claimTacoGame('source', 'tacoPlace', 'shell-integrity', 'Meat or beans');
+
+	assert.equal(daves.source[taco].count, 2);
+	assert.equal(ioEvents.length, 2);
 });

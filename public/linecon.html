@@ -378,9 +378,14 @@
 		}
 
 		function syncBump() {
-			socket.emit("lineconBump", userId, placeId, (result) => {
+			socket.emit("lineconBump", userId, placeId, bestBumps, (result) => {
 				if (result?.ok) {
 					totalBumps = result.bumps;
+					bestBumps = Math.max(bestBumps, Number(result.bestStreak ?? 0));
+					localStorage.setItem(bestKey, bestBumps.toString());
+					if (result.earnedBallMaster) {
+						statusEl.textContent = "BALL MASTER unlocked.";
+					}
 					renderScores();
 					return;
 				}

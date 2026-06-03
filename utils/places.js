@@ -8,6 +8,13 @@ import {
 	getPlaceFragmentChallengeForEmoji,
 	isCorrectPlaceFragmentAnswer
 } from "../public/utils/placeChallenges.js";
+import {
+	canAttemptTacoGame,
+	getTacoGameQuestion,
+	isCorrectTacoGameAnswer,
+	TACO_GAME_REWARD_COUNT,
+	TACO_ITEM
+} from "../public/utils/tacoGame.js";
 import { removeFragment } from './players.js';
 
 const HOTDOG_ITEM = "🌭";
@@ -237,16 +244,55 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			return;
 		}
 		const question = getPlaceChallengeQuestion(action, questionId);
-		if (!question || !canAttemptPlaceFragmentChallenge(dave, challenge) || !isCorrectPlaceFragmentAnswer(action, answer, questionId)) {
+		if (!question || !canAttemptPlaceFragmentChallenge(dave, challenge)) {
+			return;
+		}
+		const isCorrect = isCorrectPlaceFragmentAnswer(action, answer, questionId);
+		if (action === "hackerJeopardy") {
+			dave[challenge.cooldownKey] = Date.now();
+		}
+		if (!isCorrect) {
+			if (action === "hackerJeopardy") {
+				io.emit("update");
+			}
 			return;
 		}
 
 		const rewardLabel = grantChallengeReward(dave, question.reward ?? challenge.reward);
 		if (action === "hackerJeopardy") {
 			grantItemReward(dave, BABY_ITEM);
+		} else {
+			dave[challenge.cooldownKey] = Date.now();
 		}
-		dave[challenge.cooldownKey] = Date.now();
 		logEvent(`${dave.name} completed ${challenge.label} at ${place.name} and recovered ${rewardLabel}.`, {
+			userId: dave.userId,
+			placeId
+		});
+		io.emit("update");
+	});
+
+	socket.on("claimTacoGame", (sourceId, placeId, questionId, answer) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		if (!dave || !place || firstEmoji(place.name) !== TACO_ITEM || !inRange(dave, place)) {
+			return;
+		}
+		if (!getTacoGameQuestion(questionId) || !canAttemptTacoGame(dave)) {
+			return;
+		}
+		const isCorrect = isCorrectTacoGameAnswer(questionId, answer);
+		dave.lastTacoCalibrationTime = Date.now();
+		if (!isCorrect) {
+			io.emit("update");
+			return;
+		}
+
+		grantItemReward(dave, TACO_ITEM, TACO_GAME_REWARD_COUNT);
+		logEvent(`${dave.name} completed Taco Calibration at ${place.name} and earned ${TACO_GAME_REWARD_COUNT} tacos.`, {
 			userId: dave.userId,
 			placeId
 		});

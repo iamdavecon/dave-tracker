@@ -14,6 +14,7 @@ import * as debug from './utils/debug.js';
 import { postImportantLogToDiscord } from './utils/discord.js';
 import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
+import { applyLineconBump } from "./utils/linecon.js";
 import { addCommendations } from "./public/utils/dod.js";
 
 
@@ -580,7 +581,11 @@ io.on('connection', (socket) => {
 		});
 	});
 
-	socket.on("lineconBump", (sourceId, placeId = null, callback = () => {}) => {
+	socket.on("lineconBump", (sourceId, placeId = null, bestStreak = 0, callback = () => {}) => {
+		if (typeof bestStreak === "function") {
+			callback = bestStreak;
+			bestStreak = 0;
+		}
 		if (sourceId !== socket.userId) {
 			callback({ ok: false, error: "source mismatch" });
 			return;
@@ -592,9 +597,9 @@ io.on('connection', (socket) => {
 			return;
 		}
 
-		me.lineconBumps = Math.max(0, Number(me.lineconBumps ?? 0)) + 1;
+		const result = applyLineconBump(me, bestStreak);
 		me.updatedAt = Date.now();
-		callback({ ok: true, bumps: me.lineconBumps, placeId });
+		callback({ ok: true, ...result, placeId });
 	});
 
 	socket.on('disconnect', () => {

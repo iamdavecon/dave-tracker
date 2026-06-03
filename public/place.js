@@ -9,6 +9,14 @@ import {
 	getRandomPlaceChallengeQuestion,
 	shufflePlaceChallengeOptions
 } from './utils/placeChallenges.js';
+import {
+	canAttemptTacoGame,
+	formatTacoGamePrompt,
+	getRandomTacoGameQuestion,
+	getTacoGameCooldownRemaining,
+	shuffleTacoGameOptions,
+	TACO_ITEM
+} from './utils/tacoGame.js';
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
@@ -124,6 +132,23 @@ function claimPlaceFragmentChallenge(action) {
 	location.reload();
 }
 
+function playTacoGame() {
+	const question = getRandomTacoGameQuestion();
+	if (!question) return;
+
+	const options = shuffleTacoGameOptions(question);
+	const answer = prompt(formatTacoGamePrompt(question, options));
+	if (answer == null) return;
+
+	const selectedIndex = Number.parseInt(answer.trim(), 10) - 1;
+	const selectedAnswer = Number.isInteger(selectedIndex) && options[selectedIndex]
+		? options[selectedIndex]
+		: answer;
+
+	socket.emit("claimTacoGame", userId, placeId, question.id, selectedAnswer);
+	location.reload();
+}
+
 function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
 
@@ -141,6 +166,9 @@ function addActions(actionHtml) {
 				break;
 			case "placeFragmentChallenge":
 				claimPlaceFragmentChallenge(e.target.dataset.challengeAction);
+				break;
+			case "tacoGame":
+				playTacoGame();
 				break;
 			case "dod":
 				window.location.href = `/dod-application.html?placeId=${encodeURIComponent(placeId)}`;
@@ -256,7 +284,7 @@ async function loadPlace() {
 		const isLineconNode = firstEmoji == '☠' || /def\s*con|line\s*con|linecon/i.test(place.name ?? "");
 		if (isLineconNode) {
 			actionHtml += state.hasTag(dave, "linecon")
-				? `<button data-action="playLinecon">Play LineCon</button>`
+				? `<button data-action="playLinecon">Join LineCon</button>`
 				: `<button data-action="joinLinecon">Join LineCon</button>`;
 		}
 
@@ -275,6 +303,14 @@ async function loadPlace() {
 			actionHtml += available
 				? `<button data-action="placeFragmentChallenge" data-challenge-action="${fragmentChallenge.action}">${fragmentChallenge.label}</button>`
 				: `<button disabled>${fragmentChallenge.label} (${remaining})</button>`;
+		}
+
+		if (firstEmoji === TACO_ITEM) {
+			const available = canAttemptTacoGame(dave);
+			const remaining = state.formatCooldownRemaining(getTacoGameCooldownRemaining(dave));
+			actionHtml += available
+				? `<button data-action="tacoGame">Taco Calibration</button>`
+				: `<button disabled>Taco Calibration (${remaining})</button>`;
 		}
 
 		if (place.availableActions.canUpgrade) {
