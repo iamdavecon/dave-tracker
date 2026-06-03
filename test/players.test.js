@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { canStartDaveRave, countDavesInArea, summarizeDave, getInteraction, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
+import { getRange } from '../public/utils/distance.js';
 
 test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	const summary = summarizeDave({
@@ -100,6 +101,38 @@ test('getInteraction respects pepper pickup cooldown', () => {
 	assert.equal(details.availableActions.hasPepper, true);
 	assert.equal(details.availableActions.canGetPepper, false);
 	assert.ok(details.availableActions.pepperCooldownRemaining > 0);
+});
+
+test('getInteraction exposes taco eating only on your own page', () => {
+	const taco = '🌮';
+	const source = {
+		userId: 'source',
+		name: 'Source',
+		[taco]: {
+			count: 1,
+			lastTime: Date.now()
+		}
+	};
+	const target = {
+		userId: 'target',
+		name: 'Target'
+	};
+
+	assert.equal(getInteraction(source, source).availableActions.canEatTaco, true);
+	assert.equal(getInteraction(source, target).availableActions.canEatTaco, false);
+});
+
+test('getRange doubles while a taco boost is active', () => {
+	const source = {
+		userId: 'source',
+		name: 'Source',
+		tacoRangeBoostUntil: Date.now() + 60 * 1000
+	};
+
+	assert.equal(getRange(source), 100);
+
+	source.tacoRangeBoostUntil = Date.now() - 1;
+	assert.equal(getRange(source), 50);
 });
 
 test('countDavesInArea counts non-bot daves in range and enables Dave Raves at ten players', () => {

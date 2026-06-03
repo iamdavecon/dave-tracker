@@ -74,6 +74,14 @@ function startDaveRave() {
 	socket.emit("startDaveRave", userId);
 }
 
+function eatTaco() {
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		statusEl.textContent = "Eating taco...";
+	}
+	socket.emit("eatTaco", userId);
+}
+
 function grantTag() {
 	const tag = document.getElementById("grantTagSelect")?.value;
 	if (!tag) return;
@@ -174,6 +182,10 @@ function addActions(actionHtml) {
 
 			case "startDaveRave":
 				startDaveRave();
+				break;
+
+			case "eatTaco":
+				eatTaco();
 				break;
 
 			case "grantTag":
@@ -316,6 +328,13 @@ async function loadPlayer() {
 		//  DAVEPRIME (ENABLES CHEATS)
 		if (dave.availableActions.davePrime) {
 			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
+		}
+
+		if (dave.availableActions.canEatTaco) {
+			actionHtml += `<button data-action="eatTaco">Eat a taco</button>`;
+		} else if (dave.availableActions.tacoRangeBoostRemaining > 0) {
+			const remaining = state.formatCooldownRemaining(dave.availableActions.tacoRangeBoostRemaining);
+			actionHtml += `<button disabled>Eat a taco (${remaining} boost)</button>`;
 		}
 
 		const eligibleDaves = Array.isArray(dave.availableActions.daveRaveEligibleDaves)

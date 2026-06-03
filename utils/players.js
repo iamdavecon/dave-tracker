@@ -5,6 +5,7 @@ import { haversineDistance, inRange } from "../public/utils/distance.js";
 
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
+const TACO_ITEM = "🌮";
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
 
 function getDisplayTags(dave, places = {}) {
@@ -185,6 +186,10 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	daveDetails.availableActions.canGetPepper = daveDetails.availableActions.hasPepper && state.canGet(me, PEPPER_ITEM);
 	daveDetails.availableActions.pepperCooldownRemaining = daveDetails.availableActions.hasPepper
 		? state.getCooldownRemaining(me, PEPPER_ITEM)
+		: 0;
+	daveDetails.availableActions.canEatTaco = daveDetails.isMe && state.getAmt(me, TACO_ITEM) > 0;
+	daveDetails.availableActions.tacoRangeBoostRemaining = Number.isFinite(me?.tacoRangeBoostUntil)
+		? Math.max(0, me.tacoRangeBoostUntil - Date.now())
 		: 0;
 	const daveRaveDebug = getDaveRaveDebug(me, allDaves);
 	daveDetails.availableActions.davesInArea = daveRaveDebug.eligibleDaves.length;

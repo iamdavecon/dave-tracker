@@ -100,3 +100,48 @@ test('collecting too many peppers from users grants the peppercon tag', () => {
 	assert.equal(daves.source[pepper].count, 7);
 	assert.deepEqual(daves.source.tags, ['peppercon']);
 });
+
+test('eatTaco spends a taco and starts a temporary range boost', () => {
+	const { socket, handlers, io, ioEvents } = createHarness();
+	const taco = '🌮';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			[taco]: {
+				count: 2,
+				lastTime: Date.now()
+			}
+		}
+	};
+
+	registerHandlers(socket, daves, io);
+	handlers.eatTaco('source');
+
+	assert.equal(daves.source[taco].count, 1);
+	assert.ok(daves.source.tacoRangeBoostUntil > Date.now());
+	assert.deepEqual(ioEvents, [{ event: 'update', payload: undefined }]);
+});
+
+test('eatTaco rejects spoofed sources and empty taco inventory', () => {
+	const { socket, handlers, ioEvents } = createHarness();
+	const taco = '🌮';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			[taco]: {
+				count: 0,
+				lastTime: Date.now()
+			}
+		}
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) });
+	handlers.eatTaco('other');
+	handlers.eatTaco('source');
+
+	assert.equal(daves.source[taco].count, 0);
+	assert.equal(daves.source.tacoRangeBoostUntil, undefined);
+	assert.deepEqual(ioEvents, []);
+});

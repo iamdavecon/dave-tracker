@@ -34,7 +34,11 @@ export function haversineDistance(a, b) {
 
 export function getRange(src) {
 	//console.log("from: " + state.getAscendencyBonus(src));
-	return 50 * state.getAscendencyBonus(src);
+	const baseRange = 50 * state.getAscendencyBonus(src);
+	const tacoMultiplier = Number.isFinite(src?.tacoRangeBoostUntil) && src.tacoRangeBoostUntil > Date.now()
+		? 2
+		: 1;
+	return baseRange * tacoMultiplier;
 }
 
 export function inRange(src, target) {
@@ -43,5 +47,4 @@ export function inRange(src, target) {
 	//console.log(JSON.stringify(target, null, 2));
 	return haversineDistance(src, target) < getRange(src);
 }
-
 
