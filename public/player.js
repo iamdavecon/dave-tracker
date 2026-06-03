@@ -114,13 +114,17 @@ function showDaveRaveAnimation() {
 }
 
 async function teleport(freeRoam) {
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		statusEl.textContent = freeRoam ? "Teleporting..." : "Returning to live location...";
+	}
+
 	const payload = JSON.stringify({
 		source: userId,
 		targetId: daveId,
 		targetType: "player",
 		freeRoam: freeRoam
 	});
-	//console.log("teleport: " + payload);
 	const res = await fetch('/api/teleport', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
@@ -128,7 +132,21 @@ async function teleport(freeRoam) {
 	});
 
 	if (res.ok) {
-		location.reload();
+		const result = await res.json();
+		preserveActionStatusUntil = Date.now() + 3000;
+		if (statusEl) {
+			statusEl.textContent = freeRoam
+				? `Teleported to ${result.lat.toFixed(5)}, ${result.lng.toFixed(5)}.`
+				: "Live location restored.";
+		}
+		await loadPlayer();
+		return;
+	}
+
+	preserveActionStatusUntil = Date.now() + 5000;
+	const responseText = await res.text();
+	if (statusEl) {
+		statusEl.textContent = `Teleport failed (${res.status}). ${responseText}`;
 	}
 }
 

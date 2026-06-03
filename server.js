@@ -463,14 +463,14 @@ app.get('/api/data', (req, res) => {
 	});
 });
 
-app.post('/api/teleport', (req, res) => {
+app.post('/api/teleport', async (req, res) => {
 	const { source, targetId, targetType, freeRoam = true } = req.body;
-
-	//console.log("recv'd teleport call: " + JSON.stringify(req.body, null, 2));
 
 	const localDaves = getUsers(daves);
 	const me = localDaves[source];
-	if (state.isDavePrime(me) || isDebugId(source)) {
+	const allowed = state.isDavePrime(me) || isDebugId(source);
+
+	if (allowed) {
 		let target = {}	
 		if (targetType == "coords") {
 			target = { 
@@ -480,16 +480,21 @@ app.post('/api/teleport', (req, res) => {
 		} else {
 			 target = targetType == "place" ? savedPlaces[targetId] : localDaves[targetId];
 			//console.log(target + " from " + targetType + " and " + targetId);
-			//console.log("recv'd teleport call: " + JSON.stringify(savedPlaces, null, 2));
 		}	
-		if (!me || !target) return res.sendStatus(404);
+		if (!me || !target) {
+			return res.sendStatus(404);
+		}
 
 		me.lat = target.lat;
 		me.lng = target.lng;
 		me.freeRoam = !!freeRoam;
-		//notifyUser(me, "teleport", { lat : dave.lat, lng : dave.lng, freeRoam : !!freeRoam });
+		me.updatedAt = Date.now();
 
-		res.sendStatus(200);
+		notifyUser(me, "teleport", { lat: me.lat, lng: me.lng, freeRoam: me.freeRoam });
+		await saveUsers(daves, savedPlaces);
+		io.emit("update", { daves });
+
+		res.json({ ok: true, lat: me.lat, lng: me.lng, freeRoam: me.freeRoam });
 	} else {
 		return res.sendStatus(403);
 	}
@@ -605,6 +610,10 @@ io.on('connection', (socket) => {
 		// Save/update this user's location
 		const me = daves[socket.userId];
 		if (me) {
+			if (me.freeRoam) {
+				return;
+			}
+
 			me.lat = loc.lat;
 			me.lng = loc.lng;
 			me.updatedAt = Date.now();

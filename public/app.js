@@ -158,6 +158,18 @@ async function update() {
 		init = false;
 	} }
 
+async function refreshAfterNavigationRestore() {
+	await update();
+	if (me.freeRoam && Number.isFinite(Number(me.lat)) && Number.isFinite(Number(me.lng))) {
+		centerOn = true;
+		map.setView([me.lat, me.lng]);
+	}
+}
+
+window.addEventListener("pageshow", () => {
+	refreshAfterNavigationRestore();
+});
+
 socket.on('update', () => {
 	const now = Date.now();
 	if (now - lastRender > MIN_INTERVAL) {
@@ -170,7 +182,6 @@ socket.on('teleport', (data) => {
 	me.lat = data.lat;
 	me.lng = data.lng;
 	me.freeRoam = data.freeRoam;
-	//console.log("recv'd teleport: " + JSON.stringify(me));
 	map.setView([me.lat, me.lng]);
 });
 
@@ -188,14 +199,20 @@ map.on('click', async (e) => {
 		lng: lng,
 	});
 
-	await fetch('/api/teleport', {
+	const res = await fetch('/api/teleport', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: payload
 	});
 
-	map.setView([lat, lng]);
-	update()
+	if (res.ok) {
+		const result = await res.json();
+		me.lat = result.lat;
+		me.lng = result.lng;
+		me.freeRoam = result.freeRoam;
+		map.setView([me.lat, me.lng]);
+		update();
+	}
 
 });
 

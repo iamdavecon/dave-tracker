@@ -40,7 +40,8 @@ function createPill(label, state = "neutral", isYou = false) {
 }
 
 function normalizeCoordinate(value, fallback = 0) {
-	return Number.isFinite(value) ? value : fallback;
+	const coordinate = Number(value);
+	return Number.isFinite(coordinate) ? coordinate : fallback;
 }
 
 function fitMapBounds(state, force = false) {

@@ -20,6 +20,7 @@ function updateMarker(dave) {
 
 
 	const marker = playerMarkers[dave.userId];
+	marker.setLatLng([dave.lat, dave.lng]);
 	marker.setIcon(icon);
 
 
