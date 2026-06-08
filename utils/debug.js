@@ -1,9 +1,23 @@
 import * as state from "../public/utils/state.js";
 import { isDebugId } from "./debugAccess.js";
 
+function canUseDebugAction(socket, sourceId) {
+	return sourceId === socket.userId && isDebugId(socket.userId);
+}
+
+function addRandomIds(dave, field, count = 10) {
+	if (!Array.isArray(dave[field])) {
+		dave[field] = [];
+	}
+
+	for (let i = 0; i < count; i++) {
+		dave[field].push(crypto.randomUUID());
+	}
+}
+
 export function registerHandlers(socket, daves, savedPlaces, io) {
 	socket.on("increaseRank", (sourceId) => {
-		if (sourceId !== socket.userId || !isDebugId(socket.userId)) {
+		if (!canUseDebugAction(socket, sourceId)) {
 			return;
 		}
 
@@ -17,7 +31,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 	});
 
 	socket.on("decreaseRank", (sourceId) => {
-		if (sourceId !== socket.userId || !isDebugId(socket.userId)) {
+		if (!canUseDebugAction(socket, sourceId)) {
 			return;
 		}
 
@@ -28,6 +42,40 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 
 		state.decreaseRank(me);
 		io.emit("update");
+	});
+
+	socket.on("grantRandomFragments", (sourceId, callback) => {
+		if (!canUseDebugAction(socket, sourceId)) {
+			callback?.({ ok: false, error: "debug user required" });
+			return;
+		}
+
+		const me = daves[sourceId];
+		if (!me) {
+			callback?.({ ok: false, error: "user unavailable" });
+			return;
+		}
+
+		addRandomIds(me, "fragmentsCollected");
+		io.emit("update");
+		callback?.({ ok: true });
+	});
+
+	socket.on("grantRandomInfectedUsers", (sourceId, callback) => {
+		if (!canUseDebugAction(socket, sourceId)) {
+			callback?.({ ok: false, error: "debug user required" });
+			return;
+		}
+
+		const me = daves[sourceId];
+		if (!me) {
+			callback?.({ ok: false, error: "user unavailable" });
+			return;
+		}
+
+		addRandomIds(me, "infectedUsers");
+		io.emit("update");
+		callback?.({ ok: true });
 	});
 
 }

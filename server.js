@@ -1,4 +1,4 @@
-import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
+import { saveUsers, loadUsers, getUsers, getPlaces, replaceSavedData } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
 import { getFragmentFrom } from "./public/utils/id.js";  
 import { isDebugId } from "./utils/debugAccess.js";
@@ -35,7 +35,7 @@ export function getIO() {
 
 app.use(express.static('public'));
 app.use('/utils', express.static('utils'));
-app.use(express.json()); 
+app.use(express.json({ limit: '2mb' })); 
 
 export function getApp() {
 	return app;
@@ -265,6 +265,134 @@ app.get('/api/dave', (req, res) => {
 	res.json(result);
 });
 
+function requireDebugUser(req, res) {
+	const { userId } = req.body ?? {};
+	if (!isDebugId(userId)) {
+		res.status(403).json({ ok: false, error: "debug user required" });
+		return null;
+	}
+	return userId;
+}
+
+function applyLoadedDave(existingDave, loadedDave) {
+	const liveSockets = existingDave.sockets instanceof Set ? existingDave.sockets : null;
+
+	for (const key of Object.keys(existingDave)) {
+		delete existingDave[key];
+	}
+
+	Object.assign(existingDave, loadedDave);
+
+	if (liveSockets) {
+		existingDave.sockets = liveSockets;
+		existingDave.updatedAt = Date.now();
+	}
+}
+
+function replaceLiveDaves(loadedDaves) {
+	const loadedIds = new Set(Object.keys(loadedDaves));
+
+	for (const id of Object.keys(daves)) {
+		if (!loadedIds.has(id)) {
+			delete daves[id];
+		}
+	}
+
+	for (const [id, loadedDave] of Object.entries(loadedDaves)) {
+		if (daves[id]) {
+			applyLoadedDave(daves[id], loadedDave);
+		} else {
+			daves[id] = loadedDave;
+		}
+	}
+}
+
+function replaceLivePlaces(loadedPlaces) {
+	for (const id of Object.keys(savedPlaces)) {
+		delete savedPlaces[id];
+	}
+	Object.assign(savedPlaces, loadedPlaces);
+}
+
+function isPlainObject(value) {
+	return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateUsersPayload(users) {
+	if (!isPlainObject(users)) {
+		return "users must be a JSON object";
+	}
+
+	for (const [id, user] of Object.entries(users)) {
+		if (!isPlainObject(user)) {
+			return `user ${id} must be an object`;
+		}
+		if (!user.userId) {
+			return `user ${id} must include userId`;
+		}
+		if (user.userId !== id) {
+			return `user ${id} has mismatched userId`;
+		}
+	}
+
+	return null;
+}
+
+app.post('/api/admin/save-users', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const changed = await saveUsers(daves, savedPlaces);
+	res.json({ ok: true, changed });
+});
+
+app.post('/api/admin/load-users', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const loadedDaves = await loadUsers();
+	const loadedPlaces = getPlaces();
+
+	replaceLiveDaves(loadedDaves);
+	replaceLivePlaces(loadedPlaces);
+
+	savedDaves = loadedDaves;
+	io.emit("update");
+	res.json({ ok: true });
+});
+
+app.post('/api/admin/update-users', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const users = req.body?.users;
+	const validationError = validateUsersPayload(users);
+	if (validationError) {
+		return res.status(400).json({ ok: false, error: validationError });
+	}
+
+	replaceLiveDaves(users);
+	const changed = await replaceSavedData(users, savedPlaces);
+	savedDaves = getUsers({});
+	io.emit("update");
+	res.json({ ok: true, changed });
+});
+
+app.post('/api/admin/update-places', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const placesPayload = req.body?.places;
+	if (!isPlainObject(placesPayload)) {
+		return res.status(400).json({ ok: false, error: "places must be a JSON object" });
+	}
+
+	replaceLivePlaces(placesPayload);
+	const changed = await replaceSavedData(getUsers({}), savedPlaces);
+	io.emit("update");
+	res.json({ ok: true, changed });
+});
+
 app.post('/api/link-dave', async (req, res) => {
 	const { sourceId, targetId } = req.body ?? {};
 	const localDaves = getUsers(daves);
@@ -317,7 +445,6 @@ app.post('/api/link-dave', async (req, res) => {
 		}
 		awardDodCommendations(source, 1, "linking a new Dave");
 
-		await saveUsers(daves, savedPlaces);
 		io.emit("update");
 		return res.json({ ok: true, linked: true, recoveredFragment, gainedDavePrimeScanState, target: summarizeDave(target, savedPlaces) });
 	}
@@ -495,7 +622,6 @@ app.post('/api/teleport', async (req, res) => {
 		me.updatedAt = Date.now();
 
 		notifyUser(me, "teleport", { lat: me.lat, lng: me.lng, freeRoam: me.freeRoam });
-		await saveUsers(daves, savedPlaces);
 		io.emit("update", { daves });
 
 		res.json({ ok: true, lat: me.lat, lng: me.lng, freeRoam: me.freeRoam });
@@ -520,7 +646,6 @@ app.post('/api/visibility', async (req, res) => {
 	}
 	me.updatedAt = Date.now();
 
-	await saveUsers(daves, savedPlaces);
 	io.emit("update");
 
 	res.json({ ok: true, visible: me.visible, lat: me.lat, lng: me.lng });
@@ -557,7 +682,6 @@ io.on('connection', (socket) => {
 				tags: [],
 			};
 			daves[userId] = me;
-			saveUsers(daves);
 		}
 	}
 	

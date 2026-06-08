@@ -23,6 +23,28 @@ function setSavedSnapshots() {
 	lastSavedPlacesJson = JSON.stringify(savedPlaces, null, 2);
 }
 
+async function persistSavedData(users, places) {
+	const usersJson = JSON.stringify(users, null, 2);
+	const placesJson = JSON.stringify(places, null, 2);
+
+	if (usersJson === lastSavedUsersJson && placesJson === lastSavedPlacesJson) {
+		//console.log("skipping save. nothing changed");
+		return false;
+	}
+
+	if (USE_REDIS) {
+		await redis.set("davecon:users", usersJson); 
+		await redis.set("davecon:places", placesJson); 
+	} else {
+		fs.writeFileSync(USER_FILE, usersJson); 
+		fs.writeFileSync(PLACE_FILE, placesJson); 
+	}
+
+	lastSavedUsersJson = usersJson;
+	lastSavedPlacesJson = placesJson;
+	return true;
+}
+
 export async function loadUsers() {
 	if (USE_REDIS) {
 		savedDaves = await redis.get("davecon:users");
@@ -78,28 +100,19 @@ export async function saveUsers(daves, places) {
 	savedDaves = realUsers;
 	savedPlaces = places;
 
-	const usersJson = JSON.stringify(realUsers, null, 2);
-	const placesJson = JSON.stringify(places, null, 2);
-
-	if (usersJson === lastSavedUsersJson && placesJson === lastSavedPlacesJson) {
-		//console.log("skipping save. nothing changed");
-		return false;
-	}
-	//console.log("content changed.  save");
-
-	if (USE_REDIS) {
-		await redis.set("davecon:users", usersJson); 
-		await redis.set("davecon:places", placesJson); 
-	} else {
-		fs.writeFileSync(USER_FILE, usersJson); 
-		fs.writeFileSync(PLACE_FILE, placesJson); 
-	}
-
-	lastSavedUsersJson = usersJson;
-	lastSavedPlacesJson = placesJson;
-
+	const changed = await persistSavedData(realUsers, places);
 	//console.log(`[SAVE]  wrote ${JSON.stringify(realUsers, null, 2)}`);
-	return true;
+	return changed;
+}
+
+export async function replaceSavedData(users, places) {
+	const realUsers = Object.fromEntries(
+		Object.entries(users ?? {}).filter(([id, user]) => !user.isBot)
+	);
+	savedDaves = realUsers;
+	savedPlaces = places ?? {};
+
+	return persistSavedData(savedDaves, savedPlaces);
 }
 
 export function getUsers(daves) {

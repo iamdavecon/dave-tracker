@@ -216,6 +216,10 @@ function addActions(actionHtml) {
 				window.location.href = "https://iamdavecon.github.io/bb/";
 				break;
 
+			case "admin":
+				window.location.href = "/admin.html";
+				break;
+
 			case "getItemFromUser":
 				getItemFromUser(e.target.dataset.item);
 				break;
@@ -458,8 +462,7 @@ async function loadPlayer() {
 
 		//  DEBUG
 		if (isDebugUser) {
-			actionHtml += `<button data-action="increaseRank">Increase Rank</button>`
-			actionHtml += `<button data-action="decreaseRank">Decrease Rank</button>`
+			actionHtml += `<button data-action="admin">su root</button>`
 		}
 
 		addActions(actionHtml);

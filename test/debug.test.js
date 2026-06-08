@@ -53,3 +53,47 @@ test('debug rank handlers require a debug socket user and matching source', () =
 	assert.deepEqual(debugHarness.ioEvents, [{ event: 'update', payload: undefined }]);
 });
 
+test('debug inventory handlers grant random fragments and infected users', () => {
+	const daves = {
+		[DEBUG_ID]: {
+			userId: DEBUG_ID,
+			fragmentsCollected: ['existing-fragment'],
+			infectedUsers: ['existing-infection']
+		},
+		regular: { userId: 'regular', fragmentsCollected: [], infectedUsers: [] }
+	};
+
+	const regularHarness = createHarness('regular');
+	registerHandlers(regularHarness.socket, daves, {}, regularHarness.io);
+	let regularResult;
+	regularHarness.handlers.grantRandomFragments('regular', (result) => {
+		regularResult = result;
+	});
+
+	assert.equal(regularResult.ok, false);
+	assert.deepEqual(daves.regular.fragmentsCollected, []);
+	assert.equal(regularHarness.ioEvents.length, 0);
+
+	const debugHarness = createHarness(DEBUG_ID);
+	registerHandlers(debugHarness.socket, daves, {}, debugHarness.io);
+	let fragmentResult;
+	let infectionResult;
+
+	debugHarness.handlers.grantRandomFragments(DEBUG_ID, (result) => {
+		fragmentResult = result;
+	});
+	debugHarness.handlers.grantRandomInfectedUsers(DEBUG_ID, (result) => {
+		infectionResult = result;
+	});
+
+	assert.equal(fragmentResult.ok, true);
+	assert.equal(infectionResult.ok, true);
+	assert.equal(daves[DEBUG_ID].fragmentsCollected.length, 11);
+	assert.equal(daves[DEBUG_ID].infectedUsers.length, 11);
+	assert.equal(daves[DEBUG_ID].fragmentsCollected[0], 'existing-fragment');
+	assert.equal(daves[DEBUG_ID].infectedUsers[0], 'existing-infection');
+	assert.deepEqual(debugHarness.ioEvents, [
+		{ event: 'update', payload: undefined },
+		{ event: 'update', payload: undefined }
+	]);
+});

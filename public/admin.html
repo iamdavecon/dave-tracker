@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Admin</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<a id="backLink" href="/" class="back-link">< Back</a>
+		<section class="panel">
+			<div class="section-title">Admin</div>
+			<div class="field">
+				<span class="label">Dave</span>
+				<span id="adminName">Loading...</span>
+			</div>
+			<div class="field">
+				<span class="label">Rank</span>
+				<span id="adminRank">...</span>
+			</div>
+			<div id="adminStatus" class="field-note"></div>
+		</section>
+		<section class="panel">
+			<div id="adminActions">
+				<button data-action="increaseRank" disabled>Increase Rank</button>
+				<button data-action="decreaseRank" disabled>Decrease Rank</button>
+				<button data-action="grantRandomFragments" disabled>Get 10 Random Fragments</button>
+				<button data-action="grantRandomInfectedUsers" disabled>Get 10 Random Infected Users</button>
+				<button data-action="saveUsers" disabled>Save Users</button>
+				<button data-action="loadUsers" disabled>Load Users</button>
+			</div>
+		</section>
+		<section class="panel">
+			<div class="section-title">Pasted Data</div>
+			<div class="form-field">
+				<label for="usersJson">Users</label>
+				<textarea id="usersJson" rows="10" spellcheck="false"></textarea>
+				<button data-action="updateUsers" disabled>Update Users</button>
+			</div>
+			<div class="form-field">
+				<label for="placesJson">Places</label>
+				<textarea id="placesJson" rows="10" spellcheck="false"></textarea>
+				<button data-action="updatePlaces" disabled>Update Places</button>
+			</div>
+			<div class="form-field">
+				<label for="landmarkInput">Landmark</label>
+				<input id="landmarkInput" type="text" spellcheck="false" placeholder="36.133736733141575, -115.16348139665487, 🍸 Peppermill">
+				<button data-action="addLandmark" disabled>Add Landmark</button>
+			</div>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="admin.js"></script>
+</body>
+</html>
