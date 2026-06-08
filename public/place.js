@@ -1,4 +1,4 @@
-import { getUserId, isDebugId } from './utils/id.js';
+import { getUserId } from './utils/id.js';
 import { getItemsForSource, displayItems } from './utils/itemUI.js';
 import {
 	canAttemptPlaceFragmentChallenge,
@@ -32,7 +32,7 @@ const socket = io({
 
 const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
-const isDebugUser = isDebugId(userId);
+let isDebugUser = false;
 const DRINK_ITEM = "🍺";
 
 let map;
@@ -200,6 +200,7 @@ async function loadPlace() {
 	const res = await fetch(`/api/place?id=${encodeURIComponent(placeId)}&viewerId=${encodeURIComponent(userId)}`);
 	const payload = await res.json();
 	const { place, dave } = payload;
+	isDebugUser = !!payload.isDebugUser;
 
 	//console.log("loading: " + JSON.stringify(payload, null, 2));
 

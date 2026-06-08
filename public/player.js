@@ -1,4 +1,4 @@
-import { getUserId, isDebugId} from './utils/id.js';
+import { getUserId } from './utils/id.js';
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
 import { displayItems } from './utils/itemUI.js';
@@ -15,7 +15,7 @@ const socket = io({
 
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
-const isDebugUser = isDebugId(userId);
+let isDebugUser = false;
 const PEPPER_ITEM = "🌶️";
 const BABY_ITEM = "👶";
 
@@ -245,6 +245,7 @@ async function loadPlayer() {
 
 	const res = await fetch(`/api/dave?id=${encodeURIComponent(daveId)}&viewerId=${encodeURIComponent(userId)}`);
 	const dave = await res.json();
+	isDebugUser = !!dave.isDebugUser;
 	//console.log("loading: " + JSON.stringify(dave, null, 2));
 
 	if (!res.ok) {

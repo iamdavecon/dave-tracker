@@ -1,6 +1,7 @@
 import { saveUsers, loadUsers, getUsers, getPlaces } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
-import { getFragmentFrom, isDebugId} from "./public/utils/id.js";  
+import { getFragmentFrom } from "./public/utils/id.js";  
+import { isDebugId } from "./utils/debugAccess.js";
 import { inRange } from "./public/utils/distance.js";
 
 import { notifyUser } from './utils/sockets.js';
@@ -260,6 +261,7 @@ app.get('/api/dave', (req, res) => {
 
 	let result = getInteraction(me, dave, localDaves, savedPlaces);
 	result.availableActions.tooNear = places.isTooNear(me, savedPlaces);
+	result.isDebugUser = isDebugId(viewerId);
 	res.json(result);
 });
 
@@ -385,7 +387,8 @@ app.get('/api/place', (req, res) => {
 
 	res.json({
 		place: places.getInteraction(me, place),
-		dave: me
+		dave: me,
+		isDebugUser: isDebugId(viewerId)
 	});
 });
 
