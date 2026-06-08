@@ -38,6 +38,11 @@ export function cullNotSeen(map, seen) {
 			delete playerMarkers[id];
 		}
 	}
+
+	if (!seen.has(userId) && radar) {
+		map.removeLayer(radar);
+		radar = null;
+	}
 }
 
 function updateRadar(map, dave, me) {

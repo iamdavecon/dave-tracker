@@ -186,3 +186,18 @@ export function addMap(mapData, options = {}) {
 
 	return map;
 }
+
+export function removeMap(container = document.getElementById("map")) {
+	if (!container) {
+		return;
+	}
+
+	const activeState = activeMapStates.get(container);
+	if (activeState) {
+		activeState.cleanup?.();
+		activeState.map.remove();
+		activeMapStates.delete(container);
+	}
+
+	container.innerHTML = "";
+}

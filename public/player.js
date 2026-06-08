@@ -1,6 +1,6 @@
 import { getUserId } from './utils/id.js';
 import { bindLogEvents } from './utils/log.js';
-import { addMap } from './utils/map.js';
+import { addMap, removeMap } from './utils/map.js';
 import { displayItems } from './utils/itemUI.js';
 import { getRecognizedTags, getTagPlayerLabel } from './utils/tags.js';
 import { DAVE_RAVE_DEBUG_ENABLED, DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from './utils/raves.js';
@@ -158,6 +158,46 @@ async function teleport(freeRoam) {
 	}
 }
 
+async function toggleVisibility(visible) {
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		statusEl.textContent = visible ? "Becoming visible..." : "Going invisible...";
+	}
+
+	const res = await fetch('/api/visibility', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ userId, visible })
+	});
+
+	preserveActionStatusUntil = Date.now() + 3000;
+	if (res.ok) {
+		const result = await res.json();
+		if (result.visible && navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition((pos) => {
+				socket.emit('location', {
+					lat: pos.coords.latitude,
+					lng: pos.coords.longitude
+				});
+			});
+		} else if (!result.visible) {
+			socket.emit('location', { lat: 0, lng: 0 });
+		}
+		if (statusEl) {
+			statusEl.textContent = result.visible
+				? "You are visible again."
+				: "You are invisible. Location hidden at 0,0.";
+		}
+		await loadPlayer();
+		return;
+	}
+
+	const responseText = await res.text();
+	if (statusEl) {
+		statusEl.textContent = `Visibility update failed (${res.status}). ${responseText}`;
+	}
+}
+
 function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
 	const statusEl = document.getElementById("actionStatus");
@@ -198,10 +238,50 @@ function addActions(actionHtml) {
 			case "exitFreeRoam":
 				teleport(false);
 				break;	
+			case "hideMe":
+				toggleVisibility(false);
+				break;
+			case "showMe":
+				toggleVisibility(true);
+				break;
 			default:
 				emit(action);
 		}
 	};
+}
+
+function renderMapArea(dave) {
+	const mapArea = document.getElementById("mapArea");
+	const mapEl = document.getElementById("map");
+	const visibilityMapAction = document.getElementById("visibilityMapAction");
+	const showOnMapBtn = document.getElementById("showOnMapBtn");
+
+	if (!mapArea || !mapEl || !visibilityMapAction) {
+		return;
+	}
+
+	mapArea.classList.add("hidden");
+	mapEl.classList.add("hidden");
+	visibilityMapAction.classList.add("hidden");
+
+	if (dave.isMe && dave.visible === false) {
+		removeMap(mapEl);
+		mapArea.classList.remove("hidden");
+		visibilityMapAction.classList.remove("hidden");
+		if (showOnMapBtn) {
+			showOnMapBtn.onclick = () => toggleVisibility(true);
+		}
+		return;
+	}
+
+	if (!dave.isMe && dave.visible !== false) {
+		mapArea.classList.remove("hidden");
+		mapEl.classList.remove("hidden");
+		map = addMap(dave.mapData, { socket });
+		return;
+	}
+
+	removeMap(mapEl);
 }
 
 function renderLinkedDaves(linkedDaves = []) {
@@ -258,6 +338,7 @@ async function loadPlayer() {
 
 	// --- Populate fields ---
 	document.getElementById("playerName").textContent = dave.name;
+	renderMapArea(dave);
 
 	const stateEl = document.getElementById("playerState");
 	const stateValue = state.getState(dave);
@@ -312,10 +393,6 @@ async function loadPlayer() {
 		renderLinkedDaves(dave.linkedDaves);
 
 		let actionHtml = "";
-
-		//TODO  ??
-		//actionHtml += `<button id="chooseTags">Choose </button> `   
-
 		if (dave.availableActions.hasFragments) {
 			if (dave.availableActions.tooNear) {
 				actionHtml += `<button disabled=true>Daveify This Spot  (Too near a node)</button> `   
@@ -325,6 +402,11 @@ async function loadPlayer() {
 		} else {
 			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
 		}
+
+		if (dave.visible !== false) {
+			actionHtml += `<button data-action="hideMe">Hide Me</button>`;
+		}
+
 
 		//  DAVEPRIME (ENABLES CHEATS)
 		if (dave.availableActions.davePrime) {
@@ -449,8 +531,6 @@ async function loadPlayer() {
 			}
 		}
 
-
-		map = addMap(dave.mapData, { socket });
 	}
 }
 

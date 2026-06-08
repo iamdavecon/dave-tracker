@@ -92,7 +92,7 @@ export function getDavesInArea(me, allDaves = {}) {
 	}
 
 	return Object.values(allDaves).filter((dave) => {
-		if (!dave || dave.isBot || !Number.isFinite(dave.lat) || !Number.isFinite(dave.lng)) {
+		if (!dave || dave.isBot || dave.visible === false || !Number.isFinite(dave.lat) || !Number.isFinite(dave.lng)) {
 			return false;
 		}
 
@@ -116,14 +116,14 @@ export function getDaveRaveDebug(me, allDaves = {}) {
 			continue;
 		}
 
-		if (dave.isBot) {
+		if (dave.isBot || dave.visible === false) {
 			if (Number.isFinite(dave.lat) && Number.isFinite(dave.lng)) {
 				const distanceMeters = Math.round(haversineDistance(me, dave));
 				if (distanceMeters < DAVE_RAVE_RADIUS_METERS) {
 					excludedDaves.push({
 						userId: dave.userId,
 						name: dave.name ?? dave.userId,
-						reason: "bot",
+						reason: dave.isBot ? "bot" : "invisible",
 						distanceMeters
 					});
 				}

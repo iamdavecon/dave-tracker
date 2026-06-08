@@ -55,7 +55,12 @@
 		/>
 
 		<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-		<div id="map" style="height: 300px; border-radius: 12px; margin-top: 16px;"></div>
+		<div id="mapArea" class="player-map-area">
+			<div id="map" class="player-map"></div>
+			<div id="visibilityMapAction" class="visibility-map-action hidden">
+				<button id="showOnMapBtn" type="button" data-action="showMe">Show Me</button>
+			</div>
+		</div>
 
 		<br/><br/>
 		<section class="log">

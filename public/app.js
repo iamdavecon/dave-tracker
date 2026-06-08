@@ -60,6 +60,49 @@ document.getElementById("centerMe").onclick = () => {
 
 const canonicalLayer = L.layerGroup().addTo(map);
 
+async function showMe() {
+	const res = await fetch('/api/visibility', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ userId, visible: true })
+	});
+
+	if (!res.ok) {
+		return;
+	}
+
+	if (navigator.geolocation) {
+		navigator.geolocation.getCurrentPosition((pos) => {
+			socket.emit('location', {
+				lat: pos.coords.latitude,
+				lng: pos.coords.longitude
+			});
+		});
+	}
+
+	await update();
+}
+
+function renderMapVisibility() {
+	const mapEl = document.getElementById("map");
+	const centerMeButton = document.getElementById("centerMe");
+	const visibilityMapAction = document.getElementById("visibilityMapAction");
+	const showOnIndexMapBtn = document.getElementById("showOnIndexMapBtn");
+	const isInvisible = me.visible === false;
+
+	mapEl.classList.toggle("hidden", isInvisible);
+	centerMeButton.classList.toggle("hidden", isInvisible);
+	visibilityMapAction.classList.toggle("hidden", !isInvisible);
+
+	if (showOnIndexMapBtn) {
+		showOnIndexMapBtn.onclick = showMe;
+	}
+
+	if (!isInvisible) {
+		map.invalidateSize();
+	}
+}
+
 function renderPlaces(places) {
 	//console.log("render places: " + JSON.stringify(me, null, 2));
 	//console.log(JSON.stringify(places, null, 2));
@@ -74,6 +117,10 @@ function renderPlaces(places) {
 
 	const nodeDistanceList = document.getElementById("nodeDistanceList");
 	nodeDistanceList.innerHTML = "";
+
+	if (me.visible === false) {
+		return;
+	}
 
 	let i = 0;
 	Object.entries(places)  
@@ -114,10 +161,11 @@ async function update() {
 		return;
 	} 
 
+	renderMapVisibility();
 	renderPlaces(places);
 
 	const realUsers = Object.fromEntries(
-		Object.entries(daves).filter(([id, user]) => !user.isBot)
+		Object.entries(daves).filter(([id, user]) => !user.isBot && user.visible !== false)
 	);
 	addStateUI(me, Object.keys(realUsers).length);
 
@@ -127,33 +175,35 @@ async function update() {
 	let i = 0;
 
 	const seen = new Set();
-	Object.entries(daves)
-		.filter(([key, dave]) => dave.lat != null && dave.lng != null)
-		.sort(([, a], [, b]) => {
-			const distanceA = haversineDistance(
-				{ lat: me.lat, lng: me.lng },
-				{ lat: a.lat, lng: a.lng }
-			);
-			const distanceB = haversineDistance(
-				{ lat: me.lat, lng: me.lng },
-				{ lat: b.lat, lng: b.lng }
-			);
-			a.distance = distanceA;
-			b.distance = distanceB;
-			return distanceA - distanceB;
-		})
-		.forEach(([key, dave], idx) => {
-			seen.add(key);
-			const showInList = !dave.isBot;
-			addPlayer(map, me, dave, i, { showInList });
-			if (showInList) {
-				i++;
-			}
-		});
+	if (me.visible !== false) {
+		Object.entries(daves)
+			.filter(([key, dave]) => dave.visible !== false && dave.lat != null && dave.lng != null)
+			.sort(([, a], [, b]) => {
+				const distanceA = haversineDistance(
+					{ lat: me.lat, lng: me.lng },
+					{ lat: a.lat, lng: a.lng }
+				);
+				const distanceB = haversineDistance(
+					{ lat: me.lat, lng: me.lng },
+					{ lat: b.lat, lng: b.lng }
+				);
+				a.distance = distanceA;
+				b.distance = distanceB;
+				return distanceA - distanceB;
+			})
+			.forEach(([key, dave], idx) => {
+				seen.add(key);
+				const showInList = !dave.isBot;
+				addPlayer(map, me, dave, i, { showInList });
+				if (showInList) {
+					i++;
+				}
+			});
+	}
 	//console.log("\tadded: " + i);
 	cullNotSeen(map, seen);
 
-	if (init) {
+	if (init && me.visible !== false) {
 		map.setView([me.lat, me.lng]);
 		init = false;
 	} }
@@ -182,7 +232,9 @@ socket.on('teleport', (data) => {
 	me.lat = data.lat;
 	me.lng = data.lng;
 	me.freeRoam = data.freeRoam;
-	map.setView([me.lat, me.lng]);
+	if (me.visible !== false) {
+		map.setView([me.lat, me.lng]);
+	}
 });
 
 map.on('click', async (e) => {
@@ -228,9 +280,11 @@ function startGeolocation() {
 		if (me.freeRoam) {
 			return;
 		} 
-		const lat = pos.coords.latitude;
-		const lng = pos.coords.longitude;
-		if (lat === 0 && lng === 0) {
+		const lat = me.visible === false ? 0 : pos.coords.latitude;
+		const lng = me.visible === false ? 0 : pos.coords.longitude;
+		if (me.visible === false) {
+			socket.emit('location', { lat, lng });
+		} else if (lat === 0 && lng === 0) {
 			map.setView([me.lat, me.lng]);
 		} else {
 			socket.emit('location', { lat, lng });

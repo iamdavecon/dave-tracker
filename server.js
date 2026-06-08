@@ -96,7 +96,7 @@ function randomSpawn() {
 	}
 
 	const realUsers = Object.fromEntries(
-		Object.entries(daves).filter(([id, user]) => !user.isBot)
+		Object.entries(daves).filter(([id, user]) => !user.isBot && user.visible !== false)
 	);
 
 	const keys = Object.keys(realUsers);
@@ -505,6 +505,27 @@ app.post('/api/teleport', async (req, res) => {
 
 });
 
+app.post('/api/visibility', async (req, res) => {
+	const { userId, visible } = req.body ?? {};
+	const me = daves[userId];
+
+	if (!me) {
+		return res.status(404).json({ ok: false, error: "Dave's not here" });
+	}
+
+	me.visible = visible !== false;
+	if (!me.visible) {
+		me.lat = 0;
+		me.lng = 0;
+	}
+	me.updatedAt = Date.now();
+
+	await saveUsers(daves, savedPlaces);
+	io.emit("update");
+
+	res.json({ ok: true, visible: me.visible, lat: me.lat, lng: me.lng });
+});
+
 
 
 // --- Socket.io handlers ---
@@ -622,8 +643,13 @@ io.on('connection', (socket) => {
 				return;
 			}
 
-			me.lat = loc.lat;
-			me.lng = loc.lng;
+			if (me.visible === false) {
+				me.lat = 0;
+				me.lng = 0;
+			} else {
+				me.lat = loc.lat;
+				me.lng = loc.lng;
+			}
 			me.updatedAt = Date.now();
 
 			io.emit("update");
@@ -667,7 +693,7 @@ io.on('connection', (socket) => {
 		const localDaves = getUsers(daves);
 		const me = localDaves[sourceId];
 		//console.log(`[SPAWN]  ` + JSON.stringify(daves, null, 2));
-		if (!me || !state.isDavePrime(me)) {
+		if (!me || !state.isDavePrime(me) || me.visible === false) {
 			return;
 		}
 

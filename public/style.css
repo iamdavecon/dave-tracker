@@ -864,6 +864,31 @@ opacity: 0.3;
 	overflow: hidden;
 }
 
+.player-map-area {
+	margin-top: 16px;
+}
+
+.player-map {
+	height: 300px;
+	border-radius: 12px;
+	overflow: hidden;
+}
+
+.visibility-map-action {
+	display: grid;
+	place-items: center;
+	min-height: 160px;
+	padding: 16px;
+	border: 1px dashed #333;
+	border-radius: 12px;
+	background: #0f0f0f;
+}
+
+.visibility-map-action button {
+	max-width: 260px;
+	margin-bottom: 0;
+}
+
 .marker {
 	position: absolute;
 	width: 10px;
