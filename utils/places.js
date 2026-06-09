@@ -1,5 +1,5 @@
 import * as state from "../public/utils/state.js";
-import { inRange } from "../public/utils/distance.js";
+import { haversineDistance, rangesOverlap } from "../public/utils/distance.js";
 import { getMapData } from "../public/utils/map.js";
 import {
 	canAttemptPlaceFragmentChallenge,
@@ -115,7 +115,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
-		if (!dave || !place || !inRange(dave, place) || !state.getPlaceActions(dave, place).canUpgrade) {
+		if (!dave || !place || !rangesOverlap(dave, place) || !state.getPlaceActions(dave, place).canUpgrade) {
 			return;
 		}
 
@@ -140,7 +140,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
-		if (!dave || !place || !inRange(dave, place) || !state.canDoonUpgradePlace(dave, place)) {
+		if (!dave || !place || !rangesOverlap(dave, place) || !state.canDoonUpgradePlace(dave, place)) {
 			return;
 		}
 
@@ -188,7 +188,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
-		if (!dave || !place || !inRange(dave, place) || state.hasTag(dave, LINECON_TAG) || !place.name?.includes("☠")) {
+		if (!dave || !place || !rangesOverlap(dave, place) || state.hasTag(dave, LINECON_TAG) || !place.name?.includes("☠")) {
 			callback({ ok: false, error: "linecon unavailable" });
 			return;
 		}
@@ -210,7 +210,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
-		if (!dave || !place || !inRange(dave, place) || !place.name?.includes("Circus Circus")) {
+		if (!dave || !place || !rangesOverlap(dave, place) || !place.name?.includes("Circus Circus")) {
 			return;
 		}
 		if (!state.canGet(dave, DRINK_ITEM)) {
@@ -237,7 +237,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
 		const challenge = getPlaceFragmentChallengeForAction(action);
-		if (!dave || !place || !challenge || !inRange(dave, place)) {
+		if (!dave || !place || !challenge || !rangesOverlap(dave, place)) {
 			return;
 		}
 		if (getPlaceFragmentChallengeForEmoji(firstEmoji(place.name))?.action !== challenge.action) {
@@ -278,7 +278,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		const dave = daves[sourceId];
 		const place = savedPlaces[placeId];
-		if (!dave || !place || firstEmoji(place.name) !== TACO_ITEM || !inRange(dave, place)) {
+		if (!dave || !place || firstEmoji(place.name) !== TACO_ITEM || !rangesOverlap(dave, place)) {
 			return;
 		}
 		if (!getTacoGameQuestion(questionId) || !canAttemptTacoGame(dave)) {
@@ -324,9 +324,12 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 };
 
 export function getInteraction(me, place) {
+	const mapData = getMapData(me, place);
+	mapData.inRange = me && place ? rangesOverlap(me, place) : false;
+
 	let placeDetails = {
 		...place,
-		mapData : getMapData(me, place),
+		mapData,
 		availableActions : state.getPlaceActions(me, place),
 	}
 	return placeDetails;
@@ -337,11 +340,29 @@ export function isTooNear(me, savedPlaces) {
 		return false;
 	}
 
-	for (const place of Object.values(savedPlaces)) {
+	return getNearestPlaceInRange(me, savedPlaces) !== null;
+}
+
+export function getNearestPlaceInRange(me, savedPlaces) {
+	if (!me || !Number.isFinite(me.lat) || !Number.isFinite(me.lng)) {
+		return null;
+	}
+
+	let nearest = null;
+
+	for (const [placeId, place] of Object.entries(savedPlaces)) {
 		//console.log("\tconsidering : " + place.name + " is " + inRange(place, me));
-		if (inRange(place, me)) {
-			return true;
+		if (place && rangesOverlap(me, place)) {
+			const distanceMeters = haversineDistance(me, place);
+			if (!nearest || distanceMeters < nearest.distanceMeters) {
+				nearest = {
+					id: place.id ?? placeId,
+					name: place.name,
+					distanceMeters
+				};
+			}
 		}
 	}
-	return false;
+
+	return nearest;
 }

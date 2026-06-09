@@ -92,6 +92,10 @@ socket.on("dodApplyResult", (result) => {
 		? `Application accepted. Field provisions issued: ${rewards}.`
 		: "Application accepted";
 	form.hidden = true;
+
+	if (placeId) {
+		window.location.href = `/place.html?id=${encodeURIComponent(placeId)}`;
+	}
 });
 
 loadApplicationContext();

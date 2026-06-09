@@ -48,3 +48,6 @@ export function inRange(src, target) {
 	return haversineDistance(src, target) < getRange(src);
 }
 
+export function rangesOverlap(a, b) {
+	return haversineDistance(a, b) < getRange(a) + getRange(b);
+}

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { registerHandlers } from '../utils/places.js';
+import { getNearestPlaceInRange, isTooNear, registerHandlers } from '../utils/places.js';
 
 function createHarness(userId = 'source') {
 	const handlers = {};
@@ -74,6 +74,32 @@ test('dropDavePoint refuses free or too-near node creation', () => {
 	assert.deepEqual(daves.source.fragmentsCollected, ['fragment']);
 });
 
+test('nearest in-range place is exposed even when node creation can bypass proximity', () => {
+	const source = {
+		userId: 'source',
+		name: 'Source',
+		state: 'immune',
+		lat: 41,
+		lng: -87,
+		fragmentsCollected: ['fragment']
+	};
+	const places = {
+		far: { lat: 41, lng: -86.999, name: 'Far Node' },
+		near: { lat: 41, lng: -87, name: 'Near Node' }
+	};
+
+	assert.deepEqual(getNearestPlaceInRange(source, places), {
+		id: 'near',
+		name: 'Near Node',
+		distanceMeters: 0
+	});
+	assert.equal(isTooNear(source, places), true);
+
+	source.state = 'daveprime';
+	assert.equal(isTooNear(source, places), false);
+	assert.equal(getNearestPlaceInRange(source, places)?.id, 'near');
+});
+
 test('dropDavePoint lets DOPE and DAVEPRIME users ignore nearby node restriction', () => {
 	for (const daveState of ['dope', 'daveprime']) {
 		const { socket, handlers, io } = createHarness();
@@ -140,6 +166,29 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 
 	handlers.upgradeDavePoint('source', 'near');
 	assert.equal(places.near.level, 2);
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+});
+
+test('place interaction works when player and place radii overlap', () => {
+	const { socket, handlers, io } = createHarness();
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'immune',
+			lat: 41,
+			lng: -87,
+			fragmentsCollected: ['fragment']
+		}
+	};
+	const places = {
+		overlap: { id: 'overlap', lat: 41, lng: -86.9985, name: 'Overlap', level: 2 }
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.upgradeDavePoint('source', 'overlap');
+
+	assert.equal(places.overlap.level, 3);
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 });
 

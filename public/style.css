@@ -101,14 +101,25 @@
 
 /* State colors */
 
-.radar.ascended {
+.radar.daveprime,
+.radar.dope {
   stroke: gold;
   fill: gold;
 }
 
-.radar.immune {
+.radar.ascended {
+  stroke: #35d6ff;
+  fill: #35d6ff;
+}
+
+.radar.resonant {
   stroke: #4da3ff;
   fill: #4da3ff;
+}
+
+.radar.immune {
+  stroke: #4caf50;
+  fill: #4caf50;
 }
 
 .radar.unstable {
@@ -119,6 +130,11 @@
 .radar.infected {
   stroke: red;
   fill: red;
+}
+
+.radar.corrupted {
+  stroke: #d26bff;
+  fill: #d26bff;
 }
 
 /* Pulse animation */

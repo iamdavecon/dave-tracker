@@ -20,6 +20,7 @@ import {
 import { getAscensionText } from "./utils/placesUI.js";
 import { bindLogEvents } from './utils/log.js';
 import { addMap } from './utils/map.js';
+import { rangesOverlap } from "./utils/distance.js";
 import * as dod from "./utils/dod.js";
 import * as state from "./utils/state.js";
 
@@ -259,6 +260,10 @@ async function loadPlace() {
 		<div class="field">
 			<span class="label">🧬Fragments available</span>
 			<span>${fragments}</span>
+		</div>
+		<div class="field">
+			<span class="label">DoD Level</span>
+			<span>${dod.getLevel(dave)}</span>
 		</div>`
 
 	if (firstEmoji) {
@@ -281,7 +286,10 @@ async function loadPlace() {
 		}
 	}
 
-	if (place.mapData.inRange) {
+	const placeInRange = place.mapData?.inRange || rangesOverlap(dave, place);
+	place.mapData.inRange = placeInRange;
+
+	if (placeInRange) {
 		const isLineconNode = firstEmoji == '☠' || /def\s*con|line\s*con|linecon/i.test(place.name ?? "");
 		if (isLineconNode) {
 			actionHtml += state.hasTag(dave, "linecon")

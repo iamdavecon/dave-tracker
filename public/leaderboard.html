@@ -157,6 +157,10 @@
       font-weight: bold;
     }
 
+    .state-summary-empty {
+      opacity: 0.55;
+    }
+
     .row-in-range {
       box-shadow: inset 4px 0 0 #5fced1;
     }
@@ -288,17 +292,20 @@
 		      ];
 
 		    orderedStates
-			      .filter(currentState => counts[currentState] > 0)
 			      .forEach(currentState => {
+				        const stateCount = counts[currentState] || 0;
 				        const item = document.createElement("span");
 				        item.className = `state-summary-item pill ${currentState.toLowerCase()}`;
+				        if (stateCount === 0) {
+					          item.classList.add("state-summary-empty");
+				          }
 
 				        const label = document.createElement("span");
 				        label.textContent = currentState;
 
 				        const count = document.createElement("span");
 				        count.className = "state-summary-count";
-				        count.textContent = counts[currentState];
+				        count.textContent = stateCount;
 
 				        item.appendChild(label);
 				        item.appendChild(count);

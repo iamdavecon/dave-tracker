@@ -1,4 +1,4 @@
-import { ascendUser , maxState } from "../public/utils/state.js";
+import { ascendUser, getAscensionRequiredLevel, maxState } from "../public/utils/state.js";
 import { removeFragment } from './players.js';
 
 export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
@@ -13,7 +13,8 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			return;
 		}
 
-		if ((dave.fragmentsCollected?.length ?? 0) < 1 || (place.level ?? 0) <= maxState(dave)) {
+		const requiredLevel = getAscensionRequiredLevel(dave);
+		if ((dave.fragmentsCollected?.length ?? 0) < 1 || requiredLevel == null || (place.level ?? 0) < requiredLevel) {
 			return;
 		}
 

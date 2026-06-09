@@ -61,3 +61,41 @@ test('ascendAtNode rejects forged source ids and insufficient nodes', () => {
 	assert.equal(daves.source.state, 'immune');
 	assert.deepEqual(daves.source.fragmentsCollected, ['fragment']);
 });
+
+test('ascendAtNode requires each state threshold before the next ascension', () => {
+	const handlers = {};
+	const ioEvents = [];
+	const socket = {
+		userId: 'source',
+		on(event, handler) {
+			handlers[event] = handler;
+		}
+	};
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			state: 'immune',
+			fragmentsCollected: ['fragment-1', 'fragment-2']
+		}
+	};
+	const places = {
+		node: { id: 'node', name: 'Node', level: 3 }
+	};
+
+	registerHandlers(socket, daves, places, { emit: (...args) => ioEvents.push(args) });
+
+	handlers.ascendAtNode('source', 'node');
+	assert.equal(daves.source.state, 'resonant');
+	assert.deepEqual(daves.source.fragmentsCollected, ['fragment-2']);
+
+	handlers.ascendAtNode('source', 'node');
+	assert.equal(daves.source.state, 'resonant');
+	assert.deepEqual(daves.source.fragmentsCollected, ['fragment-2']);
+
+	places.node.level = 5;
+	handlers.ascendAtNode('source', 'node');
+	assert.equal(daves.source.state, 'ascended');
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+	assert.equal(ioEvents.length, 2);
+});

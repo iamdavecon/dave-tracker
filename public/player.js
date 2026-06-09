@@ -58,6 +58,10 @@ function emit(event) {
 	} else {
 		socket.emit(event, userId, daveId);
 	}
+	if (event === "dropDavePoint") {
+		window.location.href = "/";
+		return;
+	}
 	location.reload()
 }
 
@@ -232,6 +236,10 @@ function addActions(actionHtml) {
 				eatTaco();
 				break;
 
+			case "openNearestPlace":
+				window.location.href = `/place.html?id=${encodeURIComponent(e.target.dataset.placeId)}&viewerId=${encodeURIComponent(userId)}`;
+				break;
+
 			case "grantTag":
 				grantTag();
 				break;
@@ -397,14 +405,15 @@ async function loadPlayer() {
 		renderLinkedDaves(dave.linkedDaves);
 
 		let actionHtml = "";
-		if (dave.availableActions.hasFragments) {
-			if (dave.availableActions.tooNear) {
-				actionHtml += `<button disabled=true>Daveify This Spot  (Too near a node)</button> `   
-			} else {
-				actionHtml += `<button data-action="dropDavePoint">Daveify This Spot</button> `   
-			}
+		const nearestPlace = dave.availableActions.nearestPlace;
+		if (nearestPlace?.id) {
+			actionHtml += `<button data-action="openNearestPlace" data-place-id="${nearestPlace.id}">Daveify This Spot</button> `   
 		} else {
-			actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
+			if (dave.availableActions.hasFragments) {
+				actionHtml += `<button data-action="dropDavePoint">Daveify This Spot</button> `   
+			} else {
+				actionHtml += `<button disabled=true>Daveify This Spot  (Need more Davefluence)</button> `   
+			}
 		}
 
 		if (dave.visible !== false) {

@@ -110,17 +110,7 @@ export function getStateClass(dave) {
 }
 
 export function getRadarClass(dave) {
-	const stateValue = getIndex(dave);
-	if (stateValue < toNumber(STATES.IMMUNE)) {
-		return 'ascended';
-	} else if (stateValue < toNumber(STATES.UNSTABLE)) {
-		return 'immune';
-	} else if (stateValue == toNumber(STATES.UNSTABLE)) {
-		return 'unstable';
-	} else {
-		return 'infected';
-	}
-
+	return getStateClass(dave);
 }
 
 export function getAscendencyBonus(obj) {
@@ -129,10 +119,10 @@ export function getAscendencyBonus(obj) {
 		// Explicit tuning overrides
 		const overrides = {
 			[STATES.DAVEPRIME]: 20,
-			[STATES.DOPE]: 12,
-			[STATES.ASCENDED]: 10,
-			[STATES.RESONANT]: 8,
-			[STATES.IMMUNE]: 4
+			[STATES.DOPE]: 8,
+			[STATES.ASCENDED]: 6,
+			[STATES.RESONANT]: 4,
+			[STATES.IMMUNE]: 2
 		};
 		if (overrides[currentState] != null) {
 			return overrides[currentState];
@@ -242,7 +232,7 @@ export function stabilize(dave) {
 
 
 export function hasTag(dave, tag) {
-	return Array.isArray(dave.tags) && dave.tags.includes(tag);
+	return Array.isArray(dave?.tags) && dave.tags.includes(tag);
 }
 
 export function addTag(dave, tag) {
@@ -310,7 +300,7 @@ export function hasTerritoryRank(dave) {
 }
 
 function canAfford(dave, cost) {
-	return (dave.fragmentsCollected && dave.fragmentsCollected.length >= cost)
+	return Array.isArray(dave?.fragmentsCollected) && dave.fragmentsCollected.length >= cost;
 }
 
 export function isDavePrime(dave) {
@@ -381,6 +371,19 @@ export function maxState(dave) {
 			return 10;
 	}
 	return 0;
+}
+
+export function getAscensionRequiredLevel(dave) {
+	if (dave?.state === "stable") {
+		return null;
+	}
+
+	const currentMaxState = maxState(dave);
+	if (currentMaxState >= 9) {
+		return null;
+	}
+
+	return Math.max(1, currentMaxState);
 }
 
 export function ascendency(dave) {

@@ -92,7 +92,16 @@
       const tbody = document.querySelector('#placesTable tbody');
       tbody.innerHTML = '';
 
-      const entries = Object.entries(places);
+      const entries = Object.entries(places).sort(([, a], [, b]) => {
+        const aOrder = Number.isFinite(Number(a.order)) ? Number(a.order) : -Infinity;
+        const bOrder = Number.isFinite(Number(b.order)) ? Number(b.order) : -Infinity;
+
+        if (aOrder !== bOrder) {
+          return bOrder - aOrder;
+        }
+
+        return (a.name || '').localeCompare(b.name || '');
+      });
 
       for (const [id, place] of entries) {
         const level = place.level ?? 0;
@@ -120,4 +129,3 @@
   </script>
 </body>
 </html>
-

@@ -260,6 +260,7 @@ app.get('/api/dave', (req, res) => {
 	}
 
 	let result = getInteraction(me, dave, localDaves, savedPlaces);
+	result.availableActions.nearestPlace = places.getNearestPlaceInRange(me, savedPlaces);
 	result.availableActions.tooNear = places.isTooNear(me, savedPlaces);
 	result.isDebugUser = isDebugId(viewerId);
 	res.json(result);
@@ -312,6 +313,31 @@ function replaceLivePlaces(loadedPlaces) {
 		delete savedPlaces[id];
 	}
 	Object.assign(savedPlaces, loadedPlaces);
+}
+
+function getOrCreateDave(userId) {
+	if (!userId) {
+		return null;
+	}
+
+	const localDaves = getUsers(daves);
+	let dave = daves[userId] || localDaves[userId];
+
+	if (!dave) {
+		dave = {
+			userId,
+			name: "Dave",
+			state: state.getDefaultState(),
+			infectedUsers: [],
+			infectedBy: [],
+			fragmentsCollected: [],
+			tags: []
+		};
+	}
+
+	daves[userId] = dave;
+	dave.updatedAt = Date.now();
+	return dave;
 }
 
 function isPlainObject(value) {
@@ -508,9 +534,16 @@ app.get('/api/logs', (req, res) => {
 // --- place details ---
 app.get('/api/place', (req, res) => {
 	const { id, viewerId } = req.query;
-	const localDaves = getUsers(daves);
 	const place = savedPlaces[id];
-	const me = localDaves[viewerId]; 
+	const me = getOrCreateDave(viewerId);
+
+	if (!place) {
+		return res.status(404).json({ error: "Node unavailable" });
+	}
+
+	if (!me) {
+		return res.status(400).json({ error: "viewerId is required" });
+	}
 
 	res.json({
 		place: places.getInteraction(me, place),

@@ -1,5 +1,5 @@
-import { inRange, getRange } from './distance.js';
-import { maxState } from './state.js';
+import { getRange, rangesOverlap } from './distance.js';
+import { getAscensionRequiredLevel, maxState } from './state.js';
 
 
 function metersToPixels(meters, lat, zoom) {
@@ -171,7 +171,7 @@ export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistance
 
 		li.appendChild(container);                
 
-		if (isDavefenceNode(place) || inRange(dave, place)) {
+		if (isDavefenceNode(place) || rangesOverlap(dave, place)) {
 			li.classList.add("in-range");
 			li.classList.remove("out-of-range");
 		} else {
@@ -214,9 +214,18 @@ export function bindInfluence(map, config) {
 }
 
 export function getAscensionText(dave, place) {
+	if (dave?.state === "stable") {
+		return "";
+	}
+
+	const requiredLevel = getAscensionRequiredLevel(dave);
+	if (requiredLevel == null) {
+		return "";
+	}
+
 	const currentMaxState = maxState(dave);
 	const hasFragment = (dave.fragmentsCollected?.length ?? 0) > 0;
-	if (hasFragment && currentMaxState < 9 && place.level > currentMaxState) {
+	if (hasFragment && (place.level ?? 0) >= requiredLevel) {
 		const emoji = firstEmoji(place.name);
 		if (emoji) {
 			switch (emoji) {

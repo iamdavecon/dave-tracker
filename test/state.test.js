@@ -9,6 +9,13 @@ test('defaults unknown or missing states to unstable', () => {
 	assert.equal(state.getState({ state: 'missing' }), 'unstable');
 });
 
+test('radar class matches the state pill class', () => {
+	for (const stateValue of ['daveprime', 'dope', 'ascended', 'resonant', 'immune', 'unstable', 'infected', 'corrupted']) {
+		const dave = { state: stateValue };
+		assert.equal(state.getRadarClass(dave), state.getStateClass(dave));
+	}
+});
+
 test('rank changes stop at the top and bottom of the state ladder', () => {
 	const dave = { state: 'unstable' };
 
@@ -154,6 +161,16 @@ test('place actions require fragments and cap upgrades by player state', () => {
 
 	const brokeDave = { state: 'daveprime', fragmentsCollected: [] };
 	assert.equal(state.getPlaceActions(brokeDave, upgradeablePlace).canUpgrade, undefined);
+});
+
+test('place actions tolerate missing dave context', () => {
+	const actions = state.getPlaceActions(undefined, { level: 1 });
+
+	assert.equal(actions.hasFragments, false);
+	assert.equal(actions.canUpgrade, undefined);
+	assert.equal(actions.canDoonUpgrade, false);
+	assert.equal(actions.doonUpgradeCooldownRemaining, 0);
+	assert.equal(actions.davePrime, false);
 });
 
 test('DOPE and DAVEPRIME bypass node distance restrictions', () => {
