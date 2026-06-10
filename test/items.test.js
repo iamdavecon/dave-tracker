@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { registerHandlers } from '../utils/items.js';
+import { applyItemHandle, registerHandlers } from '../utils/items.js';
 
 function createHarness(userId = 'source') {
 	const handlers = {};
@@ -21,9 +21,9 @@ function createHarness(userId = 'source') {
 	return { socket, handlers, io, ioEvents };
 }
 
-test('getItemFromUser grants peppers from nearby pepper-named users', () => {
+test('getItemFromUser grants the first item from nearby item-named users', () => {
 	const { socket, handlers, io, ioEvents } = createHarness();
-	const pepper = '🌶️';
+	const taco = '🌮';
 	const daves = {
 		source: {
 			userId: 'source',
@@ -33,22 +33,22 @@ test('getItemFromUser grants peppers from nearby pepper-named users', () => {
 		},
 		target: {
 			userId: 'target',
-			name: '🌶️ Pepper Dave',
+			name: '🌮 Taco Dave',
 			lat: 41,
 			lng: -87
 		}
 	};
 
 	registerHandlers(socket, daves, io);
-	handlers.getItemFromUser('source', 'target', pepper);
+	handlers.getItemFromUser('source', 'target', taco);
 
-	assert.equal(daves.source[pepper].count, 1);
+	assert.equal(daves.source[taco].count, 1);
 	assert.deepEqual(ioEvents, [{ event: 'update', payload: undefined }]);
 });
 
-test('getItemFromUser rejects spoofed sources and non-pepper targets', () => {
+test('getItemFromUser rejects spoofed sources and non-item-first targets', () => {
 	const { socket, handlers, io } = createHarness();
-	const pepper = '🌶️';
+	const taco = '🌮';
 	const daves = {
 		source: {
 			userId: 'source',
@@ -58,17 +58,17 @@ test('getItemFromUser rejects spoofed sources and non-pepper targets', () => {
 		},
 		target: {
 			userId: 'target',
-			name: 'Plain Dave',
+			name: '👶 🌮 Dave',
 			lat: 41,
 			lng: -87
 		}
 	};
 
 	registerHandlers(socket, daves, io);
-	handlers.getItemFromUser('other', 'target', pepper);
-	handlers.getItemFromUser('source', 'target', pepper);
+	handlers.getItemFromUser('other', 'target', taco);
+	handlers.getItemFromUser('source', 'target', taco);
 
-	assert.equal(daves.source[pepper], undefined);
+	assert.equal(daves.source[taco], undefined);
 });
 
 test('collecting too many peppers from users grants the peppercon tag', () => {
@@ -99,6 +99,35 @@ test('collecting too many peppers from users grants the peppercon tag', () => {
 
 	assert.equal(daves.source[pepper].count, 7);
 	assert.deepEqual(daves.source.tags, ['peppercon']);
+});
+
+test('getting a hotdog from a user between 2 AM and 4 AM grants the redeye tag', (t) => {
+	const redeyeTime = new Date(2026, 0, 1, 2, 30).getTime();
+	t.mock.method(Date, 'now', () => redeyeTime);
+
+	const { socket, handlers, io } = createHarness();
+	const hotdog = '🌭';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		},
+		target: {
+			userId: 'target',
+			name: '🌭 Hotdog Dave',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, io);
+	handlers.getItemFromUser('source', 'target', hotdog);
+
+	assert.equal(daves.source[hotdog].count, 1);
+	assert.deepEqual(daves.source.tags, ['redeye']);
 });
 
 test('receive baby transfer moves a baby only after a successful minigame', () => {
@@ -249,5 +278,68 @@ test('eatTaco rejects spoofed sources and empty taco inventory', () => {
 
 	assert.equal(daves.source[taco].count, 0);
 	assert.equal(daves.source.tacoRangeBoostUntil, undefined);
+	assert.deepEqual(ioEvents, []);
+});
+
+test('applyItemHandle adds or replaces the first emoji in a handle', () => {
+	const taco = '🌮';
+	const hotdog = '🌭';
+
+	assert.equal(applyItemHandle('Dave', taco), '🌮Dave');
+	assert.equal(applyItemHandle('🌶️ Pepper Dave', hotdog), '🌭 Pepper Dave');
+	assert.equal(applyItemHandle('Dave 🍸 Later', taco), 'Dave 🌮 Later');
+});
+
+test('becomeItem updates the source handle for owned items', () => {
+	const { socket, handlers, io, ioEvents } = createHarness();
+	const taco = '🌮';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Dave',
+			[taco]: {
+				count: 1,
+				lastTime: Date.now()
+			}
+		}
+	};
+	let result;
+
+	registerHandlers(socket, daves, io);
+	handlers.becomeItem('source', taco, (payload) => {
+		result = payload;
+	});
+
+	assert.deepEqual(result, { ok: true, name: '🌮Dave' });
+	assert.equal(daves.source.name, '🌮Dave');
+	assert.deepEqual(ioEvents, [{ event: 'update', payload: undefined }]);
+});
+
+test('becomeItem rejects spoofed, unknown, and empty item requests', () => {
+	const { socket, handlers, ioEvents } = createHarness();
+	const taco = '🌮';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Dave',
+			[taco]: {
+				count: 0,
+				lastTime: Date.now()
+			}
+		}
+	};
+	const results = [];
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) });
+	handlers.becomeItem('other', taco, (payload) => results.push(payload));
+	handlers.becomeItem('source', 'not-an-item', (payload) => results.push(payload));
+	handlers.becomeItem('source', taco, (payload) => results.push(payload));
+
+	assert.deepEqual(results, [
+		{ ok: false, error: 'source mismatch' },
+		{ ok: false, error: 'item unavailable' },
+		{ ok: false, error: 'item unavailable' }
+	]);
+	assert.equal(daves.source.name, 'Dave');
 	assert.deepEqual(ioEvents, []);
 });

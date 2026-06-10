@@ -8,6 +8,7 @@ import {
 	getPlaceFragmentChallengeForEmoji,
 	isCorrectPlaceFragmentAnswer
 } from "../public/utils/placeChallenges.js";
+import { getItemsForSource } from "../public/utils/itemUI.js";
 import {
 	canAttemptTacoGame,
 	getTacoGameQuestion,
@@ -17,6 +18,7 @@ import {
 } from "../public/utils/tacoGame.js";
 import { removeFragment } from './players.js';
 import { markActive } from './activity.js';
+import { getRedeyeTag, isRedeyeHotdogTime } from "./redeye.js";
 
 const HOTDOG_ITEM = "🌭";
 const DRINK_ITEM = "🍺";
@@ -70,6 +72,15 @@ function grantItemReward(dave, item, count = 1) {
 	return dave[item].count;
 }
 
+function getPlaceItemRule(place, item) {
+	const source = firstEmoji(place?.name);
+	if (!source) {
+		return null;
+	}
+
+	return getItemsForSource(source).find(rule => rule.item === item) ?? null;
+}
+
 function maybeLoseBabyAfterDrink(dave, logEvent, random = Math.random) {
 	if (state.getAmt(dave, BABY_ITEM) < 1 || random() >= BABY_LOSS_DRINK_CHANCE) {
 		return false;
@@ -92,6 +103,9 @@ function grantChallengeReward(dave, reward, logEvent = () => {}, random = Math.r
 		}
 		if (isDrinkItem(item)) {
 			maybeLoseBabyAfterDrink(dave, logEvent, random);
+		}
+		if (item === HOTDOG_ITEM && isRedeyeHotdogTime()) {
+			state.addTag(dave, getRedeyeTag());
 		}
 		if (item === HOTDOG_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "Timmy");
@@ -431,7 +445,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		respond({ ok: true, won: true, granted: true });
 	});
 
-	socket.on("getItem", (sourceId, item) => {
+	socket.on("getItem", (sourceId, placeIdOrItem, maybeItem) => {
 		if (sourceId !== socket.userId) {
 			return;
 		}
@@ -440,9 +454,26 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		if (!dave) {
 			return;
 		}
+		const hasPlaceContext = typeof maybeItem === "string";
+		const placeId = hasPlaceContext ? placeIdOrItem : null;
+		const item = hasPlaceContext ? maybeItem : placeIdOrItem;
+		let rewardCount = 1;
+
+		if (hasPlaceContext) {
+			const place = savedPlaces[placeId];
+			const rule = getPlaceItemRule(place, item);
+			if (!place || !rule || !rangesOverlap(dave, place)) {
+				return;
+			}
+			rewardCount = rule.rewardCount ?? 1;
+		}
+
 		const itemCountBefore = state.getAmt(dave, item);
-		const count = state.add(dave, item); 
+		const count = state.add(dave, item, rewardCount); 
 		//console.log("GETITEM: " + item + " => " + count);
+		if (item == HOTDOG_ITEM && count > itemCountBefore && isRedeyeHotdogTime()) {
+			state.addTag(dave, getRedeyeTag());
+		}
 		if (item == HOTDOG_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "Timmy");
 		}

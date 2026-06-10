@@ -2,6 +2,7 @@ import { getUserId } from './utils/id.js';
 import { bindLogEvents } from './utils/log.js';
 import { addMap, removeMap } from './utils/map.js';
 import { displayItems } from './utils/itemUI.js';
+import { BABY_ITEM, getBabyStats } from './utils/babies.js';
 import { getRecognizedTags, getTagPlayerLabel } from './utils/tags.js';
 import { DAVE_RAVE_DEBUG_ENABLED, DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from './utils/raves.js';
 import * as state from "./utils/state.js";
@@ -16,13 +17,14 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 let isDebugUser = false;
-const PEPPER_ITEM = "🌶️";
-const BABY_ITEM = "👶";
 const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
 
 let map;
 let preserveActionStatusUntil = 0;
 let pendingPlayerLoad = null;
+let grantTagInteractionActive = false;
+let deferredPlayerRefresh = false;
+let grantTagSelection = "";
 
 bindLogEvents(socket);
 
@@ -41,14 +43,14 @@ function renderQrLink(dave) {
 	qrPanel.classList.remove("hidden");
 }
 
-function renderTags(tags = []) {
+function renderTags(tags = [], options = {}) {
 	const container = document.getElementById("player-tags");
 	container.innerHTML = "";
 
 	tags.forEach(tag => {
 		const el = document.createElement("span");
 		el.className = `tag tag-${tag}`;
-		el.textContent = getTagPlayerLabel(tag);
+		el.textContent = getTagPlayerLabel(tag, options);
 		container.appendChild(el);
 	});
 }
@@ -121,25 +123,6 @@ function getItemFromUser(item) {
 	location.reload()
 }
 
-function receiveBaby() {
-	const statusEl = document.getElementById("actionStatus");
-	if (statusEl) {
-		statusEl.textContent = "Preparing baby transfer...";
-	}
-
-	socket.emit("startReceiveBaby", userId, daveId, (result) => {
-		if (!result?.ok) {
-			preserveActionStatusUntil = Date.now() + 5000;
-			if (statusEl) {
-				statusEl.textContent = result?.error || "Unable to receive baby.";
-			}
-			return;
-		}
-
-		window.location.href = `/baby-pass.html?claim=receiveBaby&returnTo=${encodeURIComponent(window.location.href)}`;
-	});
-}
-
 function startDaveRave() {
 	const statusEl = document.getElementById("actionStatus");
 	if (statusEl) {
@@ -160,14 +143,6 @@ function redirectToDaveRave(data) {
 	window.location.href = raveUrl.toString();
 }
 
-function eatTaco() {
-	const statusEl = document.getElementById("actionStatus");
-	if (statusEl) {
-		statusEl.textContent = "Eating taco...";
-	}
-	socket.emit("eatTaco", userId);
-}
-
 function grantTag() {
 	const tag = document.getElementById("grantTagSelect")?.value;
 	if (!tag) return;
@@ -178,7 +153,7 @@ function grantTag() {
 
 function getGrantTagControlHtml() {
 	const options = getRecognizedTags()
-		.map(({ tag }) => `<option value="${tag}">${getTagPlayerLabel(tag)}</option>`)
+		.map(({ tag }) => `<option value="${tag}"${tag === grantTagSelection ? " selected" : ""}>${getTagPlayerLabel(tag)}</option>`)
 		.join("");
 
 	return `
@@ -189,6 +164,50 @@ function getGrantTagControlHtml() {
 			<button data-action="grantTag">GRANT TAG</button>
 		</div>
 	`;
+}
+
+function syncGrantTagSelection() {
+	const select = document.getElementById("grantTagSelect");
+	if (select) {
+		grantTagSelection = select.value;
+	}
+}
+
+function finishGrantTagInteraction() {
+	grantTagInteractionActive = false;
+	if (deferredPlayerRefresh) {
+		deferredPlayerRefresh = false;
+		schedulePlayerRefresh();
+	}
+}
+
+function bindGrantTagControl() {
+	const select = document.getElementById("grantTagSelect");
+	if (!select) return;
+
+	if (grantTagSelection && Array.from(select.options).some((option) => option.value === grantTagSelection)) {
+		select.value = grantTagSelection;
+	} else {
+		grantTagSelection = select.value;
+	}
+
+	select.addEventListener("focus", () => {
+		grantTagInteractionActive = true;
+	});
+	select.addEventListener("pointerdown", () => {
+		grantTagInteractionActive = true;
+	});
+	select.addEventListener("change", () => {
+		grantTagSelection = select.value;
+	});
+	select.addEventListener("blur", () => {
+		grantTagSelection = select.value;
+		setTimeout(() => {
+			if (document.activeElement !== select) {
+				finishGrantTagInteraction();
+			}
+		}, 100);
+	});
 }
 
 function showDaveRaveAnimation() {
@@ -320,7 +339,9 @@ function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
 	const statusEl = document.getElementById("actionStatus");
 
+	syncGrantTagSelection();
 	actionsContainer.innerHTML = actionHtml;
+	bindGrantTagControl();
 	if (statusEl && Date.now() >= preserveActionStatusUntil) {
 		statusEl.textContent = "";
 	}
@@ -342,16 +363,8 @@ function addActions(actionHtml) {
 				getItemFromUser(e.target.dataset.item);
 				break;
 
-			case "receiveBaby":
-				receiveBaby();
-				break;
-
 			case "startDaveRave":
 				startDaveRave();
-				break;
-
-			case "eatTaco":
-				eatTaco();
 				break;
 
 			case "openNearestPlace":
@@ -380,25 +393,6 @@ function addActions(actionHtml) {
 			default:
 				emit(action);
 		}
-	};
-}
-
-function bindStatsActions() {
-	const statsContainer = document.getElementById("stats");
-	function handleStatsAction(event) {
-		const actionEl = event.target.closest("[data-action]");
-		if (!actionEl) return;
-
-		if (actionEl.dataset.action === "receiveBaby") {
-			receiveBaby();
-		}
-	}
-
-	statsContainer.onclick = handleStatsAction;
-	statsContainer.onkeydown = (event) => {
-		if (event.key !== "Enter" && event.key !== " ") return;
-		event.preventDefault();
-		handleStatsAction(event);
 	};
 }
 
@@ -513,11 +507,18 @@ async function loadPlayer() {
 			fragments = dave.fragmentsCollected.length; 
 		}
 		const nodes = dave.nodeCount ?? 0;
-		const babies = state.getAmt(dave, BABY_ITEM);
+		const babyStats = getBabyStats(dave, state);
 		const blackBadgeRaffleTickets = state.getAmt(dave, BLACK_BADGE_RAFFLE_ITEM);
-		const babyRowAction = dave.availableActions.canReceiveBaby
-			? ` data-action="receiveBaby" class="field receive-baby-row" role="button" tabindex="0" title="Receive baby"`
-			: ` class="field"`;
+		const babyHref = `/babies.html?id=${encodeURIComponent(dave.userId || daveId)}&viewerId=${encodeURIComponent(userId)}`;
+		const babyRow = babyStats.hasActivity
+			? `<a class="field item-row" href="${babyHref}">
+				<span class="label">👶 Babies</span>
+				<span>${babyStats.count}</span>
+			</a>`
+			: `<div class="field">
+				<span class="label">👶 Babies</span>
+				<span>${babyStats.count}</span>
+			</div>`;
 
 		let statHtml = "";
 		statHtml = `
@@ -533,10 +534,7 @@ async function loadPlayer() {
 				<span class="label">🏙️ Nodes</span>
 				<span>${nodes}</span>
 			</div>
-			<div${babyRowAction}>
-				<span class="label">👶 Babies</span>
-				<span>${babies}</span>
-			</div>
+			${babyRow}
 			<div class="field">
 				<span class="label">▧ Dave Raves</span>
 				<span>${dave.daveravesStarted ?? 0}</span>
@@ -546,9 +544,8 @@ async function loadPlayer() {
 				<span>${blackBadgeRaffleTickets}</span>
 			</div>
 		`;
-		statHtml += displayItems(dave);
+		statHtml += displayItems(dave, null, { userId: dave.userId || daveId, viewerId: userId });
 		document.getElementById("stats").innerHTML = statHtml;
-		bindStatsActions();
 	}
 
 	if (dave.isMe) {
@@ -575,13 +572,6 @@ async function loadPlayer() {
 		//  DAVEPRIME (ENABLES CHEATS)
 		if (dave.availableActions.davePrime) {
 			actionHtml += `<button data-action="spawnCluster">Spawn Civilians</button>`
-		}
-
-		if (dave.availableActions.canEatTaco) {
-			actionHtml += `<button data-action="eatTaco">Eat a taco</button>`;
-		} else if (dave.availableActions.tacoRangeBoostRemaining > 0) {
-			const remaining = state.formatCooldownRemaining(dave.availableActions.tacoRangeBoostRemaining);
-			actionHtml += `<button disabled>Eat a taco (${remaining} boost)</button>`;
 		}
 
 		const eligibleDaves = Array.isArray(dave.availableActions.daveRaveEligibleDaves)
@@ -680,11 +670,12 @@ async function loadPlayer() {
 				actionHtml += getGrantTagControlHtml();
 			}
 
-			if (dave.availableActions.canGetPepper) {
-				actionHtml += `<button data-action="getItemFromUser" data-item="${PEPPER_ITEM}">Get a pepper</button>`;
-			} else if (dave.availableActions.hasPepper) {
-				const remaining = state.formatCooldownRemaining(dave.availableActions.pepperCooldownRemaining);
-				actionHtml += `<button disabled>Get a pepper (${remaining})</button>`;
+			const firstItem = dave.availableActions.firstItem;
+			if (dave.availableActions.canGetFirstItem && firstItem?.item) {
+				actionHtml += `<button data-action="getItemFromUser" data-item="${firstItem.item}">${firstItem.getLabel}</button>`;
+			} else if (firstItem?.item) {
+				const remaining = state.formatCooldownRemaining(dave.availableActions.firstItemCooldownRemaining);
+				actionHtml += `<button disabled>${firstItem.getLabel} (${remaining})</button>`;
 			}
 
 			if (isDebugUser) {
@@ -710,6 +701,11 @@ async function loadPlayer() {
 loadPlayer();
 
 function schedulePlayerRefresh() {
+	if (grantTagInteractionActive) {
+		deferredPlayerRefresh = true;
+		return;
+	}
+
 	if (pendingPlayerLoad) {
 		clearTimeout(pendingPlayerLoad);
 	}

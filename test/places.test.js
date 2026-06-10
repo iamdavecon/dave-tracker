@@ -893,6 +893,132 @@ test('collecting too many peppers at a place grants the peppercon tag', () => {
 	assert.deepEqual(daves.source.tags, ['peppercon']);
 });
 
+test('getting a hotdog at a place between 2 AM and 4 AM grants the redeye tag', (t) => {
+	const redeyeTime = new Date(2026, 0, 1, 3, 59).getTime();
+	t.mock.method(Date, 'now', () => redeyeTime);
+
+	const { socket, handlers, io } = createHarness();
+	const hotdog = '🌭';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: []
+		}
+	};
+	const places = {};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', hotdog);
+
+	assert.equal(daves.source[hotdog].count, 1);
+	assert.deepEqual(daves.source.tags, ['redeye']);
+});
+
+test('getting $2 hotdogs at a hotdog place grants two hotdogs', () => {
+	const { socket, handlers, io } = createHarness();
+	const hotdog = '🌭';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		hotdogPlace: {
+			id: 'hotdogPlace',
+			name: '🌭 Slots A Fun',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', 'hotdogPlace', hotdog);
+
+	assert.equal(daves.source[hotdog].count, 2);
+});
+
+test('getting $2 beers at a hotdog place grants two beers', () => {
+	const { socket, handlers, io } = createHarness();
+	const beer = '🍺';
+	const cocktail = '🍸';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		hotdogPlace: {
+			id: 'hotdogPlace',
+			name: '🌭 Slots A Fun',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', 'hotdogPlace', cocktail);
+
+	assert.equal(daves.source[beer].count, 2);
+});
+
+test('place item claims require the requested item to belong to the place source', () => {
+	const { socket, handlers, io } = createHarness();
+	const hotdog = '🌭';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		tacoPlace: {
+			id: 'tacoPlace',
+			name: '🌮 Taco Node',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', 'tacoPlace', hotdog);
+
+	assert.equal(daves.source[hotdog], undefined);
+});
+
+test('getting a hotdog at 4 AM does not grant the redeye tag', (t) => {
+	const afterRedeyeTime = new Date(2026, 0, 1, 4, 0).getTime();
+	t.mock.method(Date, 'now', () => afterRedeyeTime);
+
+	const { socket, handlers, io } = createHarness();
+	const hotdog = '🌭';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: []
+		}
+	};
+	const places = {};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.getItem('source', hotdog);
+
+	assert.equal(daves.source[hotdog].count, 1);
+	assert.deepEqual(daves.source.tags, []);
+});
+
 test('claimTacoGame grants bonus tacos at an in-range taco place', () => {
 	const { socket, handlers, io, ioEvents, logs } = createHarness();
 	const taco = '🌮';

@@ -2,7 +2,7 @@ import { getUserId } from './utils/id.js';
 import { bindLogEvents } from './utils/log.js';
 import { COMMENDATION_THRESHOLD, getCommendations } from './utils/dod.js';
 
-const EXCHANGE_COST = 5;
+const EXCHANGE_COST = 3;
 const userId = getUserId();
 const socket = io({
 	auth: {

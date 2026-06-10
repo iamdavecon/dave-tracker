@@ -43,6 +43,20 @@
       color: #888;
     }
 
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th.sortable:hover {
+      color: #e5e5e5;
+    }
+
+    th.sortable.sorted {
+      color: #e5e5e5;
+      font-weight: 700;
+    }
+
     tr:hover {
       background: #1a1a24;
     }
@@ -206,12 +220,10 @@
     <table>
       <thead>
         <tr>
-          <th class="rank">Rank</th>
-          <th>Name</th>
-          <th>Score</th>
-          <th>Infected</th>
-          <th>Ascended</th>
-          <th>State</th>
+          <th class="rank sortable sorted" data-sort="rank">Rank</th>
+          <th class="sortable" data-sort="name">Name</th>
+          <th class="sortable" data-sort="score">Score</th>
+          <th class="sortable" data-sort="state">State</th>
         </tr>
       </thead>
 
@@ -223,7 +235,7 @@
   </div>
 
   <script type="module">
-	  import { getTagMetadata } from "/utils/tags.js";
+	  import { getTagEmoji, getTagMetadata, getTagTitle } from "/utils/tags.js";
 
 	  const STATE_ORDER = [
 		    "DAVEPRIME",
@@ -235,6 +247,73 @@
 		    "INFECTED",
 		    "CORRUPTED"
 	    ];
+	  const SORT_DEFAULTS = {
+		    rank: "asc",
+		    name: "asc",
+		    score: "desc",
+		    state: "asc"
+	    };
+	  const sortState = {
+		    key: "rank",
+		    direction: "asc"
+	    };
+
+	  function compareText(a, b) {
+		    return String(a || "").localeCompare(String(b || ""), undefined, {
+			      sensitivity: "base",
+			      numeric: true
+		      });
+	    }
+
+	  function getStateRank(row) {
+		    const stateIndex = STATE_ORDER.indexOf(row.state || "");
+		    return stateIndex === -1 ? STATE_ORDER.length : stateIndex;
+	    }
+
+	  function compareRows(a, b) {
+		    let result = 0;
+
+		    if (sortState.key === "name") {
+			      result = compareText(a.name, b.name);
+		      } else if (sortState.key === "score") {
+			      result = (Number(a.score) || 0) - (Number(b.score) || 0);
+		      } else if (sortState.key === "state") {
+			      result = getStateRank(a) - getStateRank(b) || compareText(a.name, b.name);
+		      } else {
+			      result = (Number(a.rank) || 0) - (Number(b.rank) || 0);
+		      }
+
+		    if (result === 0) {
+			      result = (Number(a.rank) || 0) - (Number(b.rank) || 0);
+		      }
+
+		    return sortState.direction === "asc" ? result : -result;
+	    }
+
+	  function sortLeaderboard(leaderboard) {
+		    return leaderboard.slice().sort(compareRows);
+	    }
+
+	  function updateSortHeaders() {
+		    document.querySelectorAll("th[data-sort]").forEach(th => {
+			      const isSorted = th.dataset.sort === sortState.key;
+			      th.classList.toggle("sorted", isSorted);
+		      });
+	    }
+
+	  document.querySelectorAll("th[data-sort]").forEach(th => {
+		    th.addEventListener("click", () => {
+			      const key = th.dataset.sort;
+			      if (sortState.key === key) {
+				        sortState.direction = sortState.direction === "asc" ? "desc" : "asc";
+			        } else {
+				        sortState.key = key;
+				        sortState.direction = SORT_DEFAULTS[key] || "asc";
+			        }
+			      updateSortHeaders();
+			      loadLeaderboard();
+		      });
+	    });
 
 
 	  function appendTextCell(tr, text, className = "") {
@@ -255,7 +334,10 @@
 
 		    const tags = Array.isArray(row.tags) ? row.tags : [];
 		    const knownTags = tags
-			    .map(tag => getTagMetadata(tag))
+			    .map(tag => {
+				      const metadata = getTagMetadata(tag);
+				      return metadata ? { tag, ...metadata } : null;
+			      })
 			    .filter(Boolean);
 
 		    if (knownTags.length > 0) {
@@ -263,11 +345,13 @@
 			      tagIcons.className = "tag-icons";
 
 			      knownTags.forEach(tag => {
+				        const emoji = getTagEmoji(tag.tag);
+				        if (!emoji) return;
 				        const icon = document.createElement("span");
 				        icon.className = "tag-icon";
-				        icon.textContent = tag.emoji;
-				        icon.title = tag.title ?? tag.label;
-				        icon.setAttribute("aria-label", tag.title ?? tag.label);
+				        icon.textContent = emoji;
+				        icon.title = getTagTitle(tag.tag);
+				        icon.setAttribute("aria-label", getTagTitle(tag.tag));
 				        tagIcons.appendChild(icon);
 			        });
 
@@ -365,7 +449,7 @@
 			    // ---------------- TABLE ----------------
 			    const tbody = document.getElementById("rows");
 			    tbody.innerHTML = "";
-			    leaderboard.forEach(row => {
+			    sortLeaderboard(leaderboard).forEach(row => {
 					      const tr = document.createElement("tr");
 
 					      const v = row.teamVirus || 0;
@@ -391,8 +475,6 @@
 					      appendTextCell(tr, `#${row.rank}`, "rank");
 					      appendNameCell(tr, row);
 					      appendTextCell(tr, row.score, "score");
-					      appendTextCell(tr, v, "virus");
-					      appendTextCell(tr, a, "antivirus");
 
 					      const stateCell = document.createElement("td");
 					      const state = document.createElement("span");

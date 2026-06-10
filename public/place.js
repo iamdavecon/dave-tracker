@@ -85,7 +85,7 @@ async function deconstructPlace() {
 }
 
 function getItem(item) {
-	socket.emit("getItem", userId, item);
+	socket.emit("getItem", userId, placeId, item);
 	location.reload()
 }
 

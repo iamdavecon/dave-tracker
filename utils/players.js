@@ -2,14 +2,22 @@ import * as state from "../public/utils/state.js";
 import { DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from "../public/utils/raves.js";
 import { getMapData } from "../public/utils/map.js"
 import { haversineDistance, inRange } from "../public/utils/distance.js";
+import { getFirstItemDefinition } from "../public/utils/itemUI.js";
 import { DAVE_TANGENT_NAME, GOON_NAME } from "./bots.js";
 
-const PEPPER_ITEM = "🌶️";
-const PEPPER_RE = /🌶️?/u;
 const TACO_ITEM = "🌮";
 const BABY_ITEM = "👶";
 export const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
+const VIRUS_INFLUENCE_BY_STATE = {
+	infected: 1,
+	corrupted: 2
+};
+const DAVECON_CONTROL_BY_STATE = {
+	resonant: 1,
+	ascended: 2,
+	dope: 3
+};
 
 function hasClaimedGoonRaffle(dave, goonId) {
 	return Array.isArray(dave?.claimedGoonRaffles) && dave.claimedGoonRaffles.includes(goonId);
@@ -40,19 +48,11 @@ function countAcquiredItems(dave) {
 
 export function summarizeDave(dave, places = {}) {
 	let score = 0;
-	let teamVirus = 0;
-	let teamAntivirus = 0;
+	const currentState = state.getState(dave);
+	let teamVirus = VIRUS_INFLUENCE_BY_STATE[currentState] ?? 0;
+	let teamAntivirus = DAVECON_CONTROL_BY_STATE[currentState] ?? 0;
 	const tags = getDisplayTags(dave, places);
 
-	if (dave.infectedUsers) {
-		teamVirus += dave.infectedUsers.length; 
-	}
-	if (dave.fragmentsCollected) {
-		teamAntivirus += dave.fragmentsCollected.length;
-	}
-	if (dave.nodeCount) {
-		teamAntivirus += (dave.nodeCount * 5);
-	}
 	score = teamVirus + (teamAntivirus * 2); 
 	if (dave.daveravesStarted) {
 		score += (dave.daveravesStarted * 10);
@@ -70,7 +70,7 @@ export function summarizeDave(dave, places = {}) {
 		teamVirus: teamVirus,
 		teamAntivirus: teamAntivirus,
 		daveravesStarted: dave.daveravesStarted || 0,
-		state: state.getState(dave).toUpperCase(),
+		state: currentState.toUpperCase(),
 		tags
 	};
 
@@ -193,10 +193,16 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	if (dave.isBot && dave.name === GOON_NAME) {
 		daveDetails.availableActions.canInfect = false;
 	}
-	daveDetails.availableActions.hasPepper = !daveDetails.isMe && PEPPER_RE.test(dave.name ?? "");
-	daveDetails.availableActions.canGetPepper = daveDetails.availableActions.hasPepper && state.canGet(me, PEPPER_ITEM);
-	daveDetails.availableActions.pepperCooldownRemaining = daveDetails.availableActions.hasPepper
-		? state.getCooldownRemaining(me, PEPPER_ITEM)
+	const firstItem = !daveDetails.isMe ? getFirstItemDefinition(dave.name) : null;
+	daveDetails.availableActions.firstItem = firstItem
+		? {
+			item: firstItem.item,
+			getLabel: firstItem.getLabel
+		}
+		: null;
+	daveDetails.availableActions.canGetFirstItem = !!firstItem && state.canGet(me, firstItem.item);
+	daveDetails.availableActions.firstItemCooldownRemaining = firstItem
+		? state.getCooldownRemaining(me, firstItem.item)
 		: 0;
 	daveDetails.availableActions.hasBaby = !daveDetails.isMe && state.getAmt(dave, BABY_ITEM) > 0;
 	daveDetails.availableActions.canReceiveBaby = daveDetails.availableActions.hasBaby && !dave.isBot && inRange(me, dave);

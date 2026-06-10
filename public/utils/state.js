@@ -193,6 +193,9 @@ export function canPatch(dave) {
 }
 
 export function canBePatched(dave) {
+	if (dave?.isBot) {
+		return false;
+	}
 	return getState(dave) == STATES.UNSTABLE;
 }
 
@@ -501,14 +504,15 @@ export function getAmt(dave, item) {
 	}
 }
 
-export function add(dave, item) {
+export function add(dave, item, count = 1) {
 	item = normalizeItem(item);
 
 	const now = Date.now();
+	const amount = Math.max(1, Math.floor(Number(count) || 1));
 	if (dave[item] == null) {
-		dave[item] = { count: 1, lastTime: now };
+		dave[item] = { count: amount, lastTime: now };
 	} else if (now - dave[item].lastTime > ITEM_COOLDOWN) {
-		dave[item].count += 1;
+		dave[item].count += amount;
 		dave[item].lastTime = now;
 	}
 	return dave[item].count; 

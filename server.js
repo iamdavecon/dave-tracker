@@ -265,10 +265,12 @@ function awardDodCommendations(dave, points, reason, options = {}) {
 		return result;
 	}
 
+	/*
 	logEvent(`${dave.name} received ${points} DoD commendation${points === 1 ? "" : "s"} for ${reason}.`, {
 		userId: dave.userId,
 		...options
 	});
+	*/
 
 	if (result.promoted) {
 		logEvent(`${dave.name} was promoted to General by the Department of Davefence.`, {

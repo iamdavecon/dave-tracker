@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { canStartDaveRave, countDavesInArea, summarizeDave, getInteraction, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
 import { getRange } from '../public/utils/distance.js';
 import { hasPlasticBaby } from '../public/utils/playersUI.js';
+import { getBabyStats } from '../public/utils/babies.js';
+import * as state from '../public/utils/state.js';
 
 test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	const summary = summarizeDave({
@@ -26,13 +28,35 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	assert.deepEqual(summary, {
 		userId: 'dave-1',
 		name: 'Leaderboard Dave',
-		score: 56,
-		teamVirus: 2,
-		teamAntivirus: 13,
+		score: 30,
+		teamVirus: 0,
+		teamAntivirus: 1,
 		daveravesStarted: 1,
 		state: 'RESONANT',
 		tags: ['admin', 'dod']
 	});
+});
+
+test('summarizeDave scores leaderboard influence and control by state', () => {
+	const cases = [
+		{ state: 'infected', teamVirus: 1, teamAntivirus: 0 },
+		{ state: 'corrupted', teamVirus: 2, teamAntivirus: 0 },
+		{ state: 'resonant', teamVirus: 0, teamAntivirus: 1 },
+		{ state: 'ascended', teamVirus: 0, teamAntivirus: 2 },
+		{ state: 'dope', teamVirus: 0, teamAntivirus: 3 },
+		{ state: 'immune', teamVirus: 0, teamAntivirus: 0 }
+	];
+
+	for (const expected of cases) {
+		const summary = summarizeDave({
+			userId: `dave-${expected.state}`,
+			name: expected.state,
+			state: expected.state
+		});
+
+		assert.equal(summary.teamVirus, expected.teamVirus);
+		assert.equal(summary.teamAntivirus, expected.teamAntivirus);
+	}
 });
 
 test('summarizeDave handles missing optional scoring fields', () => {
@@ -84,7 +108,22 @@ test('hasPlasticBaby detects baby inventory for online list badges', () => {
 	}), false);
 });
 
-test('getInteraction exposes pepper pickup for pepper-named users', () => {
+test('baby stats link condition includes current, lost, and received babies', () => {
+	const baby = '👶';
+
+	assert.deepEqual(getBabyStats({ name: 'No Baby Dave' }, state), {
+		count: 0,
+		lost: 0,
+		received: 0,
+		hasActivity: false
+	});
+	assert.equal(getBabyStats({ [baby]: { count: 1, lastTime: Date.now() } }, state).hasActivity, true);
+	assert.equal(getBabyStats({ babiesLost: 1 }, state).hasActivity, true);
+	assert.equal(getBabyStats({ babiesReceived: 1 }, state).hasActivity, true);
+});
+
+test('getInteraction exposes item pickup for first item emoji users', () => {
+	const taco = '🌮';
 	const me = {
 		userId: 'source',
 		name: 'Source',
@@ -93,15 +132,18 @@ test('getInteraction exposes pepper pickup for pepper-named users', () => {
 	};
 	const target = {
 		userId: 'target',
-		name: '🌶️ Pepper Dave',
+		name: '🌮 Taco Dave',
 		lat: 41,
 		lng: -87
 	};
 
 	const details = getInteraction(me, target);
 
-	assert.equal(details.availableActions.hasPepper, true);
-	assert.equal(details.availableActions.canGetPepper, true);
+	assert.deepEqual(details.availableActions.firstItem, {
+		item: taco,
+		getLabel: 'Get a Taco'
+	});
+	assert.equal(details.availableActions.canGetFirstItem, true);
 });
 
 test('getInteraction exposes baby receiving for in-range users with babies', () => {
@@ -177,26 +219,29 @@ test('getInteraction blocks GOON infection and exposes one raffle claim', () => 
 	assert.equal(getInteraction(me, goon).availableActions.canClaimGoonRaffle, false);
 });
 
-test('getInteraction respects pepper pickup cooldown', () => {
-	const pepper = '🌶️';
+test('getInteraction respects first item pickup cooldown', () => {
+	const taco = '🌮';
 	const me = {
 		userId: 'source',
 		name: 'Source',
-		[pepper]: {
+		[taco]: {
 			count: 1,
 			lastTime: Date.now()
 		}
 	};
 	const target = {
 		userId: 'target',
-		name: '🌶 Pepper Dave'
+		name: '🌮 Taco Dave'
 	};
 
 	const details = getInteraction(me, target);
 
-	assert.equal(details.availableActions.hasPepper, true);
-	assert.equal(details.availableActions.canGetPepper, false);
-	assert.ok(details.availableActions.pepperCooldownRemaining > 0);
+	assert.deepEqual(details.availableActions.firstItem, {
+		item: taco,
+		getLabel: 'Get a Taco'
+	});
+	assert.equal(details.availableActions.canGetFirstItem, false);
+	assert.ok(details.availableActions.firstItemCooldownRemaining > 0);
 });
 
 test('getInteraction exposes taco eating only on your own page', () => {
