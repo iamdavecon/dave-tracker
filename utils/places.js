@@ -16,6 +16,7 @@ import {
 	TACO_ITEM
 } from "../public/utils/tacoGame.js";
 import { removeFragment } from './players.js';
+import { markActive } from './activity.js';
 
 const HOTDOG_ITEM = "🌭";
 const DRINK_ITEM = "🍺";
@@ -130,6 +131,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		//console.log("from: " + JSON.stringify(dave, null, 2));
 		savedPlaces[newPlace.id] = newPlace;
 		state.syncTerritoryRank(dave, savedPlaces);
+		markActive(dave);
 		logEvent(`${dave.name} established a new node.`, {
 			userId: dave.userId,
 			placeId: newPlace.id,
@@ -155,7 +157,9 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 
 		removeFragment(dave);
 		place.level = (place.level ?? 0) + 1;
+		dave.davePointUpgradeCount = state.getDavePointUpgradeCount(dave) + 1;
 		state.syncTerritoryRank(dave, savedPlaces);
+		markActive(dave);
 		logEvent(`${dave.name} upgraded ${place.name} to level ${place.level}.`, {
 			userId: dave.userId,
 			placeId,
@@ -181,6 +185,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		place.level = (place.level ?? 0) + 1;
 		dave.lastDoonPlaceUpgradeTime = Date.now();
 		state.syncTerritoryRank(dave, savedPlaces);
+		markActive(dave);
 		logEvent(`${dave.name} doonified ${place.name} to level ${place.level}.`, {
 			userId: dave.userId,
 			placeId,
@@ -199,6 +204,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		if (dave && place && place.owner == sourceId) {
 			const oldName = place.name;
 			place.name = newName;	
+			markActive(dave);
 			logEvent(`${dave.name} renamed ${oldName} to ${place.name}.`, {
 				userId: dave.userId,
 				placeId
@@ -228,6 +234,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 
 		if (state.addTag(dave, LINECON_TAG)) {
+			markActive(dave);
 			logEvent(`${dave.name} joined linecon.`, {
 				userId: dave.userId,
 				placeId
@@ -259,6 +266,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		if (count > drinkCountBefore) {
 			maybeLoseBabyAfterDrink(dave, logEvent, random);
 		}
+		markActive(dave);
 
 		logEvent(`${dave.name} just parked on the sidewalk.`, {
 			userId: dave.userId,
@@ -296,6 +304,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 		if (!isCorrect) {
 			if (action === "hackerJeopardy") {
+				markActive(dave);
 				io.emit("update");
 			}
 			respond({ ok: false, correct: false });
@@ -317,6 +326,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			userId: dave.userId,
 			placeId
 		});
+		markActive(dave);
 		io.emit("update");
 		respond({ ok: true, correct: true, plasticBabyPass });
 	});
@@ -337,6 +347,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		delete dave.pendingPlasticBabyPassTime;
 		if (!won) {
 			dave.babiesLost = (dave.babiesLost ?? 0) + 1;
+			markActive(dave);
 			io.emit("update");
 			respond({ ok: true, won: false, granted: false });
 			return;
@@ -346,6 +357,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		logEvent(`${dave.name} secured a plastic baby with chopsticks.`, {
 			userId: dave.userId
 		});
+		markActive(dave);
 		io.emit("update");
 		respond({ ok: true, won: true, granted: true });
 	});
@@ -366,6 +378,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		const isCorrect = isCorrectTacoGameAnswer(questionId, answer);
 		dave.lastTacoCalibrationTime = Date.now();
 		if (!isCorrect) {
+			markActive(dave);
 			io.emit("update");
 			return;
 		}
@@ -375,6 +388,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			userId: dave.userId,
 			placeId
 		});
+		markActive(dave);
 		io.emit("update");
 	});
 
@@ -412,6 +426,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			userId: dave.userId,
 			placeId
 		});
+		markActive(dave);
 		io.emit("update");
 		respond({ ok: true, won: true, granted: true });
 	});
@@ -440,6 +455,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		if (item == PEPPER_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "peppercon");
 		}
+		markActive(dave);
 	});
 
 };

@@ -1,5 +1,6 @@
 import * as state from "../public/utils/state.js";
 import { inRange } from "../public/utils/distance.js";
+import { markActive } from "./activity.js";
 
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
@@ -51,6 +52,7 @@ export function registerHandlers(socket, daves, io) {
 		if (count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(source, "peppercon");
 		}
+		markActive(source);
 		io.emit("update");
 	});
 
@@ -72,6 +74,7 @@ export function registerHandlers(socket, daves, io) {
 			targetId,
 			time: Date.now()
 		};
+		markActive(source);
 		respond({ ok: true });
 	});
 
@@ -94,6 +97,7 @@ export function registerHandlers(socket, daves, io) {
 
 		if (!won) {
 			source.babiesLost = (source.babiesLost ?? 0) + 1;
+			markActive(source);
 			io.emit("update");
 			respond({ ok: true, won: false, transferred: false });
 			return;
@@ -106,6 +110,7 @@ export function registerHandlers(socket, daves, io) {
 
 		grantItem(source, BABY_ITEM);
 		source.babiesReceived = (source.babiesReceived ?? 0) + 1;
+		markActive(source);
 		io.emit("update");
 		respond({ ok: true, won: true, transferred: true });
 	});
@@ -121,6 +126,7 @@ export function registerHandlers(socket, daves, io) {
 		}
 
 		source.tacoRangeBoostUntil = Date.now() + TACO_RANGE_BOOST_DURATION;
+		markActive(source);
 		io.emit("update");
 	});
 }

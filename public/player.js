@@ -53,6 +53,56 @@ function renderTags(tags = []) {
 	});
 }
 
+function formatRelativeTime(timestamp) {
+	const elapsedMs = Date.now() - timestamp;
+	const elapsedSeconds = Math.max(0, Math.floor(elapsedMs / 1000));
+
+	if (elapsedSeconds < 60) {
+		return "just now";
+	}
+
+	const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+	if (elapsedMinutes < 60) {
+		return `${elapsedMinutes}m ago`;
+	}
+
+	const elapsedHours = Math.floor(elapsedMinutes / 60);
+	if (elapsedHours < 24) {
+		return `${elapsedHours}h ago`;
+	}
+
+	const elapsedDays = Math.floor(elapsedHours / 24);
+	return `${elapsedDays}d ago`;
+}
+
+function renderAdminMeta(dave) {
+	const container = document.getElementById("adminMeta");
+	if (!container) return;
+
+	container.innerHTML = "";
+	container.classList.add("hidden");
+
+	if (!isDebugUser || !Number.isFinite(dave.updatedAt)) {
+		return;
+	}
+
+	const lastSeen = new Date(dave.updatedAt);
+	const row = document.createElement("div");
+	row.className = "field admin-meta-row";
+
+	const label = document.createElement("span");
+	label.className = "label";
+	label.textContent = "Last seen";
+
+	const value = document.createElement("span");
+	value.textContent = `${lastSeen.toLocaleString()} (${formatRelativeTime(dave.updatedAt)})`;
+
+	row.appendChild(label);
+	row.appendChild(value);
+	container.appendChild(row);
+	container.classList.remove("hidden");
+}
+
 function emit(event) {
 	if (event === "spawnCluster") {
 		socket.emit(event, userId, 10);
@@ -234,6 +284,38 @@ async function toggleVisibility(visible) {
 	}
 }
 
+async function removePlayer() {
+	const statusEl = document.getElementById("actionStatus");
+	const confirmed = window.confirm("Remove this Dave from the active online list?");
+	if (!confirmed) {
+		return;
+	}
+
+	if (statusEl) {
+		statusEl.textContent = "Removing Dave...";
+	}
+
+	const res = await fetch('/api/admin/remove-player', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ userId, targetId: daveId })
+	});
+
+	preserveActionStatusUntil = Date.now() + 5000;
+	if (res.ok) {
+		if (statusEl) {
+			statusEl.textContent = "Dave removed from active players.";
+		}
+		window.location.href = `/leaderboard.html?userId=${encodeURIComponent(userId)}`;
+		return;
+	}
+
+	const result = await res.json().catch(() => ({}));
+	if (statusEl) {
+		statusEl.textContent = result.error || `Remove failed (${res.status}).`;
+	}
+}
+
 function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
 	const statusEl = document.getElementById("actionStatus");
@@ -291,6 +373,9 @@ function addActions(actionHtml) {
 				break;
 			case "showMe":
 				toggleVisibility(true);
+				break;
+			case "removePlayer":
+				removePlayer();
 				break;
 			default:
 				emit(action);
@@ -399,6 +484,7 @@ async function loadPlayer() {
 		document.getElementById("playerName").textContent = "Dave unavailable";
 		document.getElementById("actions").innerHTML = "";
 		document.getElementById("actionStatus").textContent = dave.error ?? "Unable to load this Dave.";
+		renderAdminMeta({});
 		return;
 	}
 
@@ -415,6 +501,7 @@ async function loadPlayer() {
 	if (dave.tags) {
 		renderTags(dave.tags);
 	}
+	renderAdminMeta(dave);
 
 	if (!dave.isBot) {
 		let infectedCount = 0;
@@ -602,6 +689,7 @@ async function loadPlayer() {
 
 			if (isDebugUser) {
 				actionHtml += `<button data-action="teleport">Teleport</button>`;
+				actionHtml += `<button data-action="removePlayer">Remove Player</button>`;
 			}
 
 			addActions(actionHtml);
@@ -609,6 +697,7 @@ async function loadPlayer() {
 			if (isDebugUser) {
 				let actionHtml = "";
 				actionHtml += `<button data-action="teleport">Teleport</button>`;
+				actionHtml += `<button data-action="removePlayer">Remove Player</button>`;
 				addActions(actionHtml);
 			} else {
 				document.getElementById("actions").innerHTML = `OUT OF RANGE`;

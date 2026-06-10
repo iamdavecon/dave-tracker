@@ -19,7 +19,7 @@ function getDisplayTags(dave, places = {}) {
 	const tags = Array.isArray(dave.tags)
 		? dave.tags.filter(tag => !state.isTerritoryTag(tag))
 		: [];
-	const rank = state.getTerritoryRank(state.getTerritoryScore(dave, places));
+	const rank = state.getTerritoryRank(state.getTerritoryScore(dave, places), state.getDavePointUpgradeCount(dave));
 
 	if (rank) {
 		tags.unshift(rank.tag);

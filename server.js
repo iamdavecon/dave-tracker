@@ -18,6 +18,7 @@ import { summarizeDave, getInteraction } from "./utils/players.js";
 import { applyLineconBump } from "./utils/linecon.js";
 import { addCommendations } from "./public/utils/dod.js";
 import { resetAllCooldowns } from "./utils/cooldowns.js";
+import { applyLocationActivity, markActive } from "./utils/activity.js";
 
 
 // --- HTTP server ---
@@ -52,24 +53,33 @@ server.listen(PORT, () => {
 let savedDaves = await loadUsers();
 let savedPlaces = getPlaces();
 
-let daves = savedDaves;  
+let daves = { ...savedDaves };  
+
+function isActiveDave(info, now = Date.now()) {
+	if (!info || !Number.isFinite(info.updatedAt)) {
+		return false;
+	}
+
+	const maxIdleMs = info.isBot ? getBotLifetimeMs() : 15 * 60 * 1000;
+	return info.updatedAt >= now - maxIdleMs;
+}
+
+function getActiveDaves() {
+	return Object.fromEntries(
+		Object.entries(daves).filter(([, info]) => isActiveDave(info))
+	);
+}
 
 // --- save active users, cull idle users ---
 setInterval(async () => { 
-	const cutoff = Date.now() - 15 * 60 * 1000; // 15 minutes
-	const botCutoff = Date.now() - getBotLifetimeMs();
+	const now = Date.now();
 	let davesToCull = [];
 
 	// Build a list of daves to cull
 	for (const [id, info] of Object.entries(daves)) {
-		if (!info || info.updatedAt < cutoff) {
+		if (!isActiveDave(info, now)) {
 			//console.log("\tCULLED: " + info.userId);
 			davesToCull.push(id);
-		} else {
-			if (info.isBot && info.updatedAt < botCutoff) {
-				//console.log("\tCULLED: " + info.userId);
-				davesToCull.push(id);
-			}
 		}
 	}
 
@@ -312,7 +322,7 @@ function applyLoadedDave(existingDave, loadedDave) {
 
 	if (liveSockets) {
 		existingDave.sockets = liveSockets;
-		existingDave.updatedAt = Date.now();
+		markActive(existingDave);
 	}
 }
 
@@ -348,6 +358,7 @@ function getOrCreateDave(userId) {
 
 	const localDaves = getUsers(daves);
 	let dave = daves[userId] || localDaves[userId];
+	let created = false;
 
 	if (!dave) {
 		dave = {
@@ -359,10 +370,13 @@ function getOrCreateDave(userId) {
 			fragmentsCollected: [],
 			tags: []
 		};
+		created = true;
 	}
 
 	daves[userId] = dave;
-	dave.updatedAt = Date.now();
+	if (created || !Number.isFinite(dave.updatedAt)) {
+		markActive(dave);
+	}
 	return dave;
 }
 
@@ -456,6 +470,28 @@ app.post('/api/admin/reset-cooldowns', async (req, res) => {
 	res.json({ ok: true, resetCount, changed });
 });
 
+app.post('/api/admin/remove-player', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const { targetId } = req.body ?? {};
+	if (!targetId) {
+		return res.status(400).json({ ok: false, error: "targetId is required" });
+	}
+	if (targetId === userId) {
+		return res.status(400).json({ ok: false, error: "admins cannot remove themselves" });
+	}
+
+	const target = daves[targetId];
+	if (!target) {
+		return res.status(404).json({ ok: false, error: "player is not active" });
+	}
+
+	delete daves[targetId];
+	io.emit("update");
+	res.json({ ok: true, removed: targetId });
+});
+
 app.post('/api/link-dave', async (req, res) => {
 	const { sourceId, targetId } = req.body ?? {};
 	const localDaves = getUsers(daves);
@@ -496,7 +532,7 @@ app.post('/api/link-dave', async (req, res) => {
 		source.linkedDaves.push(targetId);
 		const recoveredFragment = getFragmentFrom(source, target);
 		const gainedDavePrimeScanState = state.grantDavePrimeScanBonus(source, target);
-		source.updatedAt = Date.now();
+		markActive(source);
 
 		logEvent(`${source.name} linked with ${target.name}.`, {
 			userId: source.userId
@@ -660,7 +696,7 @@ app.get('/api/places', (req, res) => {
 //  --- daves and places ---
 app.get('/api/data', (req, res) => {
 	res.json( {
-		daves: getUsers(daves), 
+		daves: getActiveDaves(), 
 		places: savedPlaces 
 	});
 });
@@ -690,7 +726,7 @@ app.post('/api/teleport', async (req, res) => {
 		me.lat = target.lat;
 		me.lng = target.lng;
 		me.freeRoam = !!freeRoam;
-		me.updatedAt = Date.now();
+		markActive(me);
 
 		notifyUser(me, "teleport", { lat: me.lat, lng: me.lng, freeRoam: me.freeRoam });
 		io.emit("update", { daves });
@@ -715,7 +751,7 @@ app.post('/api/visibility', async (req, res) => {
 		me.lat = 0;
 		me.lng = 0;
 	}
-	me.updatedAt = Date.now();
+	markActive(me);
 
 	io.emit("update");
 
@@ -733,6 +769,7 @@ io.on('connection', (socket) => {
 
 	// load from savedDaves or initialize if new
 	let me = daves[userId];
+	let createdDave = false;
 	if (!me) {  //not in current session
 		savedDaves = getUsers(daves);
 		if (savedDaves[userId]) {  //but recognized
@@ -752,11 +789,14 @@ io.on('connection', (socket) => {
 				fragmentsCollected: [],
 				tags: [],
 			};
+			createdDave = true;
 			daves[userId] = me;
 		}
 	}
 	
-	me.updatedAt = Date.now();
+	if (createdDave || !Number.isFinite(me.updatedAt)) {
+		markActive(me);
+	}
 	if (!me.sockets || Object.keys(me.sockets).length === 0) {
 		me.sockets = new Set();
 	} 
@@ -766,6 +806,11 @@ io.on('connection', (socket) => {
 
 	//check for immune flag on main page (redirected from bb)
 	socket.on("register", (data) => {
+		const me = daves[socket.userId];
+		if (me) {
+			markActive(me);
+		}
+
 		const ts = data.immune;
 		if (ts) {
 			//console.log("register with ts: _" + ts + "_");
@@ -777,6 +822,7 @@ io.on('connection', (socket) => {
 				if (difference <= 20 * 1000) {
 					//console.log("INSTALL");
 					state.installAntivirus(daves[socket.userId]);
+					markActive(daves[socket.userId]);
 					logEvent(`${daves[socket.userId].name} installed mind antivirus.`, {
 						userId: socket.userId
 					});
@@ -817,7 +863,7 @@ io.on('connection', (socket) => {
 		}
 
 		const result = applyLineconBump(me, bestStreak);
-		me.updatedAt = Date.now();
+		markActive(me);
 		callback({ ok: true, ...result, placeId });
 	});
 
@@ -838,16 +884,9 @@ io.on('connection', (socket) => {
 				return;
 			}
 
-			if (me.visible === false) {
-				me.lat = 0;
-				me.lng = 0;
-			} else {
-				me.lat = loc.lat;
-				me.lng = loc.lng;
+			if (applyLocationActivity(me, loc)) {
+				io.emit("update");
 			}
-			me.updatedAt = Date.now();
-
-			io.emit("update");
 		} 
 
 		//console.log("location update: " + JSON.stringify(daves, null, 2));
@@ -858,6 +897,7 @@ io.on('connection', (socket) => {
 		if (dave) {
 			const oldName = dave.name;
 			dave.name = name;
+			markActive(dave);
 			logEvent(`${oldName} is now known as ${dave.name}.`, {
 				userId: dave.userId
 			});
@@ -875,6 +915,7 @@ io.on('connection', (socket) => {
 
 		if (!me) return;
 		state.installAntivirus(me);
+		markActive(me);
 		logEvent(`${me.name} installed mind antivirus.`, {
 			userId: me.userId
 		});
@@ -900,6 +941,7 @@ io.on('connection', (socket) => {
 			daves[bot.userId] = bot;
 		}
 
+		markActive(me);
 		logEvent(`${me.name} spawned ${count} civilians.`, {
 			userId: me.userId
 		});
@@ -959,6 +1001,7 @@ io.on('connection', (socket) => {
 			submittedAt: Date.now()
 		};
 		state.addTag(me, "dod");
+		markActive(me);
 
 		const rewards = getDodApplicationRewards(application);
 		for (const [item, count] of Object.entries(rewards)) {
@@ -1005,6 +1048,7 @@ io.on('connection', (socket) => {
 
 		me.infectedUsers.splice(0, 5);
 		me.fragmentsCollected.push(crypto.randomUUID());
+		markActive(me);
 
 		logEvent(`${me.name} exchanged 5 infections for 1 fragment with the Department of Davefence.`, {
 			userId: me.userId

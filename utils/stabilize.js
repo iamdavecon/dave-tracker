@@ -20,6 +20,7 @@ import { inRange } from '../public/utils/distance.js';
 import { getUsers } from './storage.js';
 import { DAVE_TANGENT_NAME, GOON_NAME } from './bots.js';
 import { BLACK_BADGE_RAFFLE_ITEM } from './players.js';
+import { markActive } from './activity.js';
 
 function normalizeGrantedTag(tag) {
 	return String(tag ?? "").trim().slice(0, 40);
@@ -97,6 +98,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		});
 
 		if (success) {
+			markActive(me);
 			logEvent(recoveredFragment
 				? `${me.name} stabilized ${target.name} and recovered a fragment.`
 				: `${me.name} stabilized ${target.name}.`, {
@@ -129,6 +131,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		//console.log("result: " + success);
 
 		if (success) {
+			markActive(me);
 			logEvent(recoveredFragment
 				? `${me.name} helped ${target.name} ascend and recovered a fragment.`
 				: `${me.name} helped ${target.name} ascend.`, {
@@ -162,6 +165,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 			if (me.badDecisionsMade >= 3) {
 				addTag(me, "bad-decision");
 			}
+			markActive(me);
 
 			logEvent(recoveredFragment
 				? `${me.name} made a bad decision with ${target.name} and recovered 2 fragments.`
@@ -192,6 +196,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = addTag(target, "doon");
 
 		if (success) {
+			markActive(me);
 			logEvent(`${me.name} daveputized ${target.name}.`, {
 				userId: me.userId
 			});
@@ -217,6 +222,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 
 		if (success) {
 			const recoveredFragments = grantCorruptHostFragments(me, target);
+			markActive(me);
 			logEvent(recoveredFragments
 				? `${me.name} pushed ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()} and recovered 2 fragments.`
 				: `${me.name} pushed ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
@@ -244,6 +250,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 
 		if (success) {
 			const recoveredFragments = grantCorruptHostFragments(me, target);
+			markActive(me);
 			logEvent(recoveredFragments
 				? `${me.name} decreased ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()} and recovered 2 fragments.`
 				: `${me.name} decreased ${target.name} from ${previousState.toUpperCase()} to ${target.state.toUpperCase()}.`, {
@@ -268,6 +275,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = grantDavePrime(target);
 
 		if (success) {
+			markActive(me);
 			logEvent(`${me.name} granted DAVEPRIME clearance to ${target.name}.`, {
 				userId: me.userId,
 				important: true
@@ -293,6 +301,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = addTag(target, normalizedTag);
 
 		if (success) {
+			markActive(me);
 			logEvent(`${me.name} granted ${normalizedTag} to ${target.name}.`, {
 				userId: me.userId
 			});
@@ -315,6 +324,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = addTag(me, "DT");
 
 		if (success) {
+			markActive(me);
 			logEvent(`${me.name} introduced themselves to ${DAVE_TANGENT_NAME}.`, {
 				userId: me.userId
 			});
@@ -337,6 +347,7 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const success = grantBlackBadgeRaffleTicket(me, target.userId);
 
 		if (success) {
+			markActive(me);
 			logEvent(`${me.name} accepted a black badge raffle ticket from ${GOON_NAME}.`, {
 				userId: me.userId
 			});

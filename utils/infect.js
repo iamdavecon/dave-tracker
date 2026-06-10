@@ -3,6 +3,7 @@ import { inRange } from "../public/utils/distance.js";
 import { getUsers } from './storage.js';
 import { notifyUser } from './sockets.js';
 import { GOON_NAME } from './bots.js';
+import { markActive } from './activity.js';
 
 
 /**
@@ -68,6 +69,7 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 		});
 
 		if (success) {
+			markActive(me);
 			logEvent(`${me.name} transmitted the mindvirus to ${target.name}.`, {
 				userId: me.userId
 			});

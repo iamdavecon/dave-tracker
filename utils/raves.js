@@ -1,6 +1,7 @@
 import { DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from "../public/utils/raves.js";
 import { canStartDaveRave, getDaveRaveDebug, getDaveRaveCooldownRemaining } from "./players.js";
 import { getUsers } from "./storage.js";
+import { markActive } from "./activity.js";
 
 export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDodCommendations = () => {}) {
 	socket.on("startDaveRave", (sourceId) => {
@@ -41,6 +42,7 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}, awardDo
 
 		dave.daveravesStarted = (dave.daveravesStarted ?? 0) + 1;
 		dave.lastDaveRaveTime = Date.now();
+		markActive(dave);
 		logEvent(`${dave.name} started a Dave Rave.`, {
 			userId: dave.userId,
 			important: true

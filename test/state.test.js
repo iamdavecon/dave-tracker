@@ -95,6 +95,15 @@ test('ascension and tags drive user actions', () => {
 	assert.equal(state.canDoonShift(source, target), false);
 });
 
+test('doon tag grants Daveputize without a territory rank', () => {
+	const source = { userId: 'source', state: 'immune', tags: ['doon'] };
+	const target = { userId: 'target', state: 'infected', tags: [] };
+
+	assert.equal(state.hasTerritoryRank(source), false);
+	assert.equal(state.getUserActions(source, target).canDaveputize, true);
+	assert.equal(state.getUserActions(source, { ...target, tags: ['doon'] }).canDaveputize, false);
+});
+
 test('DavePrime QR scan bonus raises source state only up to DOPE', () => {
 	const target = { userId: 'target', state: 'daveprime' };
 	const ordinaryTarget = { userId: 'ordinary', state: 'immune' };
@@ -136,7 +145,7 @@ test('infected and corrupted daves can decrease another user status', () => {
 });
 
 test('territory ranks scale by owned node count and level', () => {
-	const dave = { userId: 'source', tags: ['standard-user', 'dod'] };
+	const dave = { userId: 'source', tags: ['standard-user', 'dod'], davePointUpgradeCount: 3 };
 	const places = {
 		one: { owner: 'source' },
 		two: { owner: 'source', level: 2 },
@@ -145,11 +154,16 @@ test('territory ranks scale by owned node count and level', () => {
 
 	assert.equal(state.getTerritoryScore(dave, places), 3);
 	assert.deepEqual(state.syncTerritoryRank(dave, places), {
+		tag: 'power-user',
+		label: 'Power User',
+		min: 6
+	});
+	assert.deepEqual(dave.tags, ['dod', 'power-user']);
+	assert.deepEqual(state.getTerritoryRank(2, 1), {
 		tag: 'admin',
 		label: 'Admin',
 		min: 3
 	});
-	assert.deepEqual(dave.tags, ['dod', 'admin']);
 });
 
 test('place actions require fragments and cap upgrades by player state', () => {

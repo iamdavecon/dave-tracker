@@ -1,5 +1,6 @@
 import * as state from "../public/utils/state.js";
 import { isDebugId } from "./debugAccess.js";
+import { markActive } from "./activity.js";
 
 function canUseDebugAction(socket, sourceId) {
 	return sourceId === socket.userId && isDebugId(socket.userId);
@@ -27,6 +28,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		}
 
 		state.increaseRank(me);
+		markActive(me);
 		io.emit("update");
 	});
 
@@ -41,6 +43,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		}
 
 		state.decreaseRank(me);
+		markActive(me);
 		io.emit("update");
 	});
 
@@ -57,6 +60,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		}
 
 		addRandomIds(me, "fragmentsCollected");
+		markActive(me);
 		io.emit("update");
 		callback?.({ ok: true });
 	});
@@ -74,6 +78,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		}
 
 		addRandomIds(me, "infectedUsers");
+		markActive(me);
 		io.emit("update");
 		callback?.({ ok: true });
 	});

@@ -156,17 +156,21 @@ test('upgradeDavePoint enforces source, range, fragments, and max level', () => 
 
 	handlers.upgradeDavePoint('other', 'near');
 	assert.equal(places.near.level, 1);
+	assert.equal(daves.source.davePointUpgradeCount, undefined);
 
 	handlers.upgradeDavePoint('source', 'far');
 	assert.equal(places.far.level, 1);
+	assert.equal(daves.source.davePointUpgradeCount, undefined);
 
 	handlers.upgradeDavePoint('source', 'maxed');
 	assert.equal(places.maxed.level, 3);
 	assert.deepEqual(daves.source.fragmentsCollected, ['fragment']);
+	assert.equal(daves.source.davePointUpgradeCount, undefined);
 
 	handlers.upgradeDavePoint('source', 'near');
 	assert.equal(places.near.level, 2);
 	assert.deepEqual(daves.source.fragmentsCollected, []);
+	assert.equal(daves.source.davePointUpgradeCount, 1);
 });
 
 test('place interaction works when player and place radii overlap', () => {

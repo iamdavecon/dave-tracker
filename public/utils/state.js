@@ -21,7 +21,8 @@ const TERRITORY_RANKS = [
 	{ tag: "admin", label: "Admin", min: 3 },
 	{ tag: "power-user", label: "Power User", min: 6 },
 	{ tag: "root", label: "Root", min: 10 },
-	{ tag: "network-administrator", label: "Network Administrator", min: 15 }
+	{ tag: "network-administrator", label: "Network Administrator", min: 15 },
+	{ tag: "netgod", label: "god", min: 21 }
 ];
 
 function toNumber(state) {
@@ -269,11 +270,16 @@ export function getTerritoryScore(dave, places = {}) {
 	}, 0);
 }
 
-export function getTerritoryRank(score) {
+export function getDavePointUpgradeCount(dave) {
+	return Math.max(0, Number(dave?.davePointUpgradeCount ?? 0));
+}
+
+export function getTerritoryRank(score, davePointUpgradeCount = 0) {
+	const territoryScore = Number(score ?? 0) + Math.max(0, Number(davePointUpgradeCount ?? 0));
 	let rank = null;
 
 	for (const candidate of TERRITORY_RANKS) {
-		if (score >= candidate.min) {
+		if (territoryScore >= candidate.min) {
 			rank = candidate;
 		}
 	}
@@ -289,7 +295,7 @@ export function syncTerritoryRank(dave, places = {}) {
 		dave.tags = [];
 	}
 
-	const rank = getTerritoryRank(getTerritoryScore(dave, places));
+	const rank = getTerritoryRank(getTerritoryScore(dave, places), getDavePointUpgradeCount(dave));
 	dave.tags = dave.tags.filter(tag => !isTerritoryTag(tag));
 
 	if (rank) {
@@ -351,7 +357,7 @@ export function getUserActions(source, target) {
 		canPatch : hasPatchAbility(source),
 		canBePatched : canBePatched(target),
 		hasFragments : canAfford(source, 1),
-		canDaveputize : hasTerritoryRank(source) && ! hasTag(target, "doon"),
+		canDaveputize : (hasTerritoryRank(source) || hasTag(source, "doon")) && ! hasTag(target, "doon"),
 		canDoonShift : canDoonShift(source, target),
 		canGrantDavePrime : isDavePrime(source) && !isDavePrime(target),
 		canGrantTag : canGrantTag(source, target),

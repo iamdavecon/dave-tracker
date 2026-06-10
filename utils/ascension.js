@@ -1,5 +1,6 @@
 import { ascendUser, getAscensionRequiredLevel, maxState } from "../public/utils/state.js";
 import { removeFragment } from './players.js';
+import { markActive } from './activity.js';
 
 export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}) {
 	socket.on("ascendAtNode", (userId, placeId) => {
@@ -23,6 +24,7 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		}
 		removeFragment(dave);
 		const level = maxState(dave);
+		markActive(dave);
 
 		logEvent(`${dave.name} ascended at ${place.name} to level ${level}.`, {
 			userId: dave.userId,
