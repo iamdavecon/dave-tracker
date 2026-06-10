@@ -18,6 +18,7 @@ const daveId = params.get("id");
 let isDebugUser = false;
 const PEPPER_ITEM = "🌶️";
 const BABY_ITEM = "👶";
+const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
 
 let map;
 let preserveActionStatusUntil = 0;
@@ -426,6 +427,7 @@ async function loadPlayer() {
 		}
 		const nodes = dave.nodeCount ?? 0;
 		const babies = state.getAmt(dave, BABY_ITEM);
+		const blackBadgeRaffleTickets = state.getAmt(dave, BLACK_BADGE_RAFFLE_ITEM);
 		const babyRowAction = dave.availableActions.canReceiveBaby
 			? ` data-action="receiveBaby" class="field receive-baby-row" role="button" tabindex="0" title="Receive baby"`
 			: ` class="field"`;
@@ -451,6 +453,10 @@ async function loadPlayer() {
 			<div class="field">
 				<span class="label">▧ Dave Raves</span>
 				<span>${dave.daveravesStarted ?? 0}</span>
+			</div>
+			<div class="field">
+				<span class="label">Black Badge Raffle Tickets</span>
+				<span>${blackBadgeRaffleTickets}</span>
 			</div>
 		`;
 		statHtml += displayItems(dave);
@@ -557,6 +563,14 @@ async function loadPlayer() {
 
 			if (dave.availableActions.canMakeBadDecision) {
 				actionHtml += `<button data-action="badDecision">Do you want to make a bad decision?</button>`;
+			}
+
+			if (dave.availableActions.canIntroduceDaveTangent) {
+				actionHtml += `<button data-action="introduceDaveTangent">Give DaveTangent a high five</button>`;
+			}
+
+			if (dave.availableActions.canClaimGoonRaffle) {
+				actionHtml += `<button data-action="claimGoonRaffle">Black badge raffle!?  Thanks!</button>`;
 			}
 
 			if (!dave.isBot && dave.availableActions.canDaveputize) {

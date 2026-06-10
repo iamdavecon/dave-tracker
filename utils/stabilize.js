@@ -18,6 +18,8 @@ import {
 } from '../public/utils/state.js';
 import { inRange } from '../public/utils/distance.js';
 import { getUsers } from './storage.js';
+import { DAVE_TANGENT_NAME, GOON_NAME } from './bots.js';
+import { BLACK_BADGE_RAFFLE_ITEM } from './players.js';
 
 function normalizeGrantedTag(tag) {
 	return String(tag ?? "").trim().slice(0, 40);
@@ -29,6 +31,23 @@ function grantBonusFragment(dave) {
 	}
 
 	dave.fragmentsCollected.push(crypto.randomUUID());
+}
+
+function grantBlackBadgeRaffleTicket(dave, goonId) {
+	if (!Array.isArray(dave.claimedGoonRaffles)) {
+		dave.claimedGoonRaffles = [];
+	}
+	if (dave.claimedGoonRaffles.includes(goonId)) {
+		return false;
+	}
+	if (!dave[BLACK_BADGE_RAFFLE_ITEM]) {
+		dave[BLACK_BADGE_RAFFLE_ITEM] = { count: 0, lastTime: 0 };
+	}
+
+	dave[BLACK_BADGE_RAFFLE_ITEM].count += 1;
+	dave[BLACK_BADGE_RAFFLE_ITEM].lastTime = Date.now();
+	dave.claimedGoonRaffles.push(goonId);
+	return true;
 }
 
 function grantCorruptHostFragments(source, target) {
@@ -275,6 +294,50 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 
 		if (success) {
 			logEvent(`${me.name} granted ${normalizedTag} to ${target.name}.`, {
+				userId: me.userId
+			});
+			io.emit("update", { daves });
+		}
+	});
+
+	socket.on("introduceDaveTangent", (sourceId, targetId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target || !target.isBot || target.name !== DAVE_TANGENT_NAME || !inRange(me, target)) {
+			return;
+		}
+
+		const success = addTag(me, "DT");
+
+		if (success) {
+			logEvent(`${me.name} introduced themselves to ${DAVE_TANGENT_NAME}.`, {
+				userId: me.userId
+			});
+			io.emit("update", { daves });
+		}
+	});
+
+	socket.on("claimGoonRaffle", (sourceId, targetId) => {
+		if (sourceId !== socket.userId) {
+			return;
+		}
+
+		const localDaves = getUsers(daves);
+		const me = localDaves[sourceId];
+		const target = localDaves[targetId];
+		if (!me || !target || !target.isBot || target.name !== GOON_NAME || !inRange(me, target)) {
+			return;
+		}
+
+		const success = grantBlackBadgeRaffleTicket(me, target.userId);
+
+		if (success) {
+			logEvent(`${me.name} accepted a black badge raffle ticket from ${GOON_NAME}.`, {
 				userId: me.userId
 			});
 			io.emit("update", { daves });

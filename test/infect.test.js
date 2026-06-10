@@ -101,3 +101,31 @@ test('infect socket handler rejects forged and out-of-range attempts', () => {
 		{ event: 'infectResult', payload: { success: false } }
 	]);
 });
+
+test('infect socket handler rejects GOON targets', () => {
+	const handlers = {};
+	const emittedToSocket = [];
+	const socket = {
+		userId: 'source',
+		on(event, handler) {
+			handlers[event] = handler;
+		},
+		emit(event, payload) {
+			emittedToSocket.push({ event, payload });
+		}
+	};
+	const daves = {
+		source: { userId: 'source', name: 'Source Dave', infectedUsers: [], lat: 41, lng: -87 },
+		goon: { userId: 'goon', name: 'GOON', isBot: true, state: 'unstable', lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, { emit: () => {} });
+
+	handlers.infect('source', 'goon');
+
+	assert.equal(daves.goon.state, 'unstable');
+	assert.deepEqual(daves.source.infectedUsers, []);
+	assert.deepEqual(emittedToSocket, [
+		{ event: 'infectResult', payload: { success: false } }
+	]);
+});

@@ -12,10 +12,11 @@ function getCurrentUserId() {
 
 function updateMarker(dave) {
 	const stateClass = state.getStateClass(dave);
+	const goonClass = dave.name === "GOON" ? "goon" : "";
 
 	const icon = L.divIcon({
 		className: "custom-icon",
-		html: `<div class="pill center ${stateClass}">
+		html: `<div class="pill center ${stateClass} ${goonClass}">
 			${dave.name}
 		</div>`,
 		iconSize: null,

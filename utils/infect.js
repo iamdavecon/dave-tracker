@@ -2,6 +2,7 @@ import { infect } from "../public/utils/state.js";
 import { inRange } from "../public/utils/distance.js";
 import { getUsers } from './storage.js';
 import { notifyUser } from './sockets.js';
+import { GOON_NAME } from './bots.js';
 
 
 /**
@@ -44,6 +45,12 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 		const target = localDaves[targetId];
 		if (!me || !target) {
 			console.log("missing user");
+			return;
+		}
+		if (target.isBot && target.name === GOON_NAME) {
+			socket.emit("infectResult", {
+				success: false
+			});
 			return;
 		}
 		if (!inRange(me, target)) {

@@ -103,6 +103,22 @@ test('ascendPlayer is distinct from node ascension and enforces player eligibili
 	assert.equal(logs.length, 1);
 });
 
+test('ascendPlayer rejects bot targets', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', state: 'ascended', fragmentsCollected: [], lat: 41, lng: -87 },
+		target: { userId: 'target', name: 'Target', state: 'infected', isBot: true, lat: 41, lng: -87 }
+	};
+
+	registerHandlers(socket, daves, { emit: () => {} }, (message) => logs.push(message));
+	handlers.ascendPlayer('source', 'target');
+
+	assert.equal(daves.target.state, 'infected');
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+	assert.equal(logs.length, 0);
+});
+
 test('badDecision requires peppercon and GDIK, ascends target, and grants a fragment', () => {
 	const { socket, handlers } = createSocket('source');
 	const logs = [];
@@ -358,4 +374,53 @@ test('grantTag rejects forged, non-prime, bot, out-of-range, empty, and duplicat
 	assert.deepEqual(daves.bot.tags, []);
 	assert.equal(logs.length, 1);
 	assert.equal(ioEvents.length, 1);
+});
+
+test('introduceDaveTangent grants the source player the DT tag once', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', tags: [], lat: 41, lng: -87 },
+		tangent: { userId: 'tangent', name: 'DaveTangent', isBot: true, lat: 41, lng: -87 },
+		civilian: { userId: 'civilian', name: 'CIVILIAN', isBot: true, lat: 41, lng: -87 },
+		farTangent: { userId: 'farTangent', name: 'DaveTangent', isBot: true, lat: 42, lng: -88 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.introduceDaveTangent('other', 'tangent');
+	handlers.introduceDaveTangent('source', 'civilian');
+	handlers.introduceDaveTangent('source', 'farTangent');
+	handlers.introduceDaveTangent('source', 'tangent');
+	handlers.introduceDaveTangent('source', 'tangent');
+
+	assert.deepEqual(daves.source.tags, ['DT']);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+});
+
+test('claimGoonRaffle grants one black badge raffle ticket per GOON', () => {
+	const { socket, handlers } = createSocket('source');
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		source: { userId: 'source', name: 'Source', lat: 41, lng: -87 },
+		goon: { userId: 'goon', name: 'GOON', isBot: true, lat: 41, lng: -87 },
+		otherGoon: { userId: 'otherGoon', name: 'GOON', isBot: true, lat: 41, lng: -87 },
+		civilian: { userId: 'civilian', name: 'CIVILIAN', isBot: true, lat: 41, lng: -87 },
+		farGoon: { userId: 'farGoon', name: 'GOON', isBot: true, lat: 42, lng: -88 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.claimGoonRaffle('other', 'goon');
+	handlers.claimGoonRaffle('source', 'civilian');
+	handlers.claimGoonRaffle('source', 'farGoon');
+	handlers.claimGoonRaffle('source', 'goon');
+	handlers.claimGoonRaffle('source', 'goon');
+	handlers.claimGoonRaffle('source', 'otherGoon');
+
+	assert.deepEqual(daves.source.claimedGoonRaffles, ['goon', 'otherGoon']);
+	assert.deepEqual(daves.source["Black Badge Raffle Tickets"].count, 2);
+	assert.equal(logs.length, 2);
+	assert.equal(ioEvents.length, 2);
 });

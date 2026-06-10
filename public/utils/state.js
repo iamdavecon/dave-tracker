@@ -196,6 +196,10 @@ export function canBePatched(dave) {
 }
 
 export function canAscend(me, dave) {
+	if (dave?.isBot) {
+		return false;
+	}
+
 	if (me.fragmentsCollected?.includes(dave.userId)) {
 		return false;
 	}

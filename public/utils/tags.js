@@ -13,7 +13,8 @@ export const TAGS = {
 	drinks: { emoji: "\u{1f37b}", label: "Cheers", playerLabel: "\u{1f37b}Cheers!" },
 	dod: { emoji: "\u{1f6e1}\ufe0f", label: "DoD", title: "Department of Davefence" },
 	general: { emoji: "\u{1f396}\ufe0f", label: "General" },
-	Timmy: { emoji: "\u{1f32d}", label: "Timmy" }
+	Timmy: { emoji: "\u{1f32d}", label: "Timmy" },
+	DT: { emoji: "DT", label: "Dave Tangent" }
 };
 
 export function getTagMetadata(tag) {

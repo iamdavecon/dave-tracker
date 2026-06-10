@@ -10,6 +10,7 @@ test('recognized tags expose shared metadata for compact and player rendering', 
 	});
 	assert.equal(getTagTitle('dod'), 'Department of Davefence');
 	assert.equal(getTagPlayerLabel('peppercon'), '\u{1f336}\ufe0fPepperCon');
+	assert.equal(getTagPlayerLabel('DT'), 'DT Dave Tangent');
 });
 
 test('unknown tags fall back to the tag text', () => {
@@ -23,4 +24,5 @@ test('recognized tags are available as grantable dropdown options', () => {
 
 	assert.ok(tags.some(tag => tag.tag === 'general' && tag.label === 'General'));
 	assert.ok(tags.some(tag => tag.tag === 'Timmy' && tag.emoji === '\u{1f32d}'));
+	assert.ok(tags.some(tag => tag.tag === 'DT' && tag.label === 'Dave Tangent'));
 });

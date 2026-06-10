@@ -28,10 +28,11 @@ export function getMapData(me, target) {
 
 
 function createPill(label, state = "neutral", isYou = false) {
+	const goonClass = label === "GOON" ? "goon" : "";
 	return L.divIcon({
 		className: "",
 		html: `
-			<div class="map-pill ${state} ${isYou ? "you" : ""}">
+			<div class="map-pill ${state} ${goonClass} ${isYou ? "you" : ""}">
 				${label}
 			</div>
 		`,

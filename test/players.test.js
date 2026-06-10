@@ -129,6 +129,54 @@ test('getInteraction exposes baby receiving for in-range users with babies', () 
 	assert.equal(details.availableActions.canReceiveBaby, true);
 });
 
+test('getInteraction exposes DaveTangent introduction for in-range players without the tag', () => {
+	const me = {
+		userId: 'source',
+		name: 'Source',
+		tags: [],
+		lat: 41,
+		lng: -87
+	};
+	const daveTangent = {
+		userId: 'bot-dt',
+		name: 'DaveTangent',
+		isBot: true,
+		lat: 41,
+		lng: -87
+	};
+
+	assert.equal(getInteraction(me, daveTangent).availableActions.canIntroduceDaveTangent, true);
+
+	me.tags.push('DT');
+	assert.equal(getInteraction(me, daveTangent).availableActions.canIntroduceDaveTangent, false);
+	assert.equal(getInteraction({ ...me, tags: [] }, { ...daveTangent, name: 'CIVILIAN' }).availableActions.canIntroduceDaveTangent, false);
+});
+
+test('getInteraction blocks GOON infection and exposes one raffle claim', () => {
+	const me = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87
+	};
+	const goon = {
+		userId: 'bot-goon',
+		name: 'GOON',
+		isBot: true,
+		state: 'unstable',
+		lat: 41,
+		lng: -87
+	};
+
+	const details = getInteraction(me, goon);
+
+	assert.equal(details.availableActions.canInfect, false);
+	assert.equal(details.availableActions.canClaimGoonRaffle, true);
+
+	me.claimedGoonRaffles = ['bot-goon'];
+	assert.equal(getInteraction(me, goon).availableActions.canClaimGoonRaffle, false);
+});
+
 test('getInteraction respects pepper pickup cooldown', () => {
 	const pepper = '🌶️';
 	const me = {

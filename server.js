@@ -13,7 +13,7 @@ import * as raves from './utils/raves.js';
 import * as ascension from './utils/ascension.js';
 import * as debug from './utils/debug.js';
 import { postImportantLogToDiscord } from './utils/discord.js';
-import { spawnBot, updateBots } from "./utils/bots.js";
+import { DAVE_TANGENT_NAME, getBotLifetimeMs, hasDaveTangent, spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
 import { applyLineconBump } from "./utils/linecon.js";
 import { addCommendations } from "./public/utils/dod.js";
@@ -57,7 +57,7 @@ let daves = savedDaves;
 // --- save active users, cull idle users ---
 setInterval(async () => { 
 	const cutoff = Date.now() - 15 * 60 * 1000; // 15 minutes
-	const botCutoff = Date.now() - 2 * 60 * 1000; // 2 minutes
+	const botCutoff = Date.now() - getBotLifetimeMs();
 	let davesToCull = [];
 
 	// Build a list of daves to cull
@@ -86,6 +86,7 @@ setInterval(async () => {
 }, 60_000);  //save / cull once a minute
 
 const MAX_BOTS = 80;
+const DAVE_TANGENT_SPAWN_CHANCE = 0.025;
 
 function randomSpawn() {
 	const nBots = Object.keys(Object.fromEntries(
@@ -104,7 +105,10 @@ function randomSpawn() {
 	const chance = 0.05 * keys.length;
 	if (Math.random() < chance) {
 		const randomDave = keys[Math.floor(Math.random() * keys.length)];
-		const bot = spawnBot(daves[randomDave]);
+		const shouldSpawnDaveTangent = !hasDaveTangent(daves) && Math.random() < DAVE_TANGENT_SPAWN_CHANCE;
+		const bot = spawnBot(daves[randomDave], {
+			name: shouldSpawnDaveTangent ? DAVE_TANGENT_NAME : undefined
+		});
 		//console.log("spawn: " + randomDave + " => " + bot.userId);
 		daves[bot.userId] = bot;
 

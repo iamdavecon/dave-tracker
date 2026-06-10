@@ -2,12 +2,18 @@ import * as state from "../public/utils/state.js";
 import { DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from "../public/utils/raves.js";
 import { getMapData } from "../public/utils/map.js"
 import { haversineDistance, inRange } from "../public/utils/distance.js";
+import { DAVE_TANGENT_NAME, GOON_NAME } from "./bots.js";
 
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
 const TACO_ITEM = "🌮";
 const BABY_ITEM = "👶";
+export const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
+
+function hasClaimedGoonRaffle(dave, goonId) {
+	return Array.isArray(dave?.claimedGoonRaffles) && dave.claimedGoonRaffles.includes(goonId);
+}
 
 function getDisplayTags(dave, places = {}) {
 	const tags = Array.isArray(dave.tags)
@@ -184,6 +190,9 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	daveDetails.state = state.getState(dave);
 	daveDetails.isMe = me.userId === dave.userId;
 	daveDetails.availableActions = state.getUserActions(me, dave);
+	if (dave.isBot && dave.name === GOON_NAME) {
+		daveDetails.availableActions.canInfect = false;
+	}
 	daveDetails.availableActions.hasPepper = !daveDetails.isMe && PEPPER_RE.test(dave.name ?? "");
 	daveDetails.availableActions.canGetPepper = daveDetails.availableActions.hasPepper && state.canGet(me, PEPPER_ITEM);
 	daveDetails.availableActions.pepperCooldownRemaining = daveDetails.availableActions.hasPepper
@@ -192,6 +201,16 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	daveDetails.availableActions.hasBaby = !daveDetails.isMe && state.getAmt(dave, BABY_ITEM) > 0;
 	daveDetails.availableActions.canReceiveBaby = daveDetails.availableActions.hasBaby && !dave.isBot && inRange(me, dave);
 	daveDetails.availableActions.canEatTaco = daveDetails.isMe && state.getAmt(me, TACO_ITEM) > 0;
+	daveDetails.availableActions.canIntroduceDaveTangent = !daveDetails.isMe
+		&& dave.isBot
+		&& dave.name === DAVE_TANGENT_NAME
+		&& !state.hasTag(me, "DT")
+		&& inRange(me, dave);
+	daveDetails.availableActions.canClaimGoonRaffle = !daveDetails.isMe
+		&& dave.isBot
+		&& dave.name === GOON_NAME
+		&& !hasClaimedGoonRaffle(me, dave.userId)
+		&& inRange(me, dave);
 	daveDetails.availableActions.tacoRangeBoostRemaining = Number.isFinite(me?.tacoRangeBoostUntil)
 		? Math.max(0, me.tacoRangeBoostUntil - Date.now())
 		: 0;

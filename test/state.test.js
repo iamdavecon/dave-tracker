@@ -83,6 +83,7 @@ test('ascension and tags drive user actions', () => {
 	assert.equal(actions.canDoonShift, true);
 	assert.equal(actions.canGrantTag, false);
 	assert.equal(actions.canMakeBadDecision, true);
+	assert.equal(state.getUserActions(source, { ...target, isBot: true }).canAscend, false);
 
 	source.state = 'daveprime';
 	assert.equal(state.getUserActions(source, target).canGrantTag, true);
