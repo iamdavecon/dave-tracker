@@ -10,7 +10,11 @@
     "range": 1000,
     "name": "DavePrimo",
     "lat": 38.60779513038755,
-    "lng": -90.50781867573762
+    "lng": -90.50781867573762,
+     "👶": {
+      "count": 1,
+      "lastTime": 1781055959244
+    }
   },
   "91f5eeaf-cfa7-4df4-b078-769d3cd3ccc0": {
     "userId": "91f5eeaf-cfa7-4df4-b078-769d3cd3ccc0",
@@ -34,7 +38,11 @@
     "updatedAt": 2777376805613,
     "lat": 36.17,
     "lng": -115.14,
-    "fragmentsCollected": []
+    "fragmentsCollected": [],
+"👶": {
+      "count": 1,
+      "lastTime": 1781055959244
+    }
   },
   "DAVE1": {
     "userId": "DAVE1",

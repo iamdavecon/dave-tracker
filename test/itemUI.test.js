@@ -26,3 +26,12 @@ test('slots sources award hotdogs and beers', () => {
 		]
 	);
 });
+
+test('cocktail sources award drinks directly', () => {
+	assert.deepEqual(
+		getItemsForSource('🍸').map(item => ({ item: item.item, getLabel: item.getLabel })),
+		[
+			{ item: '🍸', getLabel: 'Get a drink' }
+		]
+	);
+});

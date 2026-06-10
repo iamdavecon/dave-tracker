@@ -35,6 +35,7 @@ const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
 let isDebugUser = false;
 const DRINK_ITEM = "🍺";
+const COCKTAIL_ITEM = "🍸";
 
 let map;
 
@@ -88,6 +89,10 @@ function getItem(item) {
 	location.reload()
 }
 
+function openDrinkGame() {
+	window.location.href = `/drink-game.html?placeId=${encodeURIComponent(placeId)}&returnTo=${encodeURIComponent(window.location.href)}`;
+}
+
 function getLineconUrl() {
 	return `/linecon.html?placeId=${encodeURIComponent(placeId)}`;
 }
@@ -129,8 +134,21 @@ function claimPlaceFragmentChallenge(action) {
 		? options[selectedIndex]
 		: answer;
 
-	socket.emit("claimPlaceFragmentChallenge", userId, placeId, action, question.id, selectedAnswer);
-	location.reload();
+	let handled = false;
+	socket.emit("claimPlaceFragmentChallenge", userId, placeId, action, question.id, selectedAnswer, async (result) => {
+		handled = true;
+		if (result?.plasticBabyPass) {
+			window.location.href = `/baby-pass.html?claim=plasticBabyPass&returnTo=${encodeURIComponent(window.location.href)}`;
+			return;
+		}
+		location.reload();
+	});
+
+	setTimeout(() => {
+		if (!handled) {
+			location.reload();
+		}
+	}, 800);
 }
 
 function playTacoGame() {
@@ -164,6 +182,9 @@ function addActions(actionHtml) {
 			case "placeAction":
 				const item = e.target.dataset.item;
 				getItem(item);
+				break;
+			case "drinkGame":
+				openDrinkGame();
 				break;
 			case "placeFragmentChallenge":
 				claimPlaceFragmentChallenge(e.target.dataset.challengeAction);
@@ -345,12 +366,16 @@ async function loadPlace() {
 
 
 		for (const rule of getItemsForSource(firstEmoji)) {
-			const available = state.canGet(dave, rule.item);
-			const remaining = state.formatCooldownRemaining(state.getCooldownRemaining(dave, rule.item));
+			const action = firstEmoji === COCKTAIL_ITEM && rule.item === COCKTAIL_ITEM
+				? "drinkGame"
+				: "placeAction";
+			const cooldownItem = action === "drinkGame" ? DRINK_ITEM : rule.item;
+			const available = state.canGet(dave, cooldownItem);
+			const remaining = state.formatCooldownRemaining(state.getCooldownRemaining(dave, cooldownItem));
 			//console.log("canget:  " + rule.item + " avail " + available);
 
 			actionHtml += available
-					? `<button data-action="placeAction" data-item="${rule.item}"> ${rule.getLabel} </button>`
+					? `<button data-action="${action}" data-item="${rule.item}"> ${rule.getLabel} </button>`
 					: `<button disabled> ${rule.getLabel} (${remaining}) </button>`;
 		}
 	} else {

@@ -70,6 +70,25 @@ function getItemFromUser(item) {
 	location.reload()
 }
 
+function receiveBaby() {
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		statusEl.textContent = "Preparing baby transfer...";
+	}
+
+	socket.emit("startReceiveBaby", userId, daveId, (result) => {
+		if (!result?.ok) {
+			preserveActionStatusUntil = Date.now() + 5000;
+			if (statusEl) {
+				statusEl.textContent = result?.error || "Unable to receive baby.";
+			}
+			return;
+		}
+
+		window.location.href = `/baby-pass.html?claim=receiveBaby&returnTo=${encodeURIComponent(window.location.href)}`;
+	});
+}
+
 function startDaveRave() {
 	const statusEl = document.getElementById("actionStatus");
 	if (statusEl) {
@@ -228,6 +247,10 @@ function addActions(actionHtml) {
 				getItemFromUser(e.target.dataset.item);
 				break;
 
+			case "receiveBaby":
+				receiveBaby();
+				break;
+
 			case "startDaveRave":
 				startDaveRave();
 				break;
@@ -259,6 +282,25 @@ function addActions(actionHtml) {
 			default:
 				emit(action);
 		}
+	};
+}
+
+function bindStatsActions() {
+	const statsContainer = document.getElementById("stats");
+	function handleStatsAction(event) {
+		const actionEl = event.target.closest("[data-action]");
+		if (!actionEl) return;
+
+		if (actionEl.dataset.action === "receiveBaby") {
+			receiveBaby();
+		}
+	}
+
+	statsContainer.onclick = handleStatsAction;
+	statsContainer.onkeydown = (event) => {
+		if (event.key !== "Enter" && event.key !== " ") return;
+		event.preventDefault();
+		handleStatsAction(event);
 	};
 }
 
@@ -372,6 +414,9 @@ async function loadPlayer() {
 		}
 		const nodes = dave.nodeCount ?? 0;
 		const babies = state.getAmt(dave, BABY_ITEM);
+		const babyRowAction = dave.availableActions.canReceiveBaby
+			? ` data-action="receiveBaby" class="field receive-baby-row" role="button" tabindex="0" title="Receive baby"`
+			: ` class="field"`;
 
 		let statHtml = "";
 		statHtml = `
@@ -387,7 +432,7 @@ async function loadPlayer() {
 				<span class="label">🏙️ Nodes</span>
 				<span>${nodes}</span>
 			</div>
-			<div class="field">
+			<div${babyRowAction}>
 				<span class="label">👶 Babies</span>
 				<span>${babies}</span>
 			</div>
@@ -398,6 +443,7 @@ async function loadPlayer() {
 		`;
 		statHtml += displayItems(dave);
 		document.getElementById("stats").innerHTML = statHtml;
+		bindStatsActions();
 	}
 
 	if (dave.isMe) {

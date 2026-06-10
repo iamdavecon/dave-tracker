@@ -421,6 +421,155 @@ test('circusCircusParking rejects forged, non-circus, and out-of-range drink gra
 	assert.equal(daves.source[drink], undefined);
 });
 
+test('finishDrinkGame grants a drink at in-range cocktail locations', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const drink = '🍺';
+	let result;
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		bar: {
+			id: 'bar',
+			name: '🍸 Corner Bar',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.finishDrinkGame('source', 'bar', true, (payload) => {
+		result = payload;
+	});
+
+	assert.equal(daves.source[drink].count, 1);
+	assert.deepEqual(result, { ok: true, won: true, granted: true });
+	assert.equal(ioEvents.length, 1);
+	assert.equal(logs.length, 1);
+});
+
+test('getting a drink can lose a baby and logs the loss', () => {
+	const { socket, handlers, io, logs } = createHarness();
+	const drink = '🍺';
+	const baby = '👶';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87,
+			[baby]: {
+				count: 1,
+				lastTime: Date.now()
+			}
+		}
+	};
+	const places = {
+		bar: {
+			id: 'bar',
+			name: '🍸 Corner Bar',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }), () => {}, () => 0.19);
+	handlers.finishDrinkGame('source', 'bar', true);
+
+	assert.equal(daves.source[drink].count, 1);
+	assert.equal(daves.source[baby].count, 0);
+	assert.equal(daves.source.babiesLost, 1);
+	assert.equal(logs.some(({ message }) => message === "Where's your baby, Source?"), true);
+});
+
+test('getting a drink does not lose a baby when the chance misses or cooldown blocks the drink', () => {
+	const { socket, handlers, io, logs } = createHarness();
+	const drink = '🍺';
+	const baby = '👶';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87,
+			[baby]: {
+				count: 2,
+				lastTime: Date.now()
+			}
+		}
+	};
+	const places = {
+		bar: {
+			id: 'bar',
+			name: '🍸 Corner Bar',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }), () => {}, () => 0.2);
+	handlers.finishDrinkGame('source', 'bar', true);
+	handlers.finishDrinkGame('source', 'bar', true);
+
+	assert.equal(daves.source[drink].count, 1);
+	assert.equal(daves.source[baby].count, 2);
+	assert.equal(daves.source.babiesLost, undefined);
+	assert.equal(logs.some(({ message }) => message === "Where's your baby, Source?"), false);
+});
+
+test('finishDrinkGame rejects losses, forged, non-cocktail, out-of-range, and cooldown attempts', () => {
+	const { socket, handlers, io } = createHarness();
+	const drink = '🍺';
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			tags: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		bar: {
+			id: 'bar',
+			name: '🍸 Corner Bar',
+			lat: 41,
+			lng: -87
+		},
+		plain: {
+			id: 'plain',
+			name: 'Plain Place',
+			lat: 41,
+			lng: -87
+		},
+		farBar: {
+			id: 'farBar',
+			name: '🍸 Far Bar',
+			lat: 42,
+			lng: -88
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.finishDrinkGame('source', 'bar', false);
+	handlers.finishDrinkGame('other', 'bar', true);
+	handlers.finishDrinkGame('source', 'plain', true);
+	handlers.finishDrinkGame('source', 'farBar', true);
+	assert.equal(daves.source[drink], undefined);
+
+	handlers.finishDrinkGame('source', 'bar', true);
+	handlers.finishDrinkGame('source', 'bar', true);
+	assert.equal(daves.source[drink].count, 1);
+});
+
 test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker Jeopardy answers', () => {
 	const { socket, handlers, io, ioEvents, logs } = createHarness();
 	const drink = '🍺';
@@ -450,6 +599,134 @@ test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker 
 	assert.equal(Number.isFinite(daves.source.lastHackerJeopardyTime), true);
 	assert.equal(ioEvents.length, 1);
 	assert.equal(logs.length, 1);
+});
+
+test('claimPlaceFragmentChallenge can trigger the plastic baby pass for first Hacker Jeopardy baby', () => {
+	const { socket, handlers, io } = createHarness();
+	const baby = '👶';
+	let result;
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		jeopardy: {
+			id: 'jeopardy',
+			name: '🙅 Hacker Jeopardy',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, () => {}, () => {}, () => 0.49);
+	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', (payload) => {
+		result = payload;
+	});
+
+	assert.equal(daves.source[baby], undefined);
+	assert.equal(Number.isFinite(daves.source.pendingPlasticBabyPassTime), true);
+	assert.deepEqual(result, { ok: true, correct: true, plasticBabyPass: true });
+});
+
+test('finishPlasticBabyPass grants or drops a pending plastic baby pass', () => {
+	const baby = '👶';
+	const createJeopardyHarness = () => {
+		const { socket, handlers, io } = createHarness();
+		const daves = {
+			source: {
+				userId: 'source',
+				name: 'Source',
+				lat: 41,
+				lng: -87
+			}
+		};
+		const places = {
+			jeopardy: {
+				id: 'jeopardy',
+				name: '🙅 Hacker Jeopardy',
+				lat: 41,
+				lng: -87
+			}
+		};
+		registerHandlers(socket, daves, places, io, () => {}, () => {}, () => 0);
+		handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', () => {});
+		return { handlers, dave: daves.source };
+	};
+
+	const winHarness = createJeopardyHarness();
+	let winResult;
+	winHarness.handlers.finishPlasticBabyPass('source', true, (payload) => {
+		winResult = payload;
+	});
+
+	const dropHarness = createJeopardyHarness();
+	let dropResult;
+	dropHarness.handlers.finishPlasticBabyPass('source', false, (payload) => {
+		dropResult = payload;
+	});
+
+	assert.equal(winHarness.dave[baby].count, 1);
+	assert.equal(winHarness.dave.babiesLost, undefined);
+	assert.equal(winHarness.dave.pendingPlasticBabyPassTime, undefined);
+	assert.equal(dropHarness.dave[baby], undefined);
+	assert.equal(dropHarness.dave.babiesLost, 1);
+	assert.equal(dropHarness.dave.pendingPlasticBabyPassTime, undefined);
+	assert.deepEqual(winResult, { ok: true, won: true, granted: true });
+	assert.deepEqual(dropResult, { ok: true, won: false, granted: false });
+});
+
+test('claimPlaceFragmentChallenge skips plastic baby pass on chance miss or existing baby', () => {
+	const baby = '👶';
+	const createJeopardyHarness = (dave, random) => {
+		const { socket, handlers, io } = createHarness();
+		const places = {
+			jeopardy: {
+				id: 'jeopardy',
+				name: '🙅 Hacker Jeopardy',
+				lat: 41,
+				lng: -87
+			}
+		};
+		registerHandlers(socket, { source: dave }, places, io, () => {}, () => {}, random);
+		return handlers;
+	};
+
+	const chanceMissDave = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87
+	};
+	let chanceMissResult;
+	createJeopardyHarness(chanceMissDave, () => 0.5)
+		.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', (payload) => {
+			chanceMissResult = payload;
+		});
+
+	const existingBabyDave = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87,
+		[baby]: {
+			count: 1,
+			lastTime: Date.now()
+		}
+	};
+	let existingBabyResult;
+	createJeopardyHarness(existingBabyDave, () => 0)
+		.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', (payload) => {
+			existingBabyResult = payload;
+		});
+
+	assert.equal(chanceMissDave[baby].count, 1);
+	assert.equal(existingBabyDave[baby].count, 2);
+	assert.deepEqual(chanceMissResult, { ok: true, correct: true, plasticBabyPass: false });
+	assert.deepEqual(existingBabyResult, { ok: true, correct: true, plasticBabyPass: false });
 });
 
 test('claimPlaceFragmentChallenge grants question-specific Hacker Jeopardy rewards', () => {

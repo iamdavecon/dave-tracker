@@ -4,7 +4,9 @@ import { inRange } from "../public/utils/distance.js";
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
 const TACO_ITEM = "🌮";
+const BABY_ITEM = "👶";
 const TACO_RANGE_BOOST_DURATION = 5 * 60 * 1000;
+const BABY_TRANSFER_EXPIRATION = 5 * 60 * 1000;
 const TOO_MANY_ITEM_THRESHOLD = 7;
 
 function spendItem(dave, item) {
@@ -14,6 +16,23 @@ function spendItem(dave, item) {
 
 	dave[item].count -= 1;
 	return true;
+}
+
+function grantItem(dave, item) {
+	if (!dave[item]) {
+		dave[item] = { count: 0, lastTime: Date.now() };
+	}
+
+	dave[item].count += 1;
+	dave[item].lastTime = Date.now();
+	return dave[item].count;
+}
+
+function hasPendingBabyTransfer(dave) {
+	return dave?.pendingBabyTransfer
+		&& typeof dave.pendingBabyTransfer.targetId === "string"
+		&& Number.isFinite(dave.pendingBabyTransfer.time)
+		&& Date.now() - dave.pendingBabyTransfer.time <= BABY_TRANSFER_EXPIRATION;
 }
 
 export function registerHandlers(socket, daves, io) {
@@ -33,6 +52,62 @@ export function registerHandlers(socket, daves, io) {
 			state.addTag(source, "peppercon");
 		}
 		io.emit("update");
+	});
+
+	socket.on("startReceiveBaby", (sourceId, targetId, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
+		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const source = daves[sourceId];
+		const target = daves[targetId];
+		if (!source || !target || sourceId === targetId || target.isBot || !inRange(source, target) || state.getAmt(target, BABY_ITEM) < 1) {
+			respond({ ok: false, error: "baby unavailable" });
+			return;
+		}
+
+		source.pendingBabyTransfer = {
+			targetId,
+			time: Date.now()
+		};
+		respond({ ok: true });
+	});
+
+	socket.on("finishReceiveBaby", (sourceId, won, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
+		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const source = daves[sourceId];
+		if (!hasPendingBabyTransfer(source)) {
+			respond({ ok: false, error: "baby transfer unavailable" });
+			return;
+		}
+
+		const { targetId } = source.pendingBabyTransfer;
+		const target = daves[targetId];
+		delete source.pendingBabyTransfer;
+
+		if (!won) {
+			source.babiesLost = (source.babiesLost ?? 0) + 1;
+			io.emit("update");
+			respond({ ok: true, won: false, transferred: false });
+			return;
+		}
+
+		if (!target || !inRange(source, target) || !spendItem(target, BABY_ITEM)) {
+			respond({ ok: false, error: "baby unavailable" });
+			return;
+		}
+
+		grantItem(source, BABY_ITEM);
+		source.babiesReceived = (source.babiesReceived ?? 0) + 1;
+		io.emit("update");
+		respond({ ok: true, won: true, transferred: true });
 	});
 
 	socket.on("eatTaco", (sourceId) => {

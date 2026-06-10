@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Plastic Baby Pass</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<a id="backLink" href="/" class="back-link">< Back</a>
+		<section class="panel">
+			<div class="section-title">Plastic Baby Pass</div>
+			<div id="babyPassMount"></div>
+			<div id="babyPassDone" class="baby-pass-done" hidden>
+				<button id="returnButton" type="button">Return</button>
+			</div>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="baby-pass.js"></script>
+</body>
+</html>

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { canStartDaveRave, countDavesInArea, summarizeDave, getInteraction, getLinkedDaveSummaries, removeFragment } from '../utils/players.js';
 import { getRange } from '../public/utils/distance.js';
+import { hasPlasticBaby } from '../public/utils/playersUI.js';
 
 test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 	const summary = summarizeDave({
@@ -61,6 +62,26 @@ test('getLinkedDaveSummaries returns linked users in saved order', () => {
 	]);
 });
 
+test('hasPlasticBaby detects baby inventory for online list badges', () => {
+	const baby = '👶';
+
+	assert.equal(hasPlasticBaby({ name: 'No Baby Dave' }), false);
+	assert.equal(hasPlasticBaby({
+		name: 'Baby Dave',
+		[baby]: {
+			count: 1,
+			lastTime: Date.now()
+		}
+	}), true);
+	assert.equal(hasPlasticBaby({
+		name: 'Former Baby Dave',
+		[baby]: {
+			count: 0,
+			lastTime: Date.now()
+		}
+	}), false);
+});
+
 test('getInteraction exposes pepper pickup for pepper-named users', () => {
 	const me = {
 		userId: 'source',
@@ -79,6 +100,31 @@ test('getInteraction exposes pepper pickup for pepper-named users', () => {
 
 	assert.equal(details.availableActions.hasPepper, true);
 	assert.equal(details.availableActions.canGetPepper, true);
+});
+
+test('getInteraction exposes baby receiving for in-range users with babies', () => {
+	const baby = '👶';
+	const me = {
+		userId: 'source',
+		name: 'Source',
+		lat: 41,
+		lng: -87
+	};
+	const target = {
+		userId: 'target',
+		name: 'Baby Target',
+		lat: 41,
+		lng: -87,
+		[baby]: {
+			count: 1,
+			lastTime: Date.now()
+		}
+	};
+
+	const details = getInteraction(me, target);
+
+	assert.equal(details.availableActions.hasBaby, true);
+	assert.equal(details.availableActions.canReceiveBaby, true);
 });
 
 test('getInteraction respects pepper pickup cooldown', () => {

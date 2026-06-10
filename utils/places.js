@@ -19,8 +19,13 @@ import { removeFragment } from './players.js';
 
 const HOTDOG_ITEM = "🌭";
 const DRINK_ITEM = "🍺";
+const COCKTAIL_ITEM = "🍸";
+const DRINK_ITEMS = new Set([DRINK_ITEM, COCKTAIL_ITEM, "🍷", "🥂", "🍹", "🍾", "🫖"]);
 const PEPPER_ITEM = "🌶️";
 const BABY_ITEM = "👶";
+const BABY_LOSS_DRINK_CHANCE = 0.2;
+const PLASTIC_BABY_PASS_CHANCE = 0.5;
+const PLASTIC_BABY_PASS_EXPIRATION = 5 * 60 * 1000;
 const LINECON_TAG = "linecon";
 const TOO_MANY_ITEM_THRESHOLD = 7;
 
@@ -42,6 +47,10 @@ function firstEmoji(value = "") {
 	return [...value].find(char => /\p{Extended_Pictographic}/u.test(char));
 }
 
+function isDrinkItem(item) {
+	return DRINK_ITEMS.has(item);
+}
+
 function grantFragment(dave) {
 	if (!Array.isArray(dave.fragmentsCollected)) {
 		dave.fragmentsCollected = [];
@@ -60,12 +69,28 @@ function grantItemReward(dave, item, count = 1) {
 	return dave[item].count;
 }
 
-function grantChallengeReward(dave, reward) {
+function maybeLoseBabyAfterDrink(dave, logEvent, random = Math.random) {
+	if (state.getAmt(dave, BABY_ITEM) < 1 || random() >= BABY_LOSS_DRINK_CHANCE) {
+		return false;
+	}
+
+	dave[BABY_ITEM].count -= 1;
+	dave.babiesLost = (dave.babiesLost ?? 0) + 1;
+	logEvent(`Where's your baby, ${dave.name}?`, {
+		userId: dave.userId
+	});
+	return true;
+}
+
+function grantChallengeReward(dave, reward, logEvent = () => {}, random = Math.random) {
 	if (reward?.type === "item") {
 		const item = reward.item;
 		const count = grantItemReward(dave, item);
-		if (item === DRINK_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
+		if (isDrinkItem(item) && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "GDIK");
+		}
+		if (isDrinkItem(item)) {
+			maybeLoseBabyAfterDrink(dave, logEvent, random);
 		}
 		if (item === HOTDOG_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "Timmy");
@@ -77,7 +102,16 @@ function grantChallengeReward(dave, reward) {
 	return reward?.label ?? "a fragment";
 }
 
-export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}, awardDodCommendations = () => {}) {
+function shouldInvokePlasticBabyPass(dave, random = Math.random, canRespond = true) {
+	return canRespond && state.getAmt(dave, BABY_ITEM) === 0 && random() < PLASTIC_BABY_PASS_CHANCE;
+}
+
+function hasPendingPlasticBabyPass(dave) {
+	return Number.isFinite(dave?.pendingPlasticBabyPassTime)
+		&& Date.now() - dave.pendingPlasticBabyPassTime <= PLASTIC_BABY_PASS_EXPIRATION;
+}
+
+export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () => {}, awardDodCommendations = () => {}, random = Math.random) {
 	socket.on("dropDavePoint", (sourceId) => {
 		//console.log("dropDavePoint");
 		if (sourceId !== socket.userId) {
@@ -217,9 +251,13 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			return;
 		}
 
+		const drinkCountBefore = state.getAmt(dave, DRINK_ITEM);
 		const count = state.add(dave, DRINK_ITEM);
 		if (count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "GDIK");
+		}
+		if (count > drinkCountBefore) {
+			maybeLoseBabyAfterDrink(dave, logEvent, random);
 		}
 
 		logEvent(`${dave.name} just parked on the sidewalk.`, {
@@ -229,8 +267,10 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		io.emit("update");
 	});
 
-	socket.on("claimPlaceFragmentChallenge", (sourceId, placeId, action, questionId, answer) => {
+	socket.on("claimPlaceFragmentChallenge", (sourceId, placeId, action, questionId, answer, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
 		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
 			return;
 		}
 
@@ -238,13 +278,16 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		const place = savedPlaces[placeId];
 		const challenge = getPlaceFragmentChallengeForAction(action);
 		if (!dave || !place || !challenge || !rangesOverlap(dave, place)) {
+			respond({ ok: false, error: "challenge unavailable" });
 			return;
 		}
 		if (getPlaceFragmentChallengeForEmoji(firstEmoji(place.name))?.action !== challenge.action) {
+			respond({ ok: false, error: "challenge mismatch" });
 			return;
 		}
 		const question = getPlaceChallengeQuestion(action, questionId);
 		if (!question || !canAttemptPlaceFragmentChallenge(dave, challenge)) {
+			respond({ ok: false, error: "challenge unavailable" });
 			return;
 		}
 		const isCorrect = isCorrectPlaceFragmentAnswer(action, answer, questionId);
@@ -255,12 +298,18 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			if (action === "hackerJeopardy") {
 				io.emit("update");
 			}
+			respond({ ok: false, correct: false });
 			return;
 		}
 
-		const rewardLabel = grantChallengeReward(dave, question.reward ?? challenge.reward);
+		const plasticBabyPass = action === "hackerJeopardy" && shouldInvokePlasticBabyPass(dave, random, typeof callback === "function");
+		const rewardLabel = grantChallengeReward(dave, question.reward ?? challenge.reward, logEvent, random);
 		if (action === "hackerJeopardy") {
-			grantItemReward(dave, BABY_ITEM);
+			if (plasticBabyPass) {
+				dave.pendingPlasticBabyPassTime = Date.now();
+			} else {
+				grantItemReward(dave, BABY_ITEM);
+			}
 		} else {
 			dave[challenge.cooldownKey] = Date.now();
 		}
@@ -269,6 +318,36 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			placeId
 		});
 		io.emit("update");
+		respond({ ok: true, correct: true, plasticBabyPass });
+	});
+
+	socket.on("finishPlasticBabyPass", (sourceId, won, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
+		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const dave = daves[sourceId];
+		if (!hasPendingPlasticBabyPass(dave)) {
+			respond({ ok: false, error: "plastic baby pass unavailable" });
+			return;
+		}
+
+		delete dave.pendingPlasticBabyPassTime;
+		if (!won) {
+			dave.babiesLost = (dave.babiesLost ?? 0) + 1;
+			io.emit("update");
+			respond({ ok: true, won: false, granted: false });
+			return;
+		}
+
+		grantItemReward(dave, BABY_ITEM);
+		logEvent(`${dave.name} secured a plastic baby with chopsticks.`, {
+			userId: dave.userId
+		});
+		io.emit("update");
+		respond({ ok: true, won: true, granted: true });
 	});
 
 	socket.on("claimTacoGame", (sourceId, placeId, questionId, answer) => {
@@ -299,6 +378,44 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		io.emit("update");
 	});
 
+	socket.on("finishDrinkGame", (sourceId, placeId, won, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
+		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		if (!dave || !place || firstEmoji(place.name) !== COCKTAIL_ITEM || !rangesOverlap(dave, place)) {
+			respond({ ok: false, error: "drink game unavailable" });
+			return;
+		}
+		if (!won) {
+			respond({ ok: true, won: false, granted: false });
+			return;
+		}
+		if (!state.canGet(dave, DRINK_ITEM)) {
+			respond({ ok: false, error: "drink cooldown active" });
+			return;
+		}
+
+		const drinkCountBefore = state.getAmt(dave, DRINK_ITEM);
+		const count = state.add(dave, DRINK_ITEM);
+		if (count >= TOO_MANY_ITEM_THRESHOLD) {
+			state.addTag(dave, "GDIK");
+		}
+		if (count > drinkCountBefore) {
+			maybeLoseBabyAfterDrink(dave, logEvent, random);
+		}
+		logEvent(`${dave.name} caught a drink at ${place.name}.`, {
+			userId: dave.userId,
+			placeId
+		});
+		io.emit("update");
+		respond({ ok: true, won: true, granted: true });
+	});
+
 	socket.on("getItem", (sourceId, item) => {
 		if (sourceId !== socket.userId) {
 			return;
@@ -308,13 +425,17 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		if (!dave) {
 			return;
 		}
+		const itemCountBefore = state.getAmt(dave, item);
 		const count = state.add(dave, item); 
 		//console.log("GETITEM: " + item + " => " + count);
 		if (item == HOTDOG_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "Timmy");
 		}
-		if (item == DRINK_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
+		if (isDrinkItem(item) && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "GDIK");
+		}
+		if (isDrinkItem(item) && count > itemCountBefore) {
+			maybeLoseBabyAfterDrink(dave, logEvent, random);
 		}
 		if (item == PEPPER_ITEM && count >= TOO_MANY_ITEM_THRESHOLD) {
 			state.addTag(dave, "peppercon");

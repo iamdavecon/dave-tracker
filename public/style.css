@@ -362,6 +362,22 @@ header h1 {
 	margin-bottom: 10px;
 }
 
+.receive-baby-row {
+	cursor: pointer;
+	padding: 8px;
+	margin-inline: -8px;
+	border: 1px solid rgba(255, 215, 0, 0.22);
+	border-radius: 6px;
+	transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.receive-baby-row:hover,
+.receive-baby-row:focus-visible {
+	background: rgba(255, 215, 0, 0.08);
+	border-color: rgba(255, 215, 0, 0.65);
+	outline: none;
+}
+
 .label {
 	color: #666;
 }
@@ -824,6 +840,22 @@ opacity: 0.3;
     background: rgba(79, 195, 247, 0.3); /* Lighter blue for active state */
 }
 
+.online-dave-name {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+
+.online-dave-baby {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	line-height: 1;
+	filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.35));
+}
+
 /* Styles for in-range items (subtle) */
 .tappable-list-item.in-range {
     background: #3a4e57; /* Muted grayish-green background */
@@ -1030,6 +1062,167 @@ opacity: 0.3;
 
 .map-pill.you {
 	animation: pulse 1.8s infinite;
+}
+
+.plastic-baby-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	display: grid;
+	place-items: center;
+	background:
+		repeating-linear-gradient(
+			135deg,
+			rgba(255, 215, 0, 0.16) 0,
+			rgba(255, 215, 0, 0.16) 12px,
+			rgba(255, 92, 92, 0.14) 12px,
+			rgba(255, 92, 92, 0.14) 24px
+		),
+		rgba(0, 0, 0, 0.84);
+}
+
+.plastic-baby-page-game {
+	width: 100%;
+}
+
+.plastic-baby-stage {
+	position: relative;
+	width: min(92vw, 560px);
+	height: min(74vh, 460px);
+	min-height: 320px;
+	overflow: hidden;
+	border: 2px solid #ffd700;
+	background: #090909;
+	box-shadow: 0 0 32px rgba(255, 215, 0, 0.28);
+}
+
+.plastic-baby-page-game .plastic-baby-stage {
+	width: 100%;
+	height: min(68vh, 460px);
+}
+
+.plastic-baby-warning,
+.plastic-baby-status {
+	position: absolute;
+	left: 16px;
+	right: 16px;
+	z-index: 2;
+	text-align: center;
+	pointer-events: none;
+}
+
+.plastic-baby-warning {
+	top: 16px;
+	color: #ffd700;
+	font-size: 18px;
+	font-weight: 900;
+}
+
+.plastic-baby-actor {
+	position: absolute;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	color: #fff;
+	font-size: 52px;
+	pointer-events: none;
+	transform: translate(-50%, -50%);
+	transition:
+		left 420ms ease-in-out,
+		top 420ms ease-in-out;
+	filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.24));
+}
+
+.plastic-baby-passer {
+	left: 24%;
+	top: 46%;
+}
+
+.plastic-baby-receiver {
+	left: 76%;
+	top: 46%;
+}
+
+.plastic-baby-chopsticks {
+	display: inline-block;
+	font-size: 42px;
+	transform: rotate(-18deg);
+}
+
+.plastic-baby-receiver .plastic-baby-chopsticks {
+	transform: rotate(18deg);
+}
+
+.plastic-baby-status {
+	bottom: 16px;
+	color: #f0f0f0;
+	font-size: 14px;
+}
+
+.plastic-baby-catch {
+	position: absolute;
+	left: 37%;
+	top: 44%;
+	z-index: 2;
+	width: 48px;
+	height: 48px;
+	margin: 0;
+	padding: 0;
+	border-radius: 50%;
+	border-color: #ffd700;
+	font-size: 28px;
+	line-height: 1;
+	transform: translate(-50%, -50%);
+	transition:
+		left 420ms ease-in-out,
+		top 420ms ease-in-out,
+		transform 180ms ease,
+		background 180ms ease;
+}
+
+.plastic-baby-catch.caught {
+	background: #ffd700;
+	transform: translate(-50%, -50%) scale(1.18);
+}
+
+.plastic-baby-catch.dropped {
+	background: #2a2a2a;
+	filter: grayscale(1);
+	transform: translate(-50%, -50%) rotate(18deg) scale(0.86);
+}
+
+.baby-pass-done {
+	margin-top: 14px;
+}
+
+.drink-game-head {
+	display: grid;
+	gap: 8px;
+	margin-bottom: 12px;
+	color: #aaa;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+#drinkMeters {
+	color: #5cff9d;
+	font-weight: 700;
+}
+
+.drink-game-canvas {
+	display: block;
+	width: 100%;
+	height: 520px;
+	max-height: 70vh;
+	border: 2px solid #333;
+	background: #080808;
+	touch-action: none;
+	cursor: crosshair;
+}
+
+.drink-game-done {
+	margin-top: 14px;
 }
 
 @keyframes pulse {

@@ -6,6 +6,7 @@ import { haversineDistance, inRange } from "../public/utils/distance.js";
 const PEPPER_ITEM = "🌶️";
 const PEPPER_RE = /🌶️?/u;
 const TACO_ITEM = "🌮";
+const BABY_ITEM = "👶";
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
 
 function getDisplayTags(dave, places = {}) {
@@ -187,6 +188,8 @@ export function getInteraction(me, dave, allDaves = {}, places = {}) {
 	daveDetails.availableActions.pepperCooldownRemaining = daveDetails.availableActions.hasPepper
 		? state.getCooldownRemaining(me, PEPPER_ITEM)
 		: 0;
+	daveDetails.availableActions.hasBaby = !daveDetails.isMe && state.getAmt(dave, BABY_ITEM) > 0;
+	daveDetails.availableActions.canReceiveBaby = daveDetails.availableActions.hasBaby && !dave.isBot && inRange(me, dave);
 	daveDetails.availableActions.canEatTaco = daveDetails.isMe && state.getAmt(me, TACO_ITEM) > 0;
 	daveDetails.availableActions.tacoRangeBoostRemaining = Number.isFinite(me?.tacoRangeBoostUntil)
 		? Math.max(0, me.tacoRangeBoostUntil - Date.now())

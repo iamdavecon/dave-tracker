@@ -128,6 +128,8 @@ const DOD_REWARD_ITEMS = Object.freeze({
 	hotdog: "🌭",
 	drink: "🍺"
 });
+const BABY_ITEM = "👶";
+const BABY_LOSS_DRINK_CHANCE = 0.2;
 
 const DOD_REWARD_LABELS = Object.freeze({
 	[DOD_REWARD_ITEMS.taco]: "Taco",
@@ -173,6 +175,25 @@ function addItemReward(dave, item, count = 1) {
 
 	dave[item].count += count;
 	dave[item].lastTime = Date.now();
+
+	if (item === DOD_REWARD_ITEMS.drink) {
+		for (let index = 0; index < count; index += 1) {
+			maybeLoseBabyAfterDrink(dave);
+		}
+	}
+}
+
+function maybeLoseBabyAfterDrink(dave, random = Math.random) {
+	if (state.getAmt(dave, BABY_ITEM) < 1 || random() >= BABY_LOSS_DRINK_CHANCE) {
+		return false;
+	}
+
+	dave[BABY_ITEM].count -= 1;
+	dave.babiesLost = (dave.babiesLost ?? 0) + 1;
+	logEvent(`Where's your baby, ${dave.name}?`, {
+		userId: dave.userId
+	});
+	return true;
 }
 
 function getDodApplicationRewards(application) {

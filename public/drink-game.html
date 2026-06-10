@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Get a Drink</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<a id="backLink" href="/" class="back-link">< Back</a>
+		<section class="panel">
+			<div class="section-title">Get a Drink</div>
+			<div class="drink-game-head">
+				<div id="drinkStatus">Click or tap to place your cup under the pour.</div>
+				<div id="drinkMeters">Fill 0% | Spill 0%</div>
+			</div>
+			<canvas id="drinkCanvas" class="drink-game-canvas" width="420" height="520"></canvas>
+			<div id="drinkDone" class="drink-game-done" hidden>
+				<button id="returnButton" type="button">Return</button>
+			</div>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="drink-game.js"></script>
+</body>
+</html>

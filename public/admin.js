@@ -138,6 +138,11 @@ document.addEventListener("click", (e) => {
 		return;
 	}
 
+	if (action === "invokePlasticBabyPass") {
+		window.location.href = `/baby-pass.html?returnTo=${encodeURIComponent(window.location.href)}`;
+		return;
+	}
+
 	if (action === "saveUsers") {
 		callAdminEndpoint(
 			"/api/admin/save-users",

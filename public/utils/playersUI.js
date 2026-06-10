@@ -2,9 +2,13 @@ import { getUserId } from './id.js';
 import { inRange, getRange } from './distance.js';
 import * as state from "./state.js";
 
-const userId = getUserId();
+const BABY_ITEM = "👶";
 const playerMarkers = {};
 let radar = null;
+
+function getCurrentUserId() {
+	return getUserId();
+}
 
 function updateMarker(dave) {
 	const stateClass = state.getStateClass(dave);
@@ -26,6 +30,7 @@ function updateMarker(dave) {
 
 	//L.marker([dave.lat, dave.lng], { title: dave.name }).addTo(map);
 	marker.on("click", () => {
+		const userId = getCurrentUserId();
 		window.location.href = `/player.html?id=${encodeURIComponent(dave.userId)}&viewerId=${encodeURIComponent(userId)}`;
 	});
 
@@ -39,7 +44,7 @@ export function cullNotSeen(map, seen) {
 		}
 	}
 
-	if (!seen.has(userId) && radar) {
+	if (!seen.has(getCurrentUserId()) && radar) {
 		map.removeLayer(radar);
 		radar = null;
 	}
@@ -76,6 +81,10 @@ function updateRadar(map, dave, me) {
 	}
 }
 
+export function hasPlasticBaby(dave) {
+	return state.getAmt(dave, BABY_ITEM) > 0;
+}
+
 export function addPlayer(map, me, dave, i, options = {}) {
 	if (dave.lat == null || dave.lng == null) {
 		console.log("\tinvalid user: " + dave.userId);
@@ -83,6 +92,7 @@ export function addPlayer(map, me, dave, i, options = {}) {
 	}
 
 	const stateString = state.getState(dave).toUpperCase();
+	const userId = getCurrentUserId();
 	//console.log("UPDATE: " + dave.userId);
 	if (!playerMarkers[dave.userId]) {
 		//console.log("\tnew marker: " + dave.userId);
@@ -122,7 +132,20 @@ export function addPlayer(map, me, dave, i, options = {}) {
 		// Left side: Name
 		const name = document.createElement("span");
 		name.textContent = dave.name;
-		container.appendChild(name);
+		const nameWrap = document.createElement("span");
+		nameWrap.className = "online-dave-name";
+		nameWrap.appendChild(name);
+
+		if (hasPlasticBaby(dave)) {
+			const babyIcon = document.createElement("span");
+			babyIcon.className = "online-dave-baby";
+			babyIcon.textContent = BABY_ITEM;
+			babyIcon.title = "Has a plastic baby";
+			babyIcon.setAttribute("aria-label", "Has a plastic baby");
+			nameWrap.appendChild(babyIcon);
+		}
+
+		container.appendChild(nameWrap);
 
 		// Middle: State
 		const stateEl = document.createElement("span");
