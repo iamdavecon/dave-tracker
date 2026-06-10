@@ -17,6 +17,7 @@ import { spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
 import { applyLineconBump } from "./utils/linecon.js";
 import { addCommendations } from "./public/utils/dod.js";
+import { resetAllCooldowns } from "./utils/cooldowns.js";
 
 
 // --- HTTP server ---
@@ -440,6 +441,17 @@ app.post('/api/admin/update-places', async (req, res) => {
 	res.json({ ok: true, changed });
 });
 
+app.post('/api/admin/reset-cooldowns', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const users = getUsers(daves);
+	const resetCount = resetAllCooldowns(users);
+	const changed = await saveUsers(daves, savedPlaces);
+	io.emit("update");
+	res.json({ ok: true, resetCount, changed });
+});
+
 app.post('/api/link-dave', async (req, res) => {
 	const { sourceId, targetId } = req.body ?? {};
 	const localDaves = getUsers(daves);
@@ -535,9 +547,10 @@ app.get("/api/leaderboard", (req, res) => {
 		(acc, d) => {
 			acc.totalVirus += d.teamVirus || 0;
 			acc.totalAntivirus += d.teamAntivirus || 0;
+			acc.totalDaveRaves += d.daveravesStarted || 0;
 			return acc;
 		},
-		{ totalVirus: 0, totalAntivirus: 0 }
+		{ totalVirus: 0, totalAntivirus: 0, totalDaveRaves: 0 }
 	);
 
 	//console.log("leaderboard: " + JSON.stringify(leaderboard, null, 2));

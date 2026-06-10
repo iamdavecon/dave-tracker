@@ -46,7 +46,6 @@ async function loadAdmin() {
 		return;
 	}
 
-	statusEl.textContent = "";
 	setButtonsEnabled(true);
 }
 
@@ -61,7 +60,16 @@ async function callAdminEndpoint(path, pendingText, doneText, payload = {}, opti
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ userId, ...payload })
 		});
-		result = await res.json();
+		const contentType = res.headers.get("content-type") || "";
+		if (contentType.includes("application/json")) {
+			result = await res.json();
+		} else {
+			const body = await res.text();
+			result = {
+				ok: false,
+				error: `Admin action failed (${res.status}): ${body.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || "non-JSON response"}`
+			};
+		}
 	} catch (error) {
 		const message = `Admin action failed: ${error.message}`;
 		statusEl.textContent = message;
@@ -143,6 +151,15 @@ document.addEventListener("click", (e) => {
 		return;
 	}
 
+	if (action === "resetCooldowns") {
+		callAdminEndpoint(
+			"/api/admin/reset-cooldowns",
+			"Resetting cooldowns...",
+			(result) => `Reset ${result.resetCount ?? 0} cooldown${result.resetCount === 1 ? "" : "s"}.`
+		);
+		return;
+	}
+
 	if (action === "saveUsers") {
 		callAdminEndpoint(
 			"/api/admin/save-users",
@@ -221,8 +238,15 @@ document.addEventListener("click", (e) => {
 	}
 });
 
-socket.on("update", () => {
-	loadAdmin();
+socket.on("update", async () => {
+	const pendingMessage = statusEl.textContent;
+	await loadAdmin();
+
+	if (pendingMessage === "Increasing rank...") {
+		statusEl.textContent = "Rank increased.";
+	} else if (pendingMessage === "Decreasing rank...") {
+		statusEl.textContent = "Rank decreased.";
+	}
 });
 
 loadAdmin();

@@ -52,6 +52,18 @@
 
     .virus { color: #ff5c5c; }
     .antivirus { color: #5cff9d; }
+    .dave-raves { color: #35d6ff; }
+
+    .dave-raves a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(53, 214, 255, 0.55);
+    }
+
+    .dave-raves a:hover {
+      color: #9fffe0;
+      border-bottom-color: currentColor;
+    }
 
     .name-cell {
       display: flex;
@@ -318,6 +330,9 @@
 	  async function loadLeaderboard() {
 			    const params = new URLSearchParams(window.location.search);
 			    const myUserId = params.get("userId");
+			    const raveHref = myUserId
+				    ? `/dave-rave.html?userId=${encodeURIComponent(myUserId)}`
+				    : "/dave-rave.html";
 
 			    const res = await fetch(`/api/leaderboard?viewerId=${encodeURIComponent(myUserId || "")}`);
 			    const payload = await res.json();
@@ -327,6 +342,7 @@
 			    // ---------------- SUMMARY ----------------
 			    const virus = summary.totalVirus || 0;
 			    const antivirus = summary.totalAntivirus || 0;
+			    const daveRaves = summary.totalDaveRaves || 0;
 
 			    let statusText = "Balanced conflict";
 			    if (virus > antivirus) statusText = "Virus is currently dominating the system";
@@ -337,6 +353,7 @@
 			 <div class="summary-left">
 			 <div class="virus">Total Virus Influence: ${virus}</div>
 			 <div class="antivirus">Total DaveCon Control: ${antivirus}</div>
+			 <div class="dave-raves"><a href="${raveHref}">Total DaveRaves: ${daveRaves}</a></div>
 		 </div>
 
 		 <div class="summary-status">

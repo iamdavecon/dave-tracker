@@ -1,0 +1,350 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DaveRaves</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    :root {
+      --bg: #06070b;
+      --panel: rgba(14, 18, 28, 0.84);
+      --ink: #edf7ff;
+      --muted: #8ca3ad;
+      --line: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 18%, rgba(53, 214, 255, 0.20), transparent 28%),
+        radial-gradient(circle at 78% 22%, rgba(92, 255, 157, 0.15), transparent 24%),
+        linear-gradient(135deg, #050608 0%, #101018 52%, #06070b 100%);
+      overflow-x: hidden;
+    }
+
+    .rave-page {
+      width: min(1100px, calc(100% - 32px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 30px 0 48px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 22px;
+    }
+
+    .rave-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 16px;
+    }
+
+    .rave-title {
+      margin: 0;
+      font-size: clamp(28px, 6vw, 76px);
+      line-height: 0.9;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .rave-count {
+      min-width: 116px;
+      text-align: right;
+    }
+
+    .rave-count strong {
+      display: block;
+      font-size: clamp(32px, 8vw, 86px);
+      line-height: 0.9;
+      color: #35d6ff;
+      text-shadow: 0 0 18px rgba(53, 214, 255, 0.9);
+    }
+
+    .rave-count span {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .rave-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .rave-actions a {
+      color: #9fffe0;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(159, 255, 224, 0.55);
+    }
+
+    .rave-actions a:hover {
+      color: #ffffff;
+      border-bottom-color: currentColor;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 460px;
+      border: 1px solid var(--line);
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        var(--panel);
+      background-size: 38px 38px;
+      overflow: hidden;
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at center, transparent 0 24%, rgba(0, 0, 0, 0.20) 65%, rgba(0, 0, 0, 0.65) 100%);
+      pointer-events: none;
+    }
+
+    .glowsticks {
+      position: relative;
+      min-height: inherit;
+      width: 100%;
+      height: 100%;
+    }
+
+    .raver {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: 68px;
+      height: 108px;
+      transform: translate(-50%, -50%) rotate(var(--body-rotation));
+      animation: dance 2.2s ease-in-out infinite;
+      animation-delay: var(--delay);
+    }
+
+    .glowstick {
+      position: absolute;
+      left: 50%;
+      bottom: 42px;
+      width: 11px;
+      height: 74px;
+      border-radius: 999px;
+      background: var(--stick-color);
+      box-shadow:
+        0 0 8px var(--stick-color),
+        0 0 20px var(--stick-color),
+        0 0 38px var(--stick-color);
+      transform: translateX(13px) rotate(var(--rotation));
+      transform-origin: 50% 92%;
+      animation: pulse 1.7s ease-in-out infinite;
+      animation-delay: var(--delay);
+      z-index: 1;
+    }
+
+    .glowstick::before,
+    .glowstick::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      width: 16px;
+      height: 7px;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .glowstick::before {
+      top: -2px;
+    }
+
+    .glowstick::after {
+      bottom: -2px;
+    }
+
+    .person {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      font-size: 38px;
+      line-height: 1;
+      filter:
+        drop-shadow(0 0 8px rgba(255, 255, 255, 0.22))
+        drop-shadow(0 0 16px var(--stick-color));
+      z-index: 2;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        filter: brightness(0.95);
+        transform: translateX(13px) rotate(var(--rotation)) translateY(0);
+      }
+
+      50% {
+        filter: brightness(1.35);
+        transform: translateX(13px) rotate(var(--rotation)) translateY(-6px);
+      }
+    }
+
+    @keyframes dance {
+      0%, 100% {
+        margin-top: 0;
+      }
+
+      50% {
+        margin-top: -8px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .rave-page {
+        width: min(100% - 20px, 1100px);
+        padding-top: 18px;
+      }
+
+      .rave-top,
+      .rave-actions {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .rave-count {
+        text-align: left;
+      }
+
+      .stage {
+        min-height: 430px;
+      }
+
+      .raver {
+        width: 58px;
+        height: 92px;
+      }
+
+      .glowstick {
+        height: 62px;
+        bottom: 36px;
+      }
+
+      .person {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="rave-page">
+    <section class="rave-top">
+      <h1 class="rave-title">DaveRave</h1>
+      <div class="rave-count" aria-live="polite">
+        <strong id="raveCount">0</strong>
+        <span id="raveCountLabel">Total Raves</span>
+      </div>
+    </section>
+
+    <section class="rave-actions">
+      <a id="leaderboardLink" href="/leaderboard.html">Back to leaderboard</a>
+      <span id="updated">loading</span>
+    </section>
+
+    <section class="stage" aria-label="DaveRave glowstick count">
+      <div id="glowsticks" class="glowsticks"></div>
+    </section>
+  </main>
+
+  <script>
+    const colors = ["#35d6ff", "#5cff9d", "#ffd700", "#ff5c5c", "#f472ff", "#9fffe0"];
+    const people = ["\u{1f9d1}", "\u{1f468}", "\u{1f469}", "\u{1f9d4}", "\u{1f471}", "\u{1f472}", "\u{1f473}", "\u{1f9d5}", "\u{1f46e}", "\u{1f477}", "\u{1f482}", "\u{1f9d9}", '💃', '🕺', '🙋', '👯', '🤖', '💃', '🕺', '🙋', '👯', '🤖'];
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get("userId");
+    const proximalDaves = Number.parseInt(params.get("proximalDaves") || "", 10);
+    const hasProximalDaves = Number.isFinite(proximalDaves) && proximalDaves >= 0;
+    const leaderboardLink = document.getElementById("leaderboardLink");
+    if (userId) {
+      leaderboardLink.href = `/leaderboard.html?userId=${encodeURIComponent(userId)}`;
+    }
+
+    function randomUnit(seed) {
+      const value = Math.sin(seed * 999.937) * 10000;
+      return value - Math.floor(value);
+    }
+
+    function renderGlowsticks(value, label) {
+      const count = Math.max(0, Math.floor(Number(value) || 0));
+      const glowsticks = document.getElementById("glowsticks");
+      document.getElementById("raveCount").textContent = count;
+      document.getElementById("raveCountLabel").textContent = label;
+      glowsticks.innerHTML = "";
+
+      for (let i = 0; i < count; i += 1) {
+        const seed = (count + 11) * (i + 3);
+        const color = colors[i % colors.length];
+        const raver = document.createElement("span");
+        raver.className = "raver";
+        raver.style.setProperty("--stick-color", color);
+        raver.style.setProperty("--x", `${8 + randomUnit(seed) * 84}%`);
+        raver.style.setProperty("--y", `${12 + randomUnit(seed + 17) * 76}%`);
+        raver.style.setProperty("--body-rotation", `${randomUnit(seed + 29) * 18 - 9}deg`);
+        raver.style.setProperty("--delay", `${(i % 9) * -0.13}s`);
+        raver.setAttribute("aria-hidden", "true");
+
+        const stick = document.createElement("span");
+        stick.className = "glowstick";
+        stick.style.setProperty("--stick-color", color);
+        stick.style.setProperty("--rotation", `${((i * 37) % 70) - 35}deg`);
+        stick.style.setProperty("--delay", `${(i % 9) * -0.13}s`);
+
+        const person = document.createElement("span");
+        person.className = "person";
+        person.textContent = people[Math.floor(randomUnit(seed + 41) * people.length)];
+
+        raver.appendChild(stick);
+        raver.appendChild(person);
+        glowsticks.appendChild(raver);
+      }
+    }
+
+    async function loadDaveRaves() {
+      try {
+        const response = await fetch("/api/leaderboard");
+        const payload = await response.json();
+        const totalDaveRaves = payload?.summary?.totalDaveRaves ?? 0;
+        if (hasProximalDaves) {
+          renderGlowsticks(proximalDaves, "Proximal Daves");
+          const started = Number.parseInt(params.get("daveravesStarted") || "", 10);
+          const totalText = Number.isFinite(started)
+            ? `DaveRaves started by you: ${started}`
+            : `Server DaveRaves: ${totalDaveRaves}`;
+          document.getElementById("updated").textContent =
+            `${totalText} - updated ${new Date().toLocaleTimeString()}`;
+          return;
+        }
+        renderGlowsticks(totalDaveRaves, "Total Raves");
+        document.getElementById("updated").textContent =
+          "updated " + new Date().toLocaleTimeString();
+      } catch (error) {
+        document.getElementById("updated").textContent = "unable to load DaveRaves";
+      }
+    }
+
+    loadDaveRaves();
+    setInterval(loadDaveRaves, 3000);
+  </script>
+</body>
+</html>

@@ -29,6 +29,7 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 		score: 56,
 		teamVirus: 2,
 		teamAntivirus: 13,
+		daveravesStarted: 1,
 		state: 'RESONANT',
 		tags: ['admin', 'dod']
 	});
@@ -43,6 +44,7 @@ test('summarizeDave handles missing optional scoring fields', () => {
 	assert.equal(summary.score, 0);
 	assert.equal(summary.teamVirus, 0);
 	assert.equal(summary.teamAntivirus, 0);
+	assert.equal(summary.daveravesStarted, 0);
 	assert.equal(summary.state, 'UNSTABLE');
 	assert.deepEqual(summary.tags, []);
 });

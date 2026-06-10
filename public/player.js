@@ -97,6 +97,18 @@ function startDaveRave() {
 	socket.emit("startDaveRave", userId);
 }
 
+function redirectToDaveRave(data) {
+	const raveUrl = new URL("/dave-rave.html", window.location.origin);
+	raveUrl.searchParams.set("userId", userId);
+	if (Number.isFinite(data?.davesInArea)) {
+		raveUrl.searchParams.set("proximalDaves", String(data.davesInArea));
+	}
+	if (Number.isFinite(data?.daveravesStarted)) {
+		raveUrl.searchParams.set("daveravesStarted", String(data.daveravesStarted));
+	}
+	window.location.href = raveUrl.toString();
+}
+
 function eatTaco() {
 	const statusEl = document.getElementById("actionStatus");
 	if (statusEl) {
@@ -636,7 +648,7 @@ socket.on('stabilizeResult', (data) => {
 
 socket.on("daveRaveResult", (data) => {
 	if (data.ok) {
-		showDaveRaveAnimation();
+		redirectToDaveRave(data);
 		return;
 	}
 

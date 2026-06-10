@@ -63,6 +63,7 @@ export function summarizeDave(dave, places = {}) {
 		score: score,
 		teamVirus: teamVirus,
 		teamAntivirus: teamAntivirus,
+		daveravesStarted: dave.daveravesStarted || 0,
 		state: state.getState(dave).toUpperCase(),
 		tags
 	};
