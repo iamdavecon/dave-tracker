@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>DaveTracker Fragments</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+<body>
+	<div class="container status-page">
+		<a href="/" class="back-link">< Back</a>
+		<header class="app-header compact-header">
+			<h1>VIRUS GENE ANALYSIS</h1>
+			<div class="subtitle">RECOVERED SEQUENCE VIEWER</div>
+		</header>
+
+		<section class="panel status-metrics">
+			<div class="metric">
+				<span class="metric-label">Your Total</span>
+				<span id="personalFragments" class="metric-value antivirus">0</span>
+			</div>
+			<div class="metric">
+				<span class="metric-label">Sequence Length</span>
+				<span id="sequenceLength" class="metric-value dave-raves">0</span>
+			</div>
+			<div class="metric">
+				<span class="metric-label">Network Total</span>
+				<span id="networkFragments" class="metric-value antivirus">0</span>
+			</div>
+		</section>
+
+		<section class="panel sequence-panel">
+			<div class="sequence-toolbar">
+				<button id="previousChunk" type="button" aria-label="Previous sequence block"><</button>
+				<div class="sequence-position">
+					<span id="chunkLabel">0-0</span>
+					<span id="gcLabel">GC 0%</span>
+				</div>
+				<button id="nextChunk" type="button" aria-label="Next sequence block">></button>
+			</div>
+			<div id="sequenceView" class="sequence-view" tabindex="0" aria-label="Genetic sequence"></div>
+			<div id="sequenceMap" class="sequence-map" aria-label="Sequence navigation"></div>
+		</section>
+	</div>
+
+	<script type="module" src="/fragments.js"></script>
+</body>
+</html>

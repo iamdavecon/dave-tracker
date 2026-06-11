@@ -1,4 +1,4 @@
-import { getFragmentFrom } from '../public/utils/id.js';
+import { getFragmentFrom, recordFragmentCollected } from '../public/utils/id.js';
 import {
 	stabilize,
 	ascendUser,
@@ -32,6 +32,7 @@ function grantBonusFragment(dave) {
 	}
 
 	dave.fragmentsCollected.push(crypto.randomUUID());
+	recordFragmentCollected(dave);
 }
 
 function grantBlackBadgeRaffleTicket(dave, goonId) {

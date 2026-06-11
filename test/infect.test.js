@@ -31,6 +31,21 @@ test('infectTarget infects an unstable target once and notifies them', () => {
 	assert.deepEqual(target.infectedBy, ['source']);
 });
 
+test('infectTarget renames infected bots to Dave', () => {
+	const me = { userId: 'source', infectedUsers: [] };
+	const target = {
+		userId: 'bot-target',
+		name: 'Casey',
+		isBot: true,
+		state: 'unstable',
+		infectedBy: []
+	};
+
+	assert.equal(infectTarget(me, target), true);
+	assert.equal(target.name, 'Dave');
+	assert.equal(target.state, 'infected');
+});
+
 test('infect socket handler emits results, logs successful infections, and broadcasts updates', () => {
 	const handlers = {};
 	const emittedToSocket = [];

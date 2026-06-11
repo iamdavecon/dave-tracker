@@ -40,6 +40,23 @@ document.getElementById('setIdBtn').addEventListener('click', () => {
 
 const leaderboard = document.getElementById("leaderboardLink");
 leaderboard.href = `/leaderboard.html?userId=${encodeURIComponent(userId)}`;
+function linkStatusLabel(valueId, href, linkId) {
+	const valueEl = document.getElementById(valueId);
+	const labelEl = valueEl?.previousElementSibling;
+	if (!labelEl) {
+		return;
+	}
+
+	const link = document.createElement("a");
+	link.id = linkId;
+	link.className = `${labelEl.className} status-link`;
+	link.href = href;
+	link.textContent = labelEl.textContent;
+	labelEl.replaceWith(link);
+}
+
+linkStatusLabel("infectedCount", `/infections.html?userId=${encodeURIComponent(userId)}`, "infectionsLink");
+linkStatusLabel("fragments", `/fragments.html?userId=${encodeURIComponent(userId)}`, "fragmentsLink");
 bindLogEvents(socket);
 
 

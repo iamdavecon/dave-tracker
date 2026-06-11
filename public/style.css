@@ -1179,6 +1179,190 @@ opacity: 0.3;
 
 /**  STATUS PAGES  **/ 
 
+.status-link {
+	color: #5cff9d;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(92, 255, 157, 0.45);
+}
+
+.status-link:hover {
+	color: #9fffe0;
+	border-bottom-color: currentColor;
+}
+
+.status-page {
+	max-width: 1000px;
+}
+
+.compact-header {
+	margin-bottom: 18px;
+}
+
+.biohazard-logo {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 92px;
+	height: 92px;
+	margin: 0;
+	border: 2px solid #ff5c5c;
+	border-radius: 50%;
+	color: #ff5c5c;
+	background:
+		radial-gradient(circle at center, rgba(255, 92, 92, 0.2) 0 32%, transparent 33%),
+		#0b0b0f;
+	box-shadow:
+		0 0 18px rgba(255, 92, 92, 0.36),
+		inset 0 0 18px rgba(255, 92, 92, 0.18);
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+	font-size: 62px;
+	font-weight: 900;
+	line-height: 1;
+	text-shadow: 0 0 16px rgba(255, 92, 92, 0.7);
+}
+
+.biohazard-metric {
+	align-items: center;
+	justify-items: center;
+}
+
+.status-metrics {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.metric {
+	display: grid;
+	gap: 6px;
+	padding: 12px;
+	background: #111118;
+	border: 1px solid #222;
+}
+
+.metric-label {
+	color: #888;
+	font-size: 12px;
+	text-transform: uppercase;
+}
+
+.metric-value {
+	font-size: 30px;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.status-list {
+	display: grid;
+	gap: 6px;
+}
+
+.status-row {
+	display: grid;
+	grid-template-columns: 56px 1fr minmax(64px, auto);
+	align-items: center;
+	gap: 12px;
+	padding: 10px 12px;
+	color: #e5e5e5;
+	text-decoration: none;
+	background: #111118;
+	border: 1px solid #222;
+}
+
+.status-row:hover {
+	background: #1a1a24;
+	text-decoration: none;
+}
+
+.status-row-rank {
+	color: #888;
+}
+
+.status-row-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.status-row-value {
+	font-weight: 800;
+	text-align: right;
+}
+
+.sequence-panel {
+	display: grid;
+	gap: 12px;
+}
+
+.sequence-toolbar {
+	display: grid;
+	grid-template-columns: 44px 1fr 44px;
+	align-items: center;
+	gap: 10px;
+}
+
+.sequence-toolbar button {
+	height: 38px;
+}
+
+.sequence-position {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+	color: #aaa;
+	font-size: 12px;
+	text-transform: uppercase;
+}
+
+.sequence-view {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+	gap: 4px;
+	min-height: 220px;
+	max-height: 54vh;
+	overflow: auto;
+	padding: 12px;
+	background: #08080c;
+	border: 1px solid #222;
+	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.base {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 1;
+	min-width: 18px;
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.base-a { color: #071018; background: #9fffe0; }
+.base-c { color: #071018; background: #35d6ff; }
+.base-g { color: #111; background: #ffd700; }
+.base-t { color: #fff; background: #b71c1c; }
+
+.sequence-map {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(18px, 1fr));
+	gap: 4px;
+}
+
+.sequence-map-tile {
+	height: 12px;
+	min-height: 12px;
+	padding: 0;
+	border-radius: 0;
+	background: #222;
+	border: 1px solid #333;
+}
+
+.sequence-map-tile.active {
+	background: #5cff9d;
+	border-color: #9fffe0;
+}
+
 .player-link {
 	color: #4da6ff;
 	text-decoration: none;
@@ -1416,5 +1600,23 @@ opacity: 0.3;
 
 	.log ul {
 		padding-left: 0;
+	}
+
+	.status-metrics {
+		grid-template-columns: 1fr;
+	}
+
+	.metric-value {
+		font-size: 24px;
+	}
+
+	.status-row {
+		grid-template-columns: 44px 1fr minmax(48px, auto);
+	}
+
+	.biohazard-logo {
+		width: 72px;
+		height: 72px;
+		font-size: 48px;
 	}
 }

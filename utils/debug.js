@@ -1,4 +1,5 @@
 import * as state from "../public/utils/state.js";
+import { recordFragmentCollected, recordInfectionSpread } from "../public/utils/id.js";
 import { isDebugId } from "./debugAccess.js";
 import { markActive } from "./activity.js";
 
@@ -60,6 +61,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		}
 
 		addRandomIds(me, "fragmentsCollected");
+		recordFragmentCollected(me, 10);
 		markActive(me);
 		io.emit("update");
 		callback?.({ ok: true });
@@ -78,6 +80,7 @@ export function registerHandlers(socket, daves, savedPlaces, io) {
 		}
 
 		addRandomIds(me, "infectedUsers");
+		recordInfectionSpread(me, 10);
 		markActive(me);
 		io.emit("update");
 		callback?.({ ok: true });

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>DaveTracker Infections</title>
+	<link rel="stylesheet" href="/style.css" />
+	<link rel="icon" href="/favicon.ico" type="image/x-icon">
+</head>
+<body>
+	<div class="container status-page">
+		<a href="/" class="back-link">< Back</a>
+		<header class="app-header compact-header">
+			<h1>INFECTIONS</h1>
+			<div class="subtitle">TRANSMISSION LEDGER</div>
+		</header>
+
+		<section class="panel status-metrics">
+			<div class="metric">
+				<span class="metric-label">Your Total</span>
+				<span id="personalInfections" class="metric-value virus">0</span>
+			</div>
+			<div class="metric">
+				<span class="metric-label">Network Total</span>
+				<span id="networkInfections" class="metric-value virus">0</span>
+			</div>
+			<div class="metric biohazard-metric">
+				<div class="biohazard-logo" aria-hidden="true">&#9763;</div>
+			</div>
+		</section>
+
+		<section class="log">
+			<div class="log-title">
+				<span>TOP SPREADERS</span>
+				<span id="updated" class="value">SYNCING</span>
+			</div>
+			<div id="infectionRows" class="status-list"></div>
+		</section>
+	</div>
+
+	<script type="module" src="/infections.js"></script>
+</body>
+</html>

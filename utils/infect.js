@@ -1,5 +1,6 @@
 import { infect } from "../public/utils/state.js";
 import { inRange } from "../public/utils/distance.js";
+import { recordInfectionSpread } from "../public/utils/id.js";
 import { getUsers } from './storage.js';
 import { notifyUser } from './sockets.js';
 import { GOON_NAME } from './bots.js';
@@ -21,10 +22,14 @@ export function infectTarget(me, target) {
 	}
 	if (!me.infectedUsers.includes(id) && infect(target)) {
 		me.infectedUsers.push(id);
+		recordInfectionSpread(me);
 		if (!target.infectedBy) {
 			target.infectedBy = [];
 		}
 		target.infectedBy.push(me.userId);
+		if (target.isBot && target.name !== GOON_NAME) {
+			target.name = "Dave";
+		}
 
 		// Notify infected user via socket
 		notifyUser(target, "notifyInfected", { by: me.userId });
@@ -70,9 +75,11 @@ export function registerHandlers(socket, daves, io, logEvent = () => {}) {
 
 		if (success) {
 			markActive(me);
+			/*
 			logEvent(`${me.name} transmitted the mindvirus to ${target.name}.`, {
 				userId: me.userId
 			});
+			*/
 			io.emit("update", { daves });
 		}
 	});

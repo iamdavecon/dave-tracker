@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DAVE_TANGENT_NAME, GOON_NAME, getBotLifetimeMs, getDefaultBotName, hasDaveTangent, spawnBot, updateBots } from '../utils/bots.js';
+import { BOT_NAMES, DAVE_TANGENT_NAME, GOON_NAME, getBotLifetimeMs, getDefaultBotName, hasDaveTangent, spawnBot, updateBots } from '../utils/bots.js';
 
 test('spawnBot creates short-lived bots without future-dating updatedAt', () => {
 	const before = Date.now();
@@ -23,9 +23,11 @@ test('spawnBot supports a DaveTangent variant and detects only live bot instance
 	assert.equal(hasDaveTangent({ realDave: { name: DAVE_TANGENT_NAME } }), false);
 });
 
-test('default bot names sometimes spawn as GOON', () => {
+test('default bot names sometimes spawn as GOON or a random civilian name', () => {
+	assert.equal(BOT_NAMES.length, 64);
 	assert.equal(getDefaultBotName(() => 0), GOON_NAME);
-	assert.equal(getDefaultBotName(() => 0.99), 'CIVILIAN');
+	assert.equal(getDefaultBotName(() => 0.99), 'Wren');
+	assert.equal(getDefaultBotName(() => 0.11), 'Brook');
 });
 
 test('updateBots moves bots without refreshing updatedAt', () => {

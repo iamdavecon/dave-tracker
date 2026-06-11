@@ -1,4 +1,5 @@
 import * as state from "./state.js";
+import { getLifetimeTotal } from "./id.js";
 
 let isEditingName = false;
 
@@ -49,19 +50,10 @@ export function addStateUI(me, nDaves) {
 	stateEl.className = "value pill " + state.getStateClass(me);
 
 	const infectedCountEl = document.getElementById('infectedCount');
-	if (me.infectedUsers) {
-		infectedCountEl.textContent = me.infectedUsers.length; 
-	} else {
-		infectedCountEl.textContent = 0;
-	}
+	infectedCountEl.textContent = getLifetimeTotal(me, "totalInfectionsSpread", "infectedUsers");
 
 	const fragmentsEl = document.getElementById('fragments');
-
-	if (me.fragmentsCollected) {
-		fragmentsEl.textContent = me.fragmentsCollected.length;
-	} else {
-		fragmentsEl.textContent = 0;
-	}
+	fragmentsEl.textContent = getLifetimeTotal(me, "totalFragmentsCollected", "fragmentsCollected");
 
 	updateButtons(me)
 }

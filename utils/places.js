@@ -1,4 +1,5 @@
 import * as state from "../public/utils/state.js";
+import { recordFragmentCollected } from "../public/utils/id.js";
 import { haversineDistance, rangesOverlap } from "../public/utils/distance.js";
 import { getMapData } from "../public/utils/map.js";
 import {
@@ -60,6 +61,7 @@ function grantFragment(dave) {
 	}
 
 	dave.fragmentsCollected.push(crypto.randomUUID());
+	recordFragmentCollected(dave);
 }
 
 function grantItemReward(dave, item, count = 1) {

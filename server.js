@@ -1,6 +1,6 @@
 import { saveUsers, loadUsers, getUsers, getPlaces, replaceSavedData } from './utils/storage.js';
 import * as state from "./public/utils/state.js";
-import { getFragmentFrom } from "./public/utils/id.js";  
+import { getFragmentFrom, getLifetimeTotal, recordFragmentCollected } from "./public/utils/id.js";  
 import { isDebugId } from "./utils/debugAccess.js";
 import { inRange } from "./public/utils/distance.js";
 
@@ -97,6 +97,7 @@ setInterval(async () => {
 
 const MAX_BOTS = 80;
 const DAVE_TANGENT_SPAWN_CHANCE = 0.025;
+const DOD_EXCHANGE_INFECTION_COST = 3;
 
 function randomSpawn() {
 	const nBots = Object.keys(Object.fromEntries(
@@ -569,11 +570,13 @@ app.get("/api/leaderboard", (req, res) => {
 		Number.isFinite(target.lat) &&
 		Number.isFinite(target.lng);
 
-	const leaderboard = Object.entries(localDaves) 
+	const leaderboard = Object.entries(localDaves)
 		.filter(([id, user]) => !user.isBot)
-		.map(([key, d], idx) => { 
+		.map(([key, d], idx) => {
 			return {
 				...summarizeDave(d, savedPlaces),
+				infectionsSpread: getLifetimeTotal(d, "totalInfectionsSpread", "infectedUsers"),
+				fragmentsCollected: getLifetimeTotal(d, "totalFragmentsCollected", "fragmentsCollected"),
 				inRange: canCheckRange(d) ? inRange(viewer, d) : false,
 				linked: linkedDaves.includes(d.userId)
 			};
@@ -590,9 +593,11 @@ app.get("/api/leaderboard", (req, res) => {
 			acc.totalVirus += d.teamVirus || 0;
 			acc.totalAntivirus += d.teamAntivirus || 0;
 			acc.totalDaveRaves += d.daveravesStarted || 0;
+			acc.totalInfectionsSpread += d.infectionsSpread || 0;
+			acc.totalFragmentsCollected += d.fragmentsCollected || 0;
 			return acc;
 		},
-		{ totalVirus: 0, totalAntivirus: 0, totalDaveRaves: 0 }
+		{ totalVirus: 0, totalAntivirus: 0, totalDaveRaves: 0, totalInfectionsSpread: 0, totalFragmentsCollected: 0 }
 	);
 
 	//console.log("leaderboard: " + JSON.stringify(leaderboard, null, 2));
@@ -657,6 +662,9 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 
 	for (let i = 0; i < fragmentCount; i++) {
 		dave.fragmentsCollected.push(crypto.randomUUID());
+	}
+	if (fragmentCount > 0) {
+		recordFragmentCollected(dave, fragmentCount);
 	}
 
 	delete savedPlaces[placeId];
@@ -1039,7 +1047,7 @@ io.on('connection', (socket) => {
 			return;
 		}
 
-		if (!Array.isArray(me.infectedUsers) || me.infectedUsers.length < 5) {
+		if (!Array.isArray(me.infectedUsers) || me.infectedUsers.length < DOD_EXCHANGE_INFECTION_COST) {
 			socket.emit("dodExchangeResult", { ok: false, error: "Insufficient infections for exchange" });
 			return;
 		}
@@ -1048,11 +1056,12 @@ io.on('connection', (socket) => {
 			me.fragmentsCollected = [];
 		}
 
-		me.infectedUsers.splice(0, 5);
+		me.infectedUsers.splice(0, DOD_EXCHANGE_INFECTION_COST);
 		me.fragmentsCollected.push(crypto.randomUUID());
+		recordFragmentCollected(me);
 		markActive(me);
 
-		logEvent(`${me.name} exchanged 5 infections for 1 fragment with the Department of Davefence.`, {
+		logEvent(`${me.name} exchanged ${DOD_EXCHANGE_INFECTION_COST} infections for 1 fragment with the Department of Davefence.`, {
 			userId: me.userId
 		});
 		awardDodCommendations(me, 1, "infection reclassification");

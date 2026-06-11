@@ -2,6 +2,72 @@ import * as state from "../public/utils/state.js";
 
 const BOT_LIFETIME_MS = 2 * 60 * 1000;
 const GOON_SPAWN_CHANCE = 0.1;
+export const BOT_NAMES = [
+	"Alex",
+	"Amari",
+	"Arden",
+	"Avery",
+	"Bailey",
+	"Bellamy",
+	"Blake",
+	"Brook",
+	"Cameron",
+	"Casey",
+	"Charlie",
+	"Dakota",
+	"Devon",
+	"Drew",
+	"Emerson",
+	"Finley",
+	"Frankie",
+	"Gray",
+	"Harper",
+	"Hayden",
+	"Indigo",
+	"Jamie",
+	"Jesse",
+	"Jules",
+	"Jordan",
+	"Kai",
+	"Kendall",
+	"Kit",
+	"Lane",
+	"Lee",
+	"Lennon",
+	"Logan",
+	"London",
+	"Marlow",
+	"Micah",
+	"Morgan",
+	"Noa",
+	"Oakley",
+	"Parker",
+	"Peyton",
+	"Phoenix",
+	"Quinn",
+	"Reese",
+	"Remy",
+	"Riley",
+	"River",
+	"Robin",
+	"Rowan",
+	"Ryan",
+	"Sage",
+	"Sam",
+	"Sawyer",
+	"Scout",
+	"Shawn",
+	"Skyler",
+	"Sloan",
+	"Spencer",
+	"Sunny",
+	"Tatum",
+	"Taylor",
+	"Teagan",
+	"Toby",
+	"Val",
+	"Wren"
+];
 
 export const DAVE_TANGENT_NAME = "DaveTangent";
 export const GOON_NAME = "GOON";
@@ -15,7 +81,10 @@ export function hasDaveTangent(daves = {}) {
 }
 
 export function getDefaultBotName(random = Math.random) {
-	return random() < GOON_SPAWN_CHANCE ? GOON_NAME : "CIVILIAN";
+	if (random() < GOON_SPAWN_CHANCE) {
+		return GOON_NAME;
+	}
+	return BOT_NAMES[Math.floor(random() * BOT_NAMES.length)];
 }
 
 export function spawnBot(me, options = {}) {
