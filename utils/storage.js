@@ -18,6 +18,10 @@ let savedPlaces = {};
 let lastSavedUsersJson = null;
 let lastSavedPlacesJson = null;
 
+export function isPersistableUser(user) {
+	return user && !user.isBot && !user.isTest;
+}
+
 function setSavedSnapshots() {
 	lastSavedUsersJson = JSON.stringify(savedDaves, null, 2);
 	lastSavedPlacesJson = JSON.stringify(savedPlaces, null, 2);
@@ -95,7 +99,7 @@ export async function saveUsers(daves, places) {
 	let mergedUsers = getUsers(daves);
 	//console.log(`[SAVE]  ${JSON.stringify(mergedUsers, null, 2)}`);
 	const realUsers = Object.fromEntries(
-		Object.entries(mergedUsers).filter(([id, user]) => !user.isBot)
+		Object.entries(mergedUsers).filter(([, user]) => isPersistableUser(user))
 	);
 	savedDaves = realUsers;
 	savedPlaces = places;
@@ -107,7 +111,7 @@ export async function saveUsers(daves, places) {
 
 export async function replaceSavedData(users, places) {
 	const realUsers = Object.fromEntries(
-		Object.entries(users ?? {}).filter(([id, user]) => !user.isBot)
+		Object.entries(users ?? {}).filter(([, user]) => isPersistableUser(user))
 	);
 	savedDaves = realUsers;
 	savedPlaces = places ?? {};

@@ -19,6 +19,7 @@ import { applyLineconBump } from "./utils/linecon.js";
 import { addCommendations } from "./public/utils/dod.js";
 import { resetAllCooldowns } from "./utils/cooldowns.js";
 import { applyLocationActivity, markActive } from "./utils/activity.js";
+import { createTestDaves, TEST_DAVE_IDS } from "./utils/testDaves.js";
 
 
 // --- HTTP server ---
@@ -471,6 +472,44 @@ app.post('/api/admin/reset-cooldowns', async (req, res) => {
 	const changed = await saveUsers(daves, savedPlaces);
 	io.emit("update");
 	res.json({ ok: true, resetCount, changed });
+});
+
+app.post('/api/admin/add-test-users', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	const testDaves = createTestDaves();
+	let addedCount = 0;
+
+	for (const [id, testDave] of Object.entries(testDaves)) {
+		if (!daves[id]) {
+			addedCount += 1;
+		}
+		daves[id] = testDave;
+	}
+
+	io.emit("update");
+	res.json({ ok: true, addedCount, totalCount: TEST_DAVE_IDS.length });
+});
+
+app.post('/api/admin/remove-test-users', async (req, res) => {
+	const userId = requireDebugUser(req, res);
+	if (!userId) return;
+
+	let removedCount = 0;
+
+	for (const id of TEST_DAVE_IDS) {
+		if (daves[id]) {
+			delete daves[id];
+			removedCount += 1;
+		}
+		if (savedDaves[id]) {
+			delete savedDaves[id];
+		}
+	}
+
+	io.emit("update");
+	res.json({ ok: true, removedCount, totalCount: TEST_DAVE_IDS.length });
 });
 
 app.post('/api/admin/remove-player', async (req, res) => {
@@ -1005,6 +1044,7 @@ io.on('connection', (socket) => {
 		}
 
 		me.dodLevel = 1;
+/*
 		me.dodApplication = {
 			placeId,
 			nodeName: place.name,
@@ -1030,6 +1070,7 @@ io.on('connection', (socket) => {
 			voluntaryDisclosure: optionalText("voluntaryDisclosure", 80),
 			submittedAt: Date.now()
 		};
+*/
 		state.addTag(me, "dod");
 		markActive(me);
 

@@ -160,6 +160,24 @@ document.addEventListener("click", (e) => {
 		return;
 	}
 
+	if (action === "addTestUsers") {
+		callAdminEndpoint(
+			"/api/admin/add-test-users",
+			"Adding test users...",
+			(result) => `Added ${result.addedCount ?? 0} of ${result.totalCount ?? 0} test users.`
+		);
+		return;
+	}
+
+	if (action === "removeTestUsers") {
+		callAdminEndpoint(
+			"/api/admin/remove-test-users",
+			"Removing test users...",
+			(result) => `Removed ${result.removedCount ?? 0} test user${result.removedCount === 1 ? "" : "s"}.`
+		);
+		return;
+	}
+
 	if (action === "saveUsers") {
 		callAdminEndpoint(
 			"/api/admin/save-users",
