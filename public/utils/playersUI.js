@@ -10,7 +10,7 @@ function getCurrentUserId() {
 	return getUserId();
 }
 
-function updateMarker(dave) {
+function updateMarker(dave, options = {}) {
 	const stateClass = state.getStateClass(dave);
 	const goonClass = dave.name === "GOON" ? "goon" : "";
 
@@ -30,7 +30,18 @@ function updateMarker(dave) {
 
 
 	//L.marker([dave.lat, dave.lng], { title: dave.name }).addTo(map);
+	marker.off("click");
 	marker.on("click", () => {
+		if (typeof options.onMarkerClick === "function") {
+			options.onMarkerClick({
+				type: "player",
+				id: dave.userId,
+				lat: dave.lat,
+				lng: dave.lng
+			});
+			return;
+		}
+
 		const userId = getCurrentUserId();
 		window.location.href = `/player.html?id=${encodeURIComponent(dave.userId)}&viewerId=${encodeURIComponent(userId)}`;
 	});
@@ -107,7 +118,7 @@ export function addPlayer(map, me, dave, i, options = {}) {
 		playerMarkers[dave.userId] = marker;
 		marker.addTo(map);
 	}
-	updateMarker(dave);
+	updateMarker(dave, options);
 
 
 	updateRadar(map, dave, me);

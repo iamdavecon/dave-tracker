@@ -76,9 +76,14 @@ function isDavefenceNode(place) {
 	return firstEmoji(place?.name) === "🛡";
 }
 
-export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistanceList, i) {
+export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistanceList, i, options = {}) {
 	const lat = place.lat;
 	const lng = place.lng; 
+	if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) {
+		console.warn("Invalid coordinates for place:", place);
+		return;
+	}
+
 	const radiusMeters = getRange(place);
 	//console.log("addPlace: " + JSON.stringify(place, null, 2))
 
@@ -98,6 +103,16 @@ export function addPlace(id, dave, layer, zoom, place, isCanonical, nodeDistance
 	}).addTo(layer);
 
 	marker.on("click", () => {
+		if (typeof options.onMarkerClick === "function") {
+			options.onMarkerClick({
+				type: "place",
+				id,
+				lat,
+				lng
+			});
+			return;
+		}
+
 		window.location.href = `/place.html?id=${encodeURIComponent(id)}&viewerId=${encodeURIComponent(dave.userId)}`;
 	});
 

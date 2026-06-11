@@ -17,6 +17,8 @@ let centerOn = true;
 let lastRender = 0;
 const MIN_INTERVAL = 250;
 let init = true;
+let currentMapTargets = [];
+let activeTargetChooser = null;
 
 const params = new URLSearchParams(window.location.search);
 const immune = params.get('immune');
@@ -54,11 +56,162 @@ map.on("dragstart", () => {
 
 document.getElementById("centerMe").onclick = () => {
 	//console.log("CENTER ME: " + me.lat + ", " + me.lng);
+	if (!Number.isFinite(Number(me.lat)) || !Number.isFinite(Number(me.lng))) {
+		return;
+	}
+
 	centerOn = true;
 	map.flyTo([me.lat, me.lng], 16);
 };
 
 const canonicalLayer = L.layerGroup().addTo(map);
+
+function getTargetUrl(target) {
+	if (target.type === "place") {
+		return `/place.html?id=${encodeURIComponent(target.id)}&viewerId=${encodeURIComponent(userId)}`;
+	}
+
+	return `/player.html?id=${encodeURIComponent(target.id)}&viewerId=${encodeURIComponent(userId)}`;
+}
+
+function navigateToTarget(target) {
+	window.location.href = getTargetUrl(target);
+}
+
+function targetKindLabel(target) {
+	return target.type === "place" ? "NODE" : "DAVE";
+}
+
+function targetDetailLabel(target) {
+	const parts = [];
+	if (target.type === "place" && target.level) {
+		parts.push(`Level ${target.level}`);
+	}
+	if (Number.isFinite(Number(target.distance))) {
+		parts.push(`${Math.round(target.distance)} m away`);
+	}
+	return parts.join(" | ");
+}
+
+function closeTargetChooser() {
+	if (activeTargetChooser) {
+		activeTargetChooser.remove();
+		activeTargetChooser = null;
+	}
+}
+
+function showTargetChooser(targets) {
+	closeTargetChooser();
+
+	const overlay = document.createElement("div");
+	overlay.className = "target-chooser-overlay";
+	overlay.addEventListener("click", closeTargetChooser);
+
+	const dialog = document.createElement("div");
+	dialog.className = "target-chooser";
+	dialog.setAttribute("role", "dialog");
+	dialog.setAttribute("aria-modal", "true");
+	dialog.setAttribute("aria-labelledby", "targetChooserTitle");
+	dialog.addEventListener("click", (event) => event.stopPropagation());
+
+	const header = document.createElement("div");
+	header.className = "target-chooser-header";
+
+	const title = document.createElement("div");
+	title.id = "targetChooserTitle";
+	title.className = "target-chooser-title";
+	title.textContent = "Choose target";
+
+	const closeButton = document.createElement("button");
+	closeButton.type = "button";
+	closeButton.className = "target-chooser-close";
+	closeButton.setAttribute("aria-label", "Close target chooser");
+	closeButton.textContent = "x";
+	closeButton.addEventListener("click", closeTargetChooser);
+
+	header.appendChild(title);
+	header.appendChild(closeButton);
+	dialog.appendChild(header);
+
+	const list = document.createElement("div");
+	list.className = "target-chooser-list";
+
+	targets.forEach((target) => {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "target-choice";
+		button.addEventListener("click", () => navigateToTarget(target));
+
+		const main = document.createElement("span");
+		main.className = "target-choice-main";
+
+		const kind = document.createElement("span");
+		kind.className = "target-choice-kind";
+		kind.textContent = targetKindLabel(target);
+
+		const name = document.createElement("span");
+		name.className = "target-choice-name";
+		name.textContent = target.name || target.id;
+
+		main.appendChild(kind);
+		main.appendChild(name);
+		button.appendChild(main);
+
+		const detailText = targetDetailLabel(target);
+		if (detailText) {
+			const detail = document.createElement("span");
+			detail.className = "target-choice-detail";
+			detail.textContent = detailText;
+			button.appendChild(detail);
+		}
+
+		list.appendChild(button);
+	});
+
+	dialog.appendChild(list);
+	overlay.appendChild(dialog);
+	document.body.appendChild(overlay);
+	activeTargetChooser = overlay;
+	closeButton.focus();
+}
+
+function findOverlappingTargets(clickedTarget) {
+	if (!clickedTarget || typeof map.latLngToLayerPoint !== "function") {
+		return [];
+	}
+
+	const clickPoint = map.latLngToLayerPoint([clickedTarget.lat, clickedTarget.lng]);
+	const overlapRadiusPx = 44;
+
+	return currentMapTargets
+		.map((target) => {
+			const point = map.latLngToLayerPoint([target.lat, target.lng]);
+			return {
+				...target,
+				_screenDistance: clickPoint.distanceTo(point)
+			};
+		})
+		.filter((target) => target._screenDistance <= overlapRadiusPx)
+		.sort((a, b) => a._screenDistance - b._screenDistance || (a.distance ?? 0) - (b.distance ?? 0));
+}
+
+function handleMapTargetClick(clickedTarget) {
+	const targets = findOverlappingTargets(clickedTarget);
+
+	if (targets.length > 1) {
+		showTargetChooser(targets);
+		return;
+	}
+
+	const exactTarget = currentMapTargets.find((target) => target.type === clickedTarget.type && target.id === clickedTarget.id);
+	navigateToTarget(exactTarget || clickedTarget);
+}
+
+document.addEventListener("keydown", (event) => {
+	if (event.key === "Escape") {
+		closeTargetChooser();
+	}
+});
 
 async function showMe() {
 	const res = await fetch('/api/visibility', {
@@ -140,9 +293,24 @@ function renderPlaces(places) {
 		.slice(0, 30)  
 		.map(([id, place]) => ({ id, ...place }))  
 		.forEach((place, idx) => {  
+			if (!Number.isFinite(Number(place.lat)) || !Number.isFinite(Number(place.lng))) {
+				return;
+			}
+
 			let isCannonical = !place.owner
 			//console.log(JSON.stringify(place, null, 2));
-			addPlace(place.id, me, canonicalLayer, zoom, place, isCannonical, nodeDistanceList, i);  
+			currentMapTargets.push({
+				type: "place",
+				id: place.id,
+				name: place.name,
+				level: place.level,
+				lat: place.lat,
+				lng: place.lng,
+				distance: place.distance
+			});
+			addPlace(place.id, me, canonicalLayer, zoom, place, isCannonical, nodeDistanceList, i, {
+				onMarkerClick: handleMapTargetClick
+			});  
 		});
 }
 
@@ -155,12 +323,14 @@ async function update() {
 	//console.log(`[UPDATE daves]  ` + JSON.stringify(daves, null, 2));
 	//console.log(`[UPDATE places]  ` + JSON.stringify(places, null, 2));
 
-	me = daves[userId]
-	if (!me) {
+	const nextMe = daves[userId];
+	if (!nextMe) {
 		console.log("Update, but I'm missing");
 		return;
 	} 
+	me = nextMe;
 
+	currentMapTargets = [];
 	renderMapVisibility();
 	renderPlaces(places);
 
@@ -192,9 +362,25 @@ async function update() {
 				return distanceA - distanceB;
 			})
 			.forEach(([key, dave], idx) => {
+				if (!Number.isFinite(Number(dave.lat)) || !Number.isFinite(Number(dave.lng))) {
+					return;
+				}
+
 				seen.add(key);
 				const showInList = !dave.isBot;
-				addPlayer(map, me, dave, i, { showInList });
+				currentMapTargets.push({
+					type: "player",
+					id: dave.userId,
+					name: dave.name,
+					state: dave.state,
+					lat: dave.lat,
+					lng: dave.lng,
+					distance: dave.distance
+				});
+				addPlayer(map, me, dave, i, {
+					showInList,
+					onMarkerClick: handleMapTargetClick
+				});
 				if (showInList) {
 					i++;
 				}
@@ -203,14 +389,14 @@ async function update() {
 	//console.log("\tadded: " + i);
 	cullNotSeen(map, seen);
 
-	if (init && me.visible !== false) {
+	if (init && me.visible !== false && Number.isFinite(Number(me.lat)) && Number.isFinite(Number(me.lng))) {
 		map.setView([me.lat, me.lng]);
 		init = false;
 	} }
 
 async function refreshAfterNavigationRestore() {
 	await update();
-	if (me.freeRoam && Number.isFinite(Number(me.lat)) && Number.isFinite(Number(me.lng))) {
+	if (me?.freeRoam && Number.isFinite(Number(me.lat)) && Number.isFinite(Number(me.lng))) {
 		centerOn = true;
 		map.setView([me.lat, me.lng]);
 	}
@@ -285,8 +471,14 @@ function startGeolocation() {
 		if (me.visible === false) {
 			socket.emit('location', { lat, lng });
 		} else if (lat === 0 && lng === 0) {
-			map.setView([me.lat, me.lng]);
+			if (Number.isFinite(Number(me.lat)) && Number.isFinite(Number(me.lng))) {
+				map.setView([me.lat, me.lng]);
+			}
 		} else {
+			if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) {
+				return;
+			}
+
 			socket.emit('location', { lat, lng });
 	
 			if (centerOn) {
