@@ -33,7 +33,8 @@ test('summarizeDave calculates leaderboard scores and keeps tags', () => {
 		teamAntivirus: 1,
 		daveravesStarted: 1,
 		state: 'RESONANT',
-		tags: ['admin', 'dod']
+		tags: ['admin', 'dod'],
+		badgeStatus: null
 	});
 });
 
@@ -71,6 +72,17 @@ test('summarizeDave handles missing optional scoring fields', () => {
 	assert.equal(summary.daveravesStarted, 0);
 	assert.equal(summary.state, 'UNSTABLE');
 	assert.deepEqual(summary.tags, []);
+	assert.equal(summary.badgeStatus, null);
+});
+
+test('summarizeDave includes badge status for player pill indicators', () => {
+	const summary = summarizeDave({
+		userId: 'badge-dave',
+		name: 'Badge Dave',
+		badgeStatus: 'need'
+	});
+
+	assert.equal(summary.badgeStatus, 'need');
 });
 
 test('getLinkedDaveSummaries returns linked users in saved order', () => {

@@ -20,6 +20,7 @@ export function getMapData(me, target) {
 
 		state: me?.state ?? "unstable",
 		name: target?.name ?? "D",
+		badgeStatus: target?.badgeStatus ?? null,
 		freeRoam: !!me?.freeRoam,
 
 		inRange: me && target ? inRange(me, target) : false,
@@ -27,13 +28,26 @@ export function getMapData(me, target) {
 }
 
 
-function createPill(label, state = "neutral", isYou = false) {
+function getBadgeIndicatorHtml(badgeStatus) {
+	if (badgeStatus === "need") {
+		return `<span class="badge-indicator badge-indicator-need" title="Needs badges" aria-label="Needs badges">!</span>`;
+	}
+
+	if (badgeStatus === "have") {
+		return `<span class="badge-indicator badge-indicator-have" title="Has badges" aria-label="Has badges">!</span>`;
+	}
+
+	return "";
+}
+
+function createPill(label, state = "neutral", isYou = false, badgeStatus = null) {
 	const goonClass = label === "GOON" ? "goon" : "";
 	return L.divIcon({
 		className: "",
 		html: `
 			<div class="map-pill ${state} ${goonClass} ${isYou ? "you" : ""}">
 				${label}
+				${getBadgeIndicatorHtml(badgeStatus)}
 			</div>
 		`,
 		iconSize: null
@@ -59,7 +73,7 @@ function updateMapState(state, mapData, shouldFit = false) {
 	state.mapData = mapData;
 	state.meMarker.setLatLng([mapData.viewerLat, mapData.viewerLon]);
 	state.targetMarker.setLatLng([mapData.targetLat, mapData.targetLon]);
-	state.targetMarker.setIcon(createPill(mapData.name, mapData.state?.toLowerCase()));
+	state.targetMarker.setIcon(createPill(mapData.name, mapData.state?.toLowerCase(), false, mapData.badgeStatus));
 	state.connectionLine.setLatLngs([
 		[mapData.viewerLat, mapData.viewerLon],
 		[mapData.targetLat, mapData.targetLon]
@@ -102,7 +116,7 @@ export function addMap(mapData, options = {}) {
 	}).addTo(map);
 
 	const targetMarker = L.marker([mapData.targetLat, mapData.targetLon], {
-		icon: createPill(mapData.name, mapData.state?.toLowerCase())
+		icon: createPill(mapData.name, mapData.state?.toLowerCase(), false, mapData.badgeStatus)
 	}).addTo(map);
 
 	//L.marker([mapData.targetLat, mapData.targetLon], { title: mapData.name }).addTo(map);

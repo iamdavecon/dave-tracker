@@ -350,6 +350,58 @@ header h1 {
 	flex: 0 0 auto;
 }
 
+.player-state-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.badge-indicator {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	font-size: 14px;
+	font-weight: 900;
+	line-height: 1;
+	color: #fff;
+	border: 1px solid currentColor;
+	text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+	box-shadow: 0 0 10px rgba(255, 255, 255, 0.14);
+}
+
+.badge-indicator-need {
+	background: #b71c1c;
+	color: #ff5c5c;
+}
+
+.badge-indicator-have {
+	background: #0b3f7a;
+	color: #4da6ff;
+}
+
+.pill .badge-indicator,
+.map-pill .badge-indicator {
+	margin-left: 6px;
+	background: #111;
+	text-shadow: none;
+	box-shadow: 0 0 8px currentColor;
+}
+
+.pill .badge-indicator-need,
+.map-pill .badge-indicator-need {
+	color: #ff3131;
+}
+
+.pill .badge-indicator-have,
+.map-pill .badge-indicator-have {
+	color: #4da6ff;
+}
+
 .admin-meta {
 	margin-top: 10px;
 }
@@ -627,6 +679,33 @@ button:disabled {
 	text-shadow: 0 1px 0 rgba(255,255,255,0.35);
 	box-shadow: 0 0 18px rgba(53, 214, 255, 0.35);
 	animation: raveButtonPulse 1.2s infinite ease-in-out;
+}
+
+.badge-controls {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+	margin-bottom: 10px;
+}
+
+.badge-toggle {
+	min-width: 0;
+	margin-bottom: 0;
+	font-weight: 800;
+}
+
+.badge-toggle-need.active {
+	color: #fff;
+	background: #b71c1c;
+	border-color: #ff5c5c;
+	box-shadow: 0 0 12px rgba(255, 92, 92, 0.35);
+}
+
+.badge-toggle-have.active {
+	color: #fff;
+	background: #0b3f7a;
+	border-color: #4da6ff;
+	box-shadow: 0 0 12px rgba(77, 166, 255, 0.35);
 }
 
 .dave-rave-overlay {

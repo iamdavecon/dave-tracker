@@ -768,6 +768,26 @@ app.post('/api/visibility', async (req, res) => {
 	res.json({ ok: true, visible: me.visible, lat: me.lat, lng: me.lng });
 });
 
+app.post('/api/badge-status', async (req, res) => {
+	const { userId, status } = req.body ?? {};
+	const me = daves[userId];
+
+	if (!me) {
+		return res.status(404).json({ ok: false, error: "Dave's not here" });
+	}
+
+	if (![null, "", "need", "have"].includes(status)) {
+		return res.status(400).json({ ok: false, error: "invalid badge status" });
+	}
+
+	me.badgeStatus = status || null;
+	markActive(me);
+
+	io.emit("update");
+
+	res.json({ ok: true, badgeStatus: me.badgeStatus });
+});
+
 
 
 // --- Socket.io handlers ---

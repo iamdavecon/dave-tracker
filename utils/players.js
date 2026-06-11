@@ -71,7 +71,8 @@ export function summarizeDave(dave, places = {}) {
 		teamAntivirus: teamAntivirus,
 		daveravesStarted: dave.daveravesStarted || 0,
 		state: currentState.toUpperCase(),
-		tags
+		tags,
+		badgeStatus: dave.badgeStatus ?? null
 	};
 
 	return daveDetails;

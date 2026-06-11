@@ -6,6 +6,18 @@ const BABY_ITEM = "👶";
 const playerMarkers = {};
 let radar = null;
 
+function getBadgeIndicatorHtml(dave) {
+	if (dave.badgeStatus === "need") {
+		return `<span class="badge-indicator badge-indicator-need" title="Needs badges" aria-label="Needs badges">!</span>`;
+	}
+
+	if (dave.badgeStatus === "have") {
+		return `<span class="badge-indicator badge-indicator-have" title="Has badges" aria-label="Has badges">!</span>`;
+	}
+
+	return "";
+}
+
 function getCurrentUserId() {
 	return getUserId();
 }
@@ -18,6 +30,7 @@ function updateMarker(dave, options = {}) {
 		className: "custom-icon",
 		html: `<div class="pill center ${stateClass} ${goonClass}">
 			${dave.name}
+			${getBadgeIndicatorHtml(dave)}
 		</div>`,
 		iconSize: null,
 		iconAnchor: [0, 0]
@@ -155,6 +168,15 @@ export function addPlayer(map, me, dave, i, options = {}) {
 			babyIcon.title = "Has a plastic baby";
 			babyIcon.setAttribute("aria-label", "Has a plastic baby");
 			nameWrap.appendChild(babyIcon);
+		}
+
+		if (dave.badgeStatus === "need" || dave.badgeStatus === "have") {
+			const badgeIcon = document.createElement("span");
+			badgeIcon.className = `badge-indicator badge-indicator-${dave.badgeStatus}`;
+			badgeIcon.textContent = "!";
+			badgeIcon.title = dave.badgeStatus === "need" ? "Needs badges" : "Has badges";
+			badgeIcon.setAttribute("aria-label", badgeIcon.title);
+			nameWrap.appendChild(badgeIcon);
 		}
 
 		container.appendChild(nameWrap);

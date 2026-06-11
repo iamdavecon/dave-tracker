@@ -303,6 +303,37 @@ async function toggleVisibility(visible) {
 	}
 }
 
+async function setBadgeStatus(status) {
+	const statusEl = document.getElementById("actionStatus");
+	if (statusEl) {
+		statusEl.textContent = "Updating badge status...";
+	}
+
+	const res = await fetch('/api/badge-status', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ userId, status })
+	});
+
+	preserveActionStatusUntil = Date.now() + 3000;
+	if (res.ok) {
+		if (statusEl) {
+			statusEl.textContent = status === "need"
+				? "Badge request marked."
+				: status === "have"
+					? "Badge supply marked."
+					: "Badge status cleared.";
+		}
+		await loadPlayer();
+		return;
+	}
+
+	const result = await res.json().catch(() => ({}));
+	if (statusEl) {
+		statusEl.textContent = result.error || `Badge status update failed (${res.status}).`;
+	}
+}
+
 async function removePlayer() {
 	const statusEl = document.getElementById("actionStatus");
 	const confirmed = window.confirm("Remove this Dave from the active online list?");
@@ -347,7 +378,8 @@ function addActions(actionHtml) {
 	}
 
 	actionsContainer.onclick = (e) => {
-		const action = e.target.dataset.action;
+		const actionTarget = e.target.closest("[data-action]");
+		const action = actionTarget?.dataset.action;
 		if (!action) return;
 
 		switch (action) {
@@ -387,6 +419,9 @@ function addActions(actionHtml) {
 			case "showMe":
 				toggleVisibility(true);
 				break;
+			case "setBadgeStatus":
+				setBadgeStatus(actionTarget.dataset.badgeStatus || null);
+				break;
 			case "removePlayer":
 				removePlayer();
 				break;
@@ -394,6 +429,53 @@ function addActions(actionHtml) {
 				emit(action);
 		}
 	};
+}
+
+function getBadgeIndicatorClass(badgeStatus) {
+	if (badgeStatus === "need") {
+		return "badge-indicator badge-indicator-need";
+	}
+
+	if (badgeStatus === "have") {
+		return "badge-indicator badge-indicator-have";
+	}
+
+	return "badge-indicator hidden";
+}
+
+function renderBadgeIndicator(badgeStatus) {
+	const indicator = document.getElementById("playerBadgeIndicator");
+	if (!indicator) return;
+
+	indicator.className = getBadgeIndicatorClass(badgeStatus);
+	indicator.title = badgeStatus === "need"
+		? "Needs badges"
+		: badgeStatus === "have"
+			? "Has badges"
+			: "";
+	indicator.setAttribute("aria-label", indicator.title);
+}
+
+function getBadgeControlsHtml(badgeStatus) {
+	const needActive = badgeStatus === "need";
+	const haveActive = badgeStatus === "have";
+
+	return `
+		<div class="badge-controls" aria-label="Badge status">
+			<button
+				class="badge-toggle badge-toggle-need ${needActive ? "active" : ""}"
+				data-action="setBadgeStatus"
+				data-badge-status="${needActive ? "" : "need"}"
+				aria-pressed="${needActive}"
+			>I need badges</button>
+			<button
+				class="badge-toggle badge-toggle-have ${haveActive ? "active" : ""}"
+				data-action="setBadgeStatus"
+				data-badge-status="${haveActive ? "" : "have"}"
+				aria-pressed="${haveActive}"
+			>I have badges</button>
+		</div>
+	`;
 }
 
 function renderMapArea(dave) {
@@ -491,6 +573,7 @@ async function loadPlayer() {
 	const stateValue = state.getState(dave);
 	stateEl.textContent = stateValue.toUpperCase();
 	stateEl.className = "state-pill " + stateValue.toLowerCase();
+	renderBadgeIndicator(dave.badgeStatus);
 
 	if (dave.tags) {
 		renderTags(dave.tags);
@@ -552,7 +635,7 @@ async function loadPlayer() {
 		renderQrLink(dave);
 		renderLinkedDaves(dave.linkedDaves);
 
-		let actionHtml = "";
+		let actionHtml = getBadgeControlsHtml(dave.badgeStatus);
 		const nearestPlace = dave.availableActions.nearestPlace;
 		if (nearestPlace?.id) {
 			actionHtml += `<button data-action="openNearestPlace" data-place-id="${nearestPlace.id}">Daveify This Spot</button> `   
