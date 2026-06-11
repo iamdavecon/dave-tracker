@@ -39,7 +39,7 @@
 			margin: 0 auto;
 			padding: 18px;
 			display: grid;
-			grid-template-rows: auto auto 1fr auto;
+			grid-template-rows: auto minmax(0, 1fr) auto auto auto;
 			gap: 14px;
 		}
 
@@ -167,23 +167,6 @@
 			background: rgba(0, 0, 0, 0.45);
 		}
 
-		.bump-zone {
-			position: absolute;
-			left: 0;
-			right: 0;
-			bottom: 0;
-			height: 92px;
-			display: grid;
-			place-items: center;
-			background:
-				linear-gradient(90deg, transparent, rgba(121, 255, 155, 0.12), transparent),
-				#11181b;
-			border-top: 1px solid rgba(121, 255, 155, 0.3);
-			color: var(--muted);
-			font-size: 12px;
-			text-transform: uppercase;
-		}
-
 		.beachball {
 			position: absolute;
 			width: clamp(62px, 14vw, 92px);
@@ -280,21 +263,6 @@
 			<a id="backLink" href="/" class="back-link">< Back</a>
 		</div>
 
-		<section class="scoreboard" aria-label="LineCon scores">
-			<div class="score-card">
-				<span>Session bumps</span>
-				<strong id="sessionBumps">0</strong>
-			</div>
-			<div class="score-card">
-				<span>Total bumps</span>
-				<strong id="totalBumps">0</strong>
-			</div>
-			<div class="score-card">
-				<span>Best streak</span>
-				<strong id="bestBumps">0</strong>
-			</div>
-		</section>
-
 		<section id="gameStage" class="game-stage" tabindex="0" aria-label="LineCon beachball game">
 			<div class="crowd" aria-hidden="true">
 				<div class="person"></div>
@@ -309,7 +277,21 @@
 			</div>
 			<div class="queue-rail" aria-hidden="true"></div>
 			<div id="beachball" class="beachball" aria-hidden="true"></div>
-			<div class="bump-zone">Tap, click, or press space</div>
+		</section>
+
+		<section class="scoreboard" aria-label="LineCon scores">
+			<div class="score-card">
+				<span>Session bumps</span>
+				<strong id="sessionBumps">0</strong>
+			</div>
+			<div class="score-card">
+				<span>Total bumps</span>
+				<strong id="totalBumps">0</strong>
+			</div>
+			<div class="score-card">
+				<span>Best streak</span>
+				<strong id="bestBumps">0</strong>
+			</div>
 		</section>
 
 		<div id="statusStrip" class="status-strip" role="status">Waiting for the first bump.</div>

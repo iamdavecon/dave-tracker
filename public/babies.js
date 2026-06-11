@@ -19,6 +19,7 @@ const babySummary = document.getElementById("babySummary");
 const babyStats = document.getElementById("babyStats");
 const babyActions = document.getElementById("babyActions");
 const babyStatus = document.getElementById("babyStatus");
+const babyCrawlLayer = document.getElementById("babyCrawlLayer");
 
 if (daveId) {
 	backLink.href = `/player.html?id=${encodeURIComponent(daveId)}&viewerId=${encodeURIComponent(viewerId)}`;
@@ -30,6 +31,7 @@ function renderUnavailable(message) {
 	babyStats.innerHTML = "";
 	babyActions.innerHTML = "";
 	babyStatus.textContent = "";
+	babyCrawlLayer.innerHTML = "";
 }
 
 function receiveBaby() {
@@ -54,6 +56,35 @@ function renderActions(dave) {
 	}
 }
 
+function renderCrawlingBabies(count, canReceiveBaby) {
+	babyCrawlLayer.innerHTML = "";
+	babyCrawlLayer.classList.toggle("baby-crawl-layer-active", count > 0);
+
+	for (let index = 0; index < count; index += 1) {
+		const baby = document.createElement(canReceiveBaby ? "button" : "span");
+		baby.className = "crawling-baby";
+		baby.textContent = "👶";
+		baby.style.setProperty("--crawl-start-x", `${8 + ((index * 23) % 84)}vw`);
+		baby.style.setProperty("--crawl-start-y", `${16 + ((index * 31) % 68)}vh`);
+		baby.style.setProperty("--crawl-mid-x", `${10 + ((index * 41 + 19) % 80)}vw`);
+		baby.style.setProperty("--crawl-mid-y", `${14 + ((index * 29 + 37) % 70)}vh`);
+		baby.style.setProperty("--crawl-end-x", `${8 + ((index * 53 + 11) % 84)}vw`);
+		baby.style.setProperty("--crawl-end-y", `${16 + ((index * 17 + 43) % 68)}vh`);
+		baby.style.setProperty("--crawl-duration", `${16 + (index % 7) * 2}s`);
+		baby.style.setProperty("--crawl-delay", `${-(index % 5) * 1.7}s`);
+
+		if (canReceiveBaby) {
+			baby.type = "button";
+			baby.dataset.action = "receiveBaby";
+			baby.setAttribute("aria-label", "Receive a baby");
+		} else {
+			baby.setAttribute("aria-hidden", "true");
+		}
+
+		babyCrawlLayer.appendChild(baby);
+	}
+}
+
 async function loadBabies() {
 	if (!daveId) {
 		renderUnavailable("This baby link is missing or expired.");
@@ -69,6 +100,7 @@ async function loadBabies() {
 	}
 
 	const stats = getBabyStats(dave, state);
+	const canReceiveBaby = !!dave.availableActions?.canReceiveBaby;
 	babyOwner.textContent = `${dave.name}'s Babies`;
 	babySummary.textContent = stats.hasActivity
 		? "Plastic baby activity"
@@ -88,9 +120,16 @@ async function loadBabies() {
 		</div>
 	`;
 	renderActions(dave);
+	renderCrawlingBabies(stats.count, canReceiveBaby);
 }
 
 babyActions.onclick = (event) => {
+	if (event.target.dataset.action === "receiveBaby") {
+		receiveBaby();
+	}
+};
+
+babyCrawlLayer.onclick = (event) => {
 	if (event.target.dataset.action === "receiveBaby") {
 		receiveBaby();
 	}

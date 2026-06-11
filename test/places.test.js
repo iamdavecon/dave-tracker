@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { BABY_ITEM } from '../public/utils/babies.js';
 import { getNearestPlaceInRange, isTooNear, registerHandlers } from '../utils/places.js';
 
 function createHarness(userId = 'source') {
@@ -599,13 +600,13 @@ test('claimPlaceFragmentChallenge grants drinks only for alcohol-related Hacker 
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'malort', 'What is Malort?');
 
 	assert.equal(daves.source[drink].count, 1);
-	assert.equal(daves.source[baby].count, 1);
+	assert.equal(daves.source[baby], undefined);
 	assert.equal(Number.isFinite(daves.source.lastHackerJeopardyTime), true);
 	assert.equal(ioEvents.length, 1);
 	assert.equal(logs.length, 1);
 });
 
-test('claimPlaceFragmentChallenge can trigger the plastic baby pass for first Hacker Jeopardy baby', () => {
+test('claimHackerJeopardyBaby can trigger the plastic baby pass for first Hacker Jeopardy baby', () => {
 	const { socket, handlers, io } = createHarness();
 	const baby = '👶';
 	let result;
@@ -627,13 +628,14 @@ test('claimPlaceFragmentChallenge can trigger the plastic baby pass for first Ha
 	};
 
 	registerHandlers(socket, daves, places, io, () => {}, () => {}, () => 0.49);
-	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', (payload) => {
+	handlers.claimHackerJeopardyBaby('source', 'jeopardy', (payload) => {
 		result = payload;
 	});
 
 	assert.equal(daves.source[baby], undefined);
 	assert.equal(Number.isFinite(daves.source.pendingPlasticBabyPassTime), true);
-	assert.deepEqual(result, { ok: true, correct: true, plasticBabyPass: true });
+	assert.equal(Number.isFinite(daves.source.lastHackerJeopardyBabyTime), true);
+	assert.deepEqual(result, { ok: true, plasticBabyPass: true, granted: false });
 });
 
 test('finishPlasticBabyPass grants or drops a pending plastic baby pass', () => {
@@ -657,7 +659,7 @@ test('finishPlasticBabyPass grants or drops a pending plastic baby pass', () => 
 			}
 		};
 		registerHandlers(socket, daves, places, io, () => {}, () => {}, () => 0);
-		handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', () => {});
+		handlers.claimHackerJeopardyBaby('source', 'jeopardy', () => {});
 		return { handlers, dave: daves.source };
 	};
 
@@ -683,9 +685,9 @@ test('finishPlasticBabyPass grants or drops a pending plastic baby pass', () => 
 	assert.deepEqual(dropResult, { ok: true, won: false, granted: false });
 });
 
-test('claimPlaceFragmentChallenge skips plastic baby pass on chance miss or existing baby', () => {
+test('claimHackerJeopardyBaby always starts the baby minigame', () => {
 	const baby = '👶';
-	const createJeopardyHarness = (dave, random) => {
+	const createJeopardyHarness = (dave) => {
 		const { socket, handlers, io } = createHarness();
 		const places = {
 			jeopardy: {
@@ -695,20 +697,20 @@ test('claimPlaceFragmentChallenge skips plastic baby pass on chance miss or exis
 				lng: -87
 			}
 		};
-		registerHandlers(socket, { source: dave }, places, io, () => {}, () => {}, random);
+		registerHandlers(socket, { source: dave }, places, io, () => {}, () => {}, () => 1);
 		return handlers;
 	};
 
-	const chanceMissDave = {
+	const noBabyDave = {
 		userId: 'source',
 		name: 'Source',
 		lat: 41,
 		lng: -87
 	};
-	let chanceMissResult;
-	createJeopardyHarness(chanceMissDave, () => 0.5)
-		.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', (payload) => {
-			chanceMissResult = payload;
+	let noBabyResult;
+	createJeopardyHarness(noBabyDave)
+		.claimHackerJeopardyBaby('source', 'jeopardy', (payload) => {
+			noBabyResult = payload;
 		});
 
 	const existingBabyDave = {
@@ -722,15 +724,17 @@ test('claimPlaceFragmentChallenge skips plastic baby pass on chance miss or exis
 		}
 	};
 	let existingBabyResult;
-	createJeopardyHarness(existingBabyDave, () => 0)
-		.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?', (payload) => {
+	createJeopardyHarness(existingBabyDave)
+		.claimHackerJeopardyBaby('source', 'jeopardy', (payload) => {
 			existingBabyResult = payload;
 		});
 
-	assert.equal(chanceMissDave[baby].count, 1);
-	assert.equal(existingBabyDave[baby].count, 2);
-	assert.deepEqual(chanceMissResult, { ok: true, correct: true, plasticBabyPass: false });
-	assert.deepEqual(existingBabyResult, { ok: true, correct: true, plasticBabyPass: false });
+	assert.equal(noBabyDave[baby], undefined);
+	assert.equal(Number.isFinite(noBabyDave.pendingPlasticBabyPassTime), true);
+	assert.equal(existingBabyDave[baby].count, 1);
+	assert.equal(Number.isFinite(existingBabyDave.pendingPlasticBabyPassTime), true);
+	assert.deepEqual(noBabyResult, { ok: true, plasticBabyPass: true, granted: false });
+	assert.deepEqual(existingBabyResult, { ok: true, plasticBabyPass: true, granted: false });
 });
 
 test('claimPlaceFragmentChallenge grants question-specific Hacker Jeopardy rewards', () => {
@@ -757,11 +761,11 @@ test('claimPlaceFragmentChallenge grants question-specific Hacker Jeopardy rewar
 
 	registerHandlers(socket, daves, places, io);
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'beef-thief', 'Who is beef thief?');
-	daves.source.lastHackerJeopardyTime = Date.now() - 61 * 60 * 1000;
+	daves.source.lastHackerJeopardyTime = Date.now() - 11 * 60 * 1000;
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 
 	assert.equal(daves.source[hotdog].count, 1);
-	assert.equal(daves.source[baby].count, 2);
+	assert.equal(daves.source[baby], undefined);
 	assert.equal(daves.source.fragmentsCollected.length, 1);
 	assert.equal(daves.source['🍺'], undefined);
 });
@@ -839,12 +843,60 @@ test('claimPlaceFragmentChallenge rejects bad source, range, action, answer, and
 	assert.deepEqual(daves.source.fragmentsCollected, []);
 	assert.equal(daves.source[baby], undefined);
 
-	daves.source.lastHackerJeopardyTime = Date.now() - 61 * 60 * 1000;
+	daves.source.lastHackerJeopardyTime = Date.now() - 11 * 60 * 1000;
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 	handlers.claimPlaceFragmentChallenge('source', 'jeopardy', 'hackerJeopardy', 'rubber-duck', 'What is rubber duck debugging?');
 	assert.equal(daves.source.fragmentsCollected.length, 1);
-	assert.equal(daves.source[baby].count, 1);
+	assert.equal(daves.source[baby], undefined);
 	assert.equal(daves.source['🍺'], undefined);
+});
+
+test('claimHackerJeopardyBaby has its own one hour cooldown', () => {
+	const { socket, handlers, io } = createHarness();
+	const baby = BABY_ITEM;
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		jeopardy: {
+			id: 'jeopardy',
+			name: 'ðŸ™… Hacker Jeopardy',
+			lat: 41,
+			lng: -87
+		},
+		hardware: {
+			id: 'hardware',
+			name: 'âš™ï¸ Hardware Hacking',
+			lat: 41,
+			lng: -87
+		}
+	};
+	let firstResult;
+	let cooldownResult;
+	let mismatchResult;
+
+	registerHandlers(socket, daves, places, io, () => {}, () => {}, () => 1);
+	handlers.claimHackerJeopardyBaby('source', 'jeopardy', (payload) => {
+		firstResult = payload;
+	});
+	handlers.claimHackerJeopardyBaby('source', 'jeopardy', (payload) => {
+		cooldownResult = payload;
+	});
+	daves.source.lastHackerJeopardyBabyTime = Date.now() - 61 * 60 * 1000;
+	handlers.claimHackerJeopardyBaby('source', 'hardware', (payload) => {
+		mismatchResult = payload;
+	});
+
+	assert.equal(daves.source[baby], undefined);
+	assert.equal(Number.isFinite(daves.source.pendingPlasticBabyPassTime), true);
+	assert.deepEqual(firstResult, { ok: true, plasticBabyPass: true, granted: false });
+	assert.deepEqual(cooldownResult, { ok: false, error: 'baby cooldown active' });
+	assert.deepEqual(mismatchResult, { ok: false, error: 'baby unavailable' });
 });
 
 test('collecting too many drinks grants the GDIK tag', () => {

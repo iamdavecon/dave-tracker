@@ -2,7 +2,9 @@ import { getUserId } from './utils/id.js';
 import { getItemsForSource, displayItems } from './utils/itemUI.js';
 import {
 	canAttemptPlaceFragmentChallenge,
+	canReceiveHackerJeopardyBaby,
 	formatPlaceChallengePrompt,
+	getHackerJeopardyBabyCooldownRemaining,
 	getPlaceFragmentChallengeCooldownRemaining,
 	getPlaceFragmentChallengeForEmoji,
 	getPlaceFragmentChallengeForAction,
@@ -137,6 +139,24 @@ function claimPlaceFragmentChallenge(action) {
 	let handled = false;
 	socket.emit("claimPlaceFragmentChallenge", userId, placeId, action, question.id, selectedAnswer, async (result) => {
 		handled = true;
+		location.reload();
+	});
+
+	setTimeout(() => {
+		if (!handled) {
+			location.reload();
+		}
+	}, 800);
+}
+
+function claimHackerJeopardyBaby() {
+	let handled = false;
+	socket.emit("claimHackerJeopardyBaby", userId, placeId, (result) => {
+		handled = true;
+		if (!result?.ok) {
+			alert(result?.error || "Unable to receive a baby.");
+			return;
+		}
 		if (result?.plasticBabyPass) {
 			window.location.href = `/baby-pass.html?claim=plasticBabyPass&returnTo=${encodeURIComponent(window.location.href)}`;
 			return;
@@ -188,6 +208,9 @@ function addActions(actionHtml) {
 				break;
 			case "placeFragmentChallenge":
 				claimPlaceFragmentChallenge(e.target.dataset.challengeAction);
+				break;
+			case "hackerJeopardyBaby":
+				claimHackerJeopardyBaby();
 				break;
 			case "tacoGame":
 				playTacoGame();
@@ -333,6 +356,14 @@ async function loadPlace() {
 			actionHtml += available
 				? `<button data-action="placeFragmentChallenge" data-challenge-action="${fragmentChallenge.action}">${fragmentChallenge.label}</button>`
 				: `<button disabled>${fragmentChallenge.label} (${remaining})</button>`;
+
+			if (fragmentChallenge.action === "hackerJeopardy") {
+				const babyAvailable = canReceiveHackerJeopardyBaby(dave);
+				const babyRemaining = state.formatCooldownRemaining(getHackerJeopardyBabyCooldownRemaining(dave));
+				actionHtml += babyAvailable
+					? `<button data-action="hackerJeopardyBaby">Receive a baby</button>`
+					: `<button disabled>Receive a baby (${babyRemaining})</button>`;
+			}
 		}
 
 		if (firstEmoji === TACO_ITEM) {

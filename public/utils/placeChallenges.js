@@ -1,4 +1,7 @@
 export const PLACE_CHALLENGE_COOLDOWN = 60 * 60 * 1000;
+export const HACKER_JEOPARDY_COOLDOWN = 10 * 60 * 1000;
+export const HACKER_JEOPARDY_BABY_COOLDOWN = 60 * 60 * 1000;
+export const HACKER_JEOPARDY_BABY_COOLDOWN_KEY = "lastHackerJeopardyBabyTime";
 
 export const HACKER_JEOPARDY_QUESTIONS = [
 	{
@@ -79,6 +82,7 @@ export const PLACE_CHALLENGES = [
 		action: "hackerJeopardy",
 		label: "Hacker Jeopardy",
 		cooldownKey: "lastHackerJeopardyTime",
+		cooldown: HACKER_JEOPARDY_COOLDOWN,
 		reward: { type: "fragment", label: "a fragment" },
 		questions: HACKER_JEOPARDY_QUESTIONS
 	},
@@ -199,9 +203,21 @@ export function getPlaceFragmentChallengeCooldownRemaining(dave, challenge) {
 		return 0;
 	}
 
-	return Math.max(0, dave[challenge.cooldownKey] + PLACE_CHALLENGE_COOLDOWN - Date.now());
+	return Math.max(0, dave[challenge.cooldownKey] + (challenge.cooldown ?? PLACE_CHALLENGE_COOLDOWN) - Date.now());
 }
 
 export function canAttemptPlaceFragmentChallenge(dave, challenge) {
 	return getPlaceFragmentChallengeCooldownRemaining(dave, challenge) === 0;
+}
+
+export function getHackerJeopardyBabyCooldownRemaining(dave) {
+	if (!Number.isFinite(dave?.[HACKER_JEOPARDY_BABY_COOLDOWN_KEY])) {
+		return 0;
+	}
+
+	return Math.max(0, dave[HACKER_JEOPARDY_BABY_COOLDOWN_KEY] + HACKER_JEOPARDY_BABY_COOLDOWN - Date.now());
+}
+
+export function canReceiveHackerJeopardyBaby(dave) {
+	return getHackerJeopardyBabyCooldownRemaining(dave) === 0;
 }

@@ -9,6 +9,7 @@ test('resetDaveCooldowns clears named cooldowns and item timestamps', () => {
 		updatedAt: Date.now(),
 		lastDaveRaveTime: Date.now(),
 		lastDoonPlaceUpgradeTime: Date.now(),
+		lastHackerJeopardyBabyTime: Date.now(),
 		lastTacoCalibrationTime: Date.now(),
 		pendingPlasticBabyPassTime: Date.now(),
 		'beer': { count: 2, lastTime: Date.now() },
@@ -17,9 +18,10 @@ test('resetDaveCooldowns clears named cooldowns and item timestamps', () => {
 
 	const resetCount = resetDaveCooldowns(dave);
 
-	assert.equal(resetCount, 5);
+	assert.equal(resetCount, 6);
 	assert.equal(dave.lastDaveRaveTime, 0);
 	assert.equal(dave.lastDoonPlaceUpgradeTime, 0);
+	assert.equal(dave.lastHackerJeopardyBabyTime, 0);
 	assert.equal(dave.lastTacoCalibrationTime, 0);
 	assert.equal(dave.beer.count, 2);
 	assert.equal(dave.beer.lastTime, 0);

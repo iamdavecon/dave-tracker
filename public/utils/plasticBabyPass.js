@@ -15,7 +15,7 @@ export function playPlasticBabyPassMinigame({
 				</div>
 				<div class="plastic-baby-actor plastic-baby-receiver">
 					<span class="plastic-baby-chopsticks">🥢</span>
-					<span class="plastic-baby-person">😐</span>
+					<span class="plastic-baby-person">😬</span>
 				</div>
 				<button class="plastic-baby-catch" type="button" aria-label="Catch plastic baby">👶</button>
 				<div class="plastic-baby-status">Someone is trying to pass you a plastic baby with chopsticks.</div>

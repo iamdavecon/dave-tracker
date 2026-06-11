@@ -55,13 +55,13 @@ export function summarizeDave(dave, places = {}) {
 
 	score = teamVirus + (teamAntivirus * 2); 
 	if (dave.daveravesStarted) {
-		score += (dave.daveravesStarted * 10);
+		score += (dave.daveravesStarted * 2);
 	}
 	if (Array.isArray(dave.linkedDaves)) {
-		score += (dave.linkedDaves.length * 2);
+		score += (dave.linkedDaves.length * 5);
 	}
 	score += countAcquiredItems(dave);
-	score += tags.length * 5;
+	score += tags.length * 2;
 
 	let daveDetails = {
 		userId: dave.userId,

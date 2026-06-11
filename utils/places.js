@@ -4,9 +4,11 @@ import { haversineDistance, rangesOverlap } from "../public/utils/distance.js";
 import { getMapData } from "../public/utils/map.js";
 import {
 	canAttemptPlaceFragmentChallenge,
+	canReceiveHackerJeopardyBaby,
 	getPlaceChallengeQuestion,
 	getPlaceFragmentChallengeForAction,
 	getPlaceFragmentChallengeForEmoji,
+	HACKER_JEOPARDY_BABY_COOLDOWN_KEY,
 	isCorrectPlaceFragmentAnswer
 } from "../public/utils/placeChallenges.js";
 import { getItemsForSource } from "../public/utils/itemUI.js";
@@ -327,15 +329,8 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 			return;
 		}
 
-		const plasticBabyPass = action === "hackerJeopardy" && shouldInvokePlasticBabyPass(dave, random, typeof callback === "function");
 		const rewardLabel = grantChallengeReward(dave, question.reward ?? challenge.reward, logEvent, random);
-		if (action === "hackerJeopardy") {
-			if (plasticBabyPass) {
-				dave.pendingPlasticBabyPassTime = Date.now();
-			} else {
-				grantItemReward(dave, BABY_ITEM);
-			}
-		} else {
+		if (action !== "hackerJeopardy") {
 			dave[challenge.cooldownKey] = Date.now();
 		}
 		logEvent(`${dave.name} completed ${challenge.label} at ${place.name} and recovered ${rewardLabel}.`, {
@@ -344,7 +339,40 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		});
 		markActive(dave);
 		io.emit("update");
-		respond({ ok: true, correct: true, plasticBabyPass });
+		respond({ ok: true, correct: true });
+	});
+
+	socket.on("claimHackerJeopardyBaby", (sourceId, placeId, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
+		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		const challenge = getPlaceFragmentChallengeForAction("hackerJeopardy");
+		if (!dave || !place || !challenge || !rangesOverlap(dave, place)) {
+			respond({ ok: false, error: "baby unavailable" });
+			return;
+		}
+		const isHackerJeopardyPlace = getPlaceFragmentChallengeForEmoji(firstEmoji(place.name))?.action === "hackerJeopardy"
+			|| /hacker\s*jeopardy/i.test(place.name ?? "");
+		if (!isHackerJeopardyPlace) {
+			respond({ ok: false, error: "baby unavailable" });
+			return;
+		}
+		if (!canReceiveHackerJeopardyBaby(dave)) {
+			respond({ ok: false, error: "baby cooldown active" });
+			return;
+		}
+
+		dave[HACKER_JEOPARDY_BABY_COOLDOWN_KEY] = Date.now();
+		dave.pendingPlasticBabyPassTime = Date.now();
+
+		markActive(dave);
+		io.emit("update");
+		respond({ ok: true, plasticBabyPass: true, granted: false });
 	});
 
 	socket.on("finishPlasticBabyPass", (sourceId, won, callback) => {

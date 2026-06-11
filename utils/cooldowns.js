@@ -1,6 +1,7 @@
 const COOLDOWN_TIME_KEYS = [
 	"lastDaveRaveTime",
 	"lastDoonPlaceUpgradeTime",
+	"lastHackerJeopardyBabyTime",
 	"lastHackerJeopardyTime",
 	"lastHardwareHackingTime",
 	"lastVetconTime",
