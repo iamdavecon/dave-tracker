@@ -428,15 +428,15 @@
 			    const antivirus = summary.totalAntivirus || 0;
 			    const daveRaves = summary.totalDaveRaves || 0;
 
-			    let statusText = "Balanced conflict";
+			    let statusText = "Balance";
 			    if (virus > antivirus) statusText = "Virus is currently dominating the system";
 			    else if (antivirus > virus) statusText = "DaveCon ascendency is on the rise";
 
 			    document.getElementById("summary").innerHTML = `
 			 <div class="summary-grid">
 			 <div class="summary-left">
-			 <div class="virus">Total Virus Influence: ${virus}</div>
-			 <div class="antivirus">Total DaveCon Control: ${antivirus}</div>
+			 <div class="virus">Virus Influence: ${virus}</div>
+			 <div class="antivirus">DaveCon Ascension: ${antivirus}</div>
 			 <div class="dave-raves"><a href="${raveHref}">Total DaveRaves: ${daveRaves}</a></div>
 		 </div>
 

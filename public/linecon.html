@@ -103,7 +103,6 @@
 			border-radius: 8px;
 			background:
 				linear-gradient(180deg, rgba(85, 215, 255, 0.18), transparent 46%),
-				linear-gradient(180deg, transparent 0 72%, rgba(121, 255, 155, 0.08) 72%),
 				#0d1114;
 			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38);
 			touch-action: manipulation;
@@ -115,56 +114,34 @@
 			outline-offset: 3px;
 		}
 
-		.queue-rail {
-			position: absolute;
-			left: 18px;
-			right: 18px;
-			bottom: 86px;
-			height: 8px;
-			background: repeating-linear-gradient(90deg, var(--rail) 0 32px, #3c464b 32px 42px);
-			border-radius: 999px;
-			box-shadow: 0 18px 0 rgba(255, 255, 255, 0.04);
-		}
-
 		.crowd {
 			position: absolute;
-			left: 18px;
-			right: 18px;
-			bottom: 96px;
+			left: 12px;
+			right: 12px;
+			bottom: 8px;
 			display: grid;
 			grid-template-columns: repeat(9, 1fr);
 			align-items: end;
-			gap: clamp(6px, 2vw, 14px);
+			gap: clamp(4px, 1.6vw, 12px);
+			pointer-events: none;
 		}
 
 		.person {
-			position: relative;
-			height: clamp(54px, 10vw, 78px);
-			border-radius: 999px 999px 8px 8px;
-			background: linear-gradient(180deg, #d7e0de 0 26%, #20282d 26%);
-			box-shadow: inset 0 -18px 0 rgba(0, 0, 0, 0.2);
-			opacity: 0.92;
+			display: grid;
+			place-items: center;
+			min-width: 0;
+			font-size: clamp(30px, 7vw, 54px);
+			line-height: 1;
+			filter: drop-shadow(0 5px 5px rgba(0, 0, 0, 0.5));
+			transform: translateY(var(--person-hop, 0));
 		}
 
 		.person:nth-child(2n) {
-			height: clamp(46px, 9vw, 66px);
-			background: linear-gradient(180deg, #ffd8a8 0 28%, #1c363d 28%);
+			--person-hop: -5px;
 		}
 
 		.person:nth-child(3n) {
-			background: linear-gradient(180deg, #c9a27f 0 25%, #3a2634 25%);
-		}
-
-		.person::after {
-			content: "";
-			position: absolute;
-			left: 50%;
-			top: 12%;
-			width: 8px;
-			height: 3px;
-			transform: translateX(-50%);
-			border-radius: 999px;
-			background: rgba(0, 0, 0, 0.45);
+			--person-hop: -10px;
 		}
 
 		.beachball {
@@ -185,6 +162,30 @@
 
 		.beachball.bumped {
 			animation: pop 150ms ease-out;
+		}
+
+		.earned-balls {
+			position: absolute;
+			left: 12px;
+			top: 12px;
+			z-index: 1;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 5px;
+			max-width: min(48%, 250px);
+			pointer-events: none;
+		}
+
+		.earned-ball {
+			width: 26px;
+			height: 26px;
+			display: grid;
+			place-items: center;
+			border-radius: 50%;
+			background: rgba(255, 255, 255, 0.08);
+			font-size: 20px;
+			line-height: 1;
+			filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.42));
 		}
 
 		.status-strip {
@@ -265,17 +266,17 @@
 
 		<section id="gameStage" class="game-stage" tabindex="0" aria-label="LineCon beachball game">
 			<div class="crowd" aria-hidden="true">
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
-				<div class="person"></div>
+				<span class="person">🧍</span>
+				<span class="person">🧑</span>
+				<span class="person">🙋</span>
+				<span class="person">🧔</span>
+				<span class="person">👩</span>
+				<span class="person">🧓</span>
+				<span class="person">🧕</span>
+				<span class="person">👨</span>
+				<span class="person">🧍‍♀️</span>
 			</div>
-			<div class="queue-rail" aria-hidden="true"></div>
+			<div id="earnedBalls" class="earned-balls" aria-label="Earned beach balls"></div>
 			<div id="beachball" class="beachball" aria-hidden="true"></div>
 		</section>
 
@@ -317,6 +318,7 @@
 
 		const stage = document.getElementById("gameStage");
 		const ball = document.getElementById("beachball");
+		const earnedBallsEl = document.getElementById("earnedBalls");
 		const bumpButton = document.getElementById("bumpButton");
 		const sessionEl = document.getElementById("sessionBumps");
 		const totalEl = document.getElementById("totalBumps");
@@ -332,6 +334,7 @@
 		let sessionBumps = 0;
 		let totalBumps = 0;
 		let bestBumps = Number(localStorage.getItem(bestKey) ?? 0);
+		let beachBalls = 0;
 		let lastFrame = performance.now();
 		let landed = false;
 		let x = 0.5;
@@ -346,6 +349,18 @@
 			bestEl.textContent = bestBumps.toString();
 		}
 
+		function renderEarnedBalls() {
+			const visibleBalls = Math.min(10, Math.max(0, Math.floor(beachBalls)));
+			earnedBallsEl.innerHTML = "";
+
+			for (let index = 0; index < visibleBalls; index += 1) {
+				const earnedBall = document.createElement("span");
+				earnedBall.className = "earned-ball";
+				earnedBall.textContent = "🏐";
+				earnedBallsEl.appendChild(earnedBall);
+			}
+		}
+
 		async function loadTotalBumps() {
 			try {
 				const res = await fetch(`/api/dave?id=${encodeURIComponent(userId)}&viewerId=${encodeURIComponent(userId)}`);
@@ -353,22 +368,28 @@
 
 				const dave = await res.json();
 				totalBumps = Math.max(0, Number(dave.lineconBumps ?? 0));
+				beachBalls = Math.max(0, Number(dave["🏐"]?.count ?? 0));
 				renderScores();
+				renderEarnedBalls();
 			} catch {
 				statusEl.textContent = "Totals will sync after the next bump.";
 			}
 		}
 
 		function syncBump() {
-			socket.emit("lineconBump", userId, placeId, bestBumps, (result) => {
+			socket.emit("lineconBump", userId, placeId, sessionBumps, (result) => {
 				if (result?.ok) {
 					totalBumps = result.bumps;
+					beachBalls = Math.max(beachBalls, Number(result.beachBalls ?? 0));
 					bestBumps = Math.max(bestBumps, Number(result.bestStreak ?? 0));
 					localStorage.setItem(bestKey, bestBumps.toString());
 					if (result.earnedBallMaster) {
 						statusEl.textContent = "BALL MASTER unlocked.";
+					} else if (result.awardedBeachBall) {
+						statusEl.textContent = "Beach ball earned.";
 					}
 					renderScores();
+					renderEarnedBalls();
 					return;
 				}
 
@@ -379,25 +400,38 @@
 		function resetBall() {
 			const rect = stage.getBoundingClientRect();
 			x = 0.5;
-			y = Math.max(124, rect.height * 0.38);
+			y = Math.max(80, rect.height * 0.34);
 			vx = 0;
-			vy = 360;
+			vy = 280;
 			rotation = 0;
 			landed = false;
 			statusEl.textContent = "Back in the air.";
 		}
 
+		function isBallBumpable() {
+			const rect = stage.getBoundingClientRect();
+			const ballSize = ball.offsetWidth || 78;
+			const ballCenterFromBottom = y + ballSize / 2;
+			return ballCenterFromBottom <= rect.height * 0.75;
+		}
+
 		function bump() {
 			if (landed) {
 				resetBall();
+				return;
+			}
+
+			if (!isBallBumpable()) {
+				statusEl.textContent = "Wait for it to drop.";
+				return;
 			}
 
 			const rect = stage.getBoundingClientRect();
 			const side = x < 0.5 ? 1 : -1;
-			vy = Math.max(vy, 650);
-			vx += side * (0.07 + Math.random() * 0.04);
-			vx = Math.max(-0.28, Math.min(0.28, vx));
-			y = Math.max(y, Math.min(150, rect.height * 0.3));
+			vy = Math.max(vy, 500);
+			vx += side * (0.045 + Math.random() * 0.025);
+			vx = Math.max(-0.2, Math.min(0.2, vx));
+			y = Math.max(y, Math.min(120, rect.height * 0.24));
 
 			sessionBumps += 1;
 			totalBumps += 1;
@@ -414,16 +448,16 @@
 		function updateBall(now) {
 			const rect = stage.getBoundingClientRect();
 			const ballSize = ball.offsetWidth || 78;
-			const floor = 96;
+			const floor = 24;
 			const ceiling = rect.height - ballSize - 16;
 			const dt = Math.min(0.032, (now - lastFrame) / 1000);
 			lastFrame = now;
 
 			if (!landed) {
-				vy -= 930 * dt;
+				vy -= 740 * dt;
 				y += vy * dt;
 				x += vx * dt;
-				rotation += (vx * 420 + 95) * dt;
+				rotation += (vx * 320 + 70) * dt;
 
 				if (x < 0.08) {
 					x = 0.08;

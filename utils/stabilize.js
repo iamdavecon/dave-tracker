@@ -21,6 +21,7 @@ import { getUsers } from './storage.js';
 import { DAVE_TANGENT_NAME, GOON_NAME } from './bots.js';
 import { BLACK_BADGE_RAFFLE_ITEM } from './players.js';
 import { markActive } from './activity.js';
+import { isDebugId } from './debugAccess.js';
 
 function normalizeGrantedTag(tag) {
 	return String(tag ?? "").trim().slice(0, 40);
@@ -295,7 +296,12 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 		const me = localDaves[sourceId];
 		const target = localDaves[targetId];
 		const normalizedTag = normalizeGrantedTag(tag);
-		if (!me || !target || target.isBot || !isDavePrime(me) || !normalizedTag || !inRange(me, target)) {
+		if (!me || !target || target.isBot || !normalizedTag) {
+			return;
+		}
+
+		const canGrant = isDebugId(sourceId) || (isDavePrime(me) && inRange(me, target));
+		if (!canGrant) {
 			return;
 		}
 

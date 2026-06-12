@@ -1,4 +1,5 @@
 import { inRange } from './distance.js';
+import { DAVE_RAVE_MIN_PLAYERS, DAVE_RAVE_RADIUS_METERS } from './raves.js';
 
 const LOCATION_OPTIONS = {
 	enableHighAccuracy: true,
@@ -65,19 +66,98 @@ function fitMapBounds(state, force = false) {
 		return;
 	}
 
-	state.map.fitBounds(state.group.getBounds(), { padding: [30, 30], animate: true, duration: 0.5 });
+	const bounds = state.options.showDaveRaveRange && state.raveRangeCircle
+		? getRadiusBounds(state.mapData.viewerLat, state.mapData.viewerLon, DAVE_RAVE_RADIUS_METERS)
+		: state.group.getBounds();
+
+	state.map.fitBounds(bounds, { padding: [30, 30], animate: true, duration: 0.5 });
 	state.lastFitAt = now;
+}
+
+function getRadiusBounds(lat, lng, radiusMeters) {
+	const latDelta = radiusMeters / 111320;
+	const lngScale = Math.max(Math.cos(lat * Math.PI / 180), 0.01);
+	const lngDelta = radiusMeters / (111320 * lngScale);
+
+	return L.latLngBounds(
+		[lat - latDelta, lng - lngDelta],
+		[lat + latDelta, lng + lngDelta]
+	);
+}
+
+function getRaveRangeSummary(options = {}) {
+	const count = Number.isFinite(options.raveCount) ? options.raveCount : 0;
+	const needed = Math.max(0, DAVE_RAVE_MIN_PLAYERS - count);
+	const status = options.canStartDaveRave
+		? "Ready"
+		: needed > 0
+			? `${needed} more`
+			: "Cooldown";
+
+	return {
+		count,
+		status
+	};
+}
+
+function renderRaveRangeLegend(state) {
+	if (!state.raveLegend) {
+		state.raveLegend = L.control({ position: "bottomleft" });
+		state.raveLegend.onAdd = () => {
+			const el = L.DomUtil.create("div", "rave-range-legend");
+			state.raveLegendEl = el;
+			return el;
+		};
+		state.raveLegend.addTo(state.map);
+	}
+
+	const summary = getRaveRangeSummary(state.options);
+	state.raveLegendEl.innerHTML = `
+		<div class="rave-range-label">Dave Rave Range</div>
+		<div class="rave-range-value">${DAVE_RAVE_RADIUS_METERS}m radius</div>
+		<div class="rave-range-count">${summary.count}/${DAVE_RAVE_MIN_PLAYERS} Daves - ${summary.status}</div>
+	`;
+}
+
+function updateRaveRange(state) {
+	if (!state.options.showDaveRaveRange) {
+		state.raveRangeCircle?.remove();
+		state.raveLegend?.remove();
+		state.raveRangeCircle = null;
+		state.raveLegend = null;
+		state.raveLegendEl = null;
+		return;
+	}
+
+	const center = [state.mapData.viewerLat, state.mapData.viewerLon];
+	if (!state.raveRangeCircle) {
+		state.raveRangeCircle = L.circle(center, {
+			radius: DAVE_RAVE_RADIUS_METERS,
+			color: "#ffd700",
+			weight: 2,
+			opacity: 0.95,
+			fillColor: "#5cff9d",
+			fillOpacity: 0.12,
+			className: "rave-range-circle"
+		}).addTo(state.map);
+	} else {
+		state.raveRangeCircle.setLatLng(center);
+		state.raveRangeCircle.setRadius(DAVE_RAVE_RADIUS_METERS);
+	}
+
+	renderRaveRangeLegend(state);
 }
 
 function updateMapState(state, mapData, shouldFit = false) {
 	state.mapData = mapData;
 	state.meMarker.setLatLng([mapData.viewerLat, mapData.viewerLon]);
-	state.targetMarker.setLatLng([mapData.targetLat, mapData.targetLon]);
-	state.targetMarker.setIcon(createPill(mapData.name, mapData.state?.toLowerCase(), false, mapData.badgeStatus));
-	state.connectionLine.setLatLngs([
+	state.targetMarker?.setLatLng([mapData.targetLat, mapData.targetLon]);
+	state.targetMarker?.setIcon(createPill(mapData.name, mapData.state?.toLowerCase(), false, mapData.badgeStatus));
+	state.connectionLine?.setLatLngs([
 		[mapData.viewerLat, mapData.viewerLon],
 		[mapData.targetLat, mapData.targetLon]
 	]);
+	updateRaveRange(state);
 	fitMapBounds(state, shouldFit);
 }
 
@@ -104,6 +184,7 @@ export function addMap(mapData, options = {}) {
 		return activeState.map;
 	}
 
+	const showTarget = !options.showDaveRaveRange;
 	const map = L.map(container);
 
 	L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -115,23 +196,27 @@ export function addMap(mapData, options = {}) {
 		icon: createPill("YOU", "", true)
 	}).addTo(map);
 
-	const targetMarker = L.marker([mapData.targetLat, mapData.targetLon], {
-		icon: createPill(mapData.name, mapData.state?.toLowerCase(), false, mapData.badgeStatus)
-	}).addTo(map);
+	const targetMarker = showTarget
+		? L.marker([mapData.targetLat, mapData.targetLon], {
+			icon: createPill(mapData.name, mapData.state?.toLowerCase(), false, mapData.badgeStatus)
+		}).addTo(map)
+		: null;
 
 	//L.marker([mapData.targetLat, mapData.targetLon], { title: mapData.name }).addTo(map);
 
-
-	const group = new L.featureGroup([meMarker, targetMarker]);
+	const groupLayers = targetMarker ? [meMarker, targetMarker] : [meMarker];
+	const group = new L.featureGroup(groupLayers);
 
 	// --- draw connection line ---
-	const connectionLine = L.polyline(
-		[
-			[mapData.viewerLat, mapData.viewerLon],
-			[mapData.targetLat, mapData.targetLon]
-		],
-		{ color: "white", opacity: 0.5 }
-	).addTo(map);
+	const connectionLine = showTarget
+		? L.polyline(
+			[
+				[mapData.viewerLat, mapData.viewerLon],
+				[mapData.targetLat, mapData.targetLon]
+			],
+			{ color: "white", opacity: 0.5 }
+		).addTo(map)
+		: null;
 
 	const mapState = {
 		map,
@@ -145,6 +230,7 @@ export function addMap(mapData, options = {}) {
 	};
 
 	activeMapStates.set(container, mapState);
+	updateRaveRange(mapState);
 
 	function updateViewerLocation(lat, lng) {
 		if (mapState.options.freeRoam || mapState.mapData.freeRoam) {
@@ -158,10 +244,11 @@ export function addMap(mapData, options = {}) {
 		mapState.mapData.viewerLat = lat;
 		mapState.mapData.viewerLon = lng;
 		meMarker.setLatLng([lat, lng]);
-		connectionLine.setLatLngs([
+		connectionLine?.setLatLngs([
 			[lat, lng],
 			[mapState.mapData.targetLat, mapState.mapData.targetLon]
 		]);
+		updateRaveRange(mapState);
 		fitMapBounds(mapState);
 
 		mapState.options.socket?.emit("location", { lat, lng });

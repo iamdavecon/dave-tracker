@@ -64,6 +64,10 @@ async function teleport() {
 	window.location.href = "/";
 }
 
+function getAdminActionHtml() {
+	return `<button data-action="admin">su root</button>`;
+}
+
 async function deconstructPlace() {
 	//console.log("deconstructing: " + placeId);
 	const res = await fetch(`/api/places/${placeId}/deconstruct`, {
@@ -199,6 +203,9 @@ function addActions(actionHtml) {
 		if (!action) return;
 
 		switch (action) {
+			case "admin":
+				window.location.href = "/admin.html";
+				break;
 			case "placeAction":
 				const item = e.target.dataset.item;
 				getItem(item);
@@ -416,6 +423,7 @@ async function loadPlace() {
 		actionHtml += `<button data-action="deconstructNode">Deconstruct node</button> `   
 	} 
 	if (isDebugUser) {
+		actionHtml += getAdminActionHtml();
 		actionHtml += `<button data-action="teleport">Teleport</button>`;
 	}
 	addActions(actionHtml);

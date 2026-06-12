@@ -19,6 +19,7 @@ import { applyLineconBump } from "./utils/linecon.js";
 import { addCommendations } from "./public/utils/dod.js";
 import { resetAllCooldowns } from "./utils/cooldowns.js";
 import { applyLocationActivity, markActive } from "./utils/activity.js";
+import { getActiveDaves, isActiveDave } from "./utils/activeDaves.js";
 import { createTestDaves, TEST_DAVE_IDS } from "./utils/testDaves.js";
 
 
@@ -55,21 +56,6 @@ let savedDaves = await loadUsers();
 let savedPlaces = getPlaces();
 
 let daves = { ...savedDaves };  
-
-function isActiveDave(info, now = Date.now()) {
-	if (!info || !Number.isFinite(info.updatedAt)) {
-		return false;
-	}
-
-	const maxIdleMs = info.isBot ? getBotLifetimeMs() : 15 * 60 * 1000;
-	return info.updatedAt >= now - maxIdleMs;
-}
-
-function getActiveDaves() {
-	return Object.fromEntries(
-		Object.entries(daves).filter(([, info]) => isActiveDave(info))
-	);
-}
 
 // --- save active users, cull idle users ---
 setInterval(async () => { 
@@ -302,7 +288,11 @@ app.get('/api/dave', (req, res) => {
 	let result = getInteraction(me, dave, localDaves, savedPlaces);
 	result.availableActions.nearestPlace = places.getNearestPlaceInRange(me, savedPlaces);
 	result.availableActions.tooNear = places.isTooNear(me, savedPlaces);
-	result.isDebugUser = isDebugId(viewerId);
+	const viewerIsDebug = isDebugId(viewerId);
+	if (viewerIsDebug && !result.isMe && !result.isBot) {
+		result.availableActions.canGrantTag = true;
+	}
+	result.isDebugUser = viewerIsDebug;
 	res.json(result);
 });
 
@@ -745,7 +735,7 @@ app.get('/api/places', (req, res) => {
 //  --- daves and places ---
 app.get('/api/data', (req, res) => {
 	res.json( {
-		daves: getActiveDaves(), 
+		daves: getActiveDaves(daves), 
 		places: savedPlaces 
 	});
 });
@@ -965,12 +955,14 @@ io.on('connection', (socket) => {
 		const dave = daves[socket.userId];
 		if (dave) {
 			const oldName = dave.name;
-			dave.name = name;
-			markActive(dave);
-			logEvent(`${oldName} is now known as ${dave.name}.`, {
-				userId: dave.userId
-			});
-			io.emit("update");
+			if (oldName != name) {
+				dave.name = name;
+				markActive(dave);
+				logEvent(`${oldName} is now known as ${dave.name}.`, {
+					userId: dave.userId
+				});
+				io.emit("update");
+			}
 		}
 	});
 

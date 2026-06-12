@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import { registerHandlers } from '../utils/stabilize.js';
 
+const DEBUG_ID = '59a388e8-413a-4d8e-906e-15469bb3b471';
+
 function createSocket(userId) {
 	const handlers = {};
 	const emitted = [];
@@ -342,6 +344,23 @@ test('grantTag lets DavePrime grant a tag to an in-range user', () => {
 
 	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
 	handlers.grantTag('source', 'target', ' general ');
+
+	assert.deepEqual(daves.target.tags, ['general']);
+	assert.equal(logs.length, 1);
+	assert.equal(ioEvents.length, 1);
+});
+
+test('grantTag lets debug users grant a tag outside normal range', () => {
+	const { socket, handlers } = createSocket(DEBUG_ID);
+	const logs = [];
+	const ioEvents = [];
+	const daves = {
+		[DEBUG_ID]: { userId: DEBUG_ID, name: 'Debug', state: 'immune', lat: 41, lng: -87 },
+		target: { userId: 'target', name: 'Target', tags: [], lat: 42, lng: -88 }
+	};
+
+	registerHandlers(socket, daves, { emit: (...args) => ioEvents.push(args) }, (message) => logs.push(message));
+	handlers.grantTag(DEBUG_ID, 'target', 'general');
 
 	assert.deepEqual(daves.target.tags, ['general']);
 	assert.equal(logs.length, 1);

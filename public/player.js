@@ -18,6 +18,7 @@ const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 let isDebugUser = false;
 const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
+const BEACH_BALL_ITEM = "🏐";
 
 let map;
 let preserveActionStatusUntil = 0;
@@ -366,6 +367,10 @@ async function removePlayer() {
 	}
 }
 
+function getAdminActionHtml() {
+	return `<button data-action="admin">su root</button>`;
+}
+
 function addActions(actionHtml) {
 	const actionsContainer = document.getElementById("actions");
 	const statusEl = document.getElementById("actionStatus");
@@ -502,6 +507,18 @@ function renderMapArea(dave) {
 		return;
 	}
 
+	if (dave.isMe && dave.visible !== false) {
+		mapArea.classList.remove("hidden");
+		mapEl.classList.remove("hidden");
+		map = addMap(dave.mapData, {
+			socket,
+			showDaveRaveRange: true,
+			raveCount: dave.availableActions?.davesInArea ?? 0,
+			canStartDaveRave: !!dave.availableActions?.canStartDaveRave
+		});
+		return;
+	}
+
 	if (!dave.isMe && dave.visible !== false) {
 		mapArea.classList.remove("hidden");
 		mapEl.classList.remove("hidden");
@@ -592,6 +609,7 @@ async function loadPlayer() {
 		const nodes = dave.nodeCount ?? 0;
 		const babyStats = getBabyStats(dave, state);
 		const blackBadgeRaffleTickets = state.getAmt(dave, BLACK_BADGE_RAFFLE_ITEM);
+		const beachBalls = state.getAmt(dave, BEACH_BALL_ITEM);
 		const babyHref = `/babies.html?id=${encodeURIComponent(dave.userId || daveId)}&viewerId=${encodeURIComponent(userId)}`;
 		const babyRow = babyStats.hasActivity
 			? `<a class="field item-row" href="${babyHref}">
@@ -601,6 +619,15 @@ async function loadPlayer() {
 			: `<div class="field">
 				<span class="label">👶 Babies</span>
 				<span>${babyStats.count}</span>
+			</div>`;
+		const beachBallRow = beachBalls > 0
+			? `<a class="field item-row" href="/linecon.html">
+				<span class="label">🏐 Beach Balls</span>
+				<span>${beachBalls}</span>
+			</a>`
+			: `<div class="field">
+				<span class="label">🏐 Beach Balls</span>
+				<span>${beachBalls}</span>
 			</div>`;
 
 		let statHtml = "";
@@ -626,6 +653,7 @@ async function loadPlayer() {
 				<span class="label">Black Badge Raffle Tickets</span>
 				<span>${blackBadgeRaffleTickets}</span>
 			</div>
+			${beachBallRow}
 		`;
 		statHtml += displayItems(dave, null, { userId: dave.userId || daveId, viewerId: userId });
 		document.getElementById("stats").innerHTML = statHtml;
@@ -695,7 +723,7 @@ async function loadPlayer() {
 
 		//  DEBUG
 		if (isDebugUser) {
-			actionHtml += `<button data-action="admin">su root</button>`
+			actionHtml += getAdminActionHtml();
 		}
 
 		addActions(actionHtml);
@@ -762,6 +790,7 @@ async function loadPlayer() {
 			}
 
 			if (isDebugUser) {
+				actionHtml += getAdminActionHtml();
 				actionHtml += `<button data-action="teleport">Teleport</button>`;
 				actionHtml += `<button data-action="removePlayer">Remove Player</button>`;
 			}
@@ -770,6 +799,10 @@ async function loadPlayer() {
 		} else {
 			if (isDebugUser) {
 				let actionHtml = "";
+				if (!dave.isBot && dave.availableActions.canGrantTag) {
+					actionHtml += getGrantTagControlHtml();
+				}
+				actionHtml += getAdminActionHtml();
 				actionHtml += `<button data-action="teleport">Teleport</button>`;
 				actionHtml += `<button data-action="removePlayer">Remove Player</button>`;
 				addActions(actionHtml);
