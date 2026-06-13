@@ -146,20 +146,18 @@ async function addLandmarkPlace(place, inputEl) {
 	}
 }
 
-function getCurrentLocation() {
-	if (!navigator.geolocation) {
-		return Promise.reject(new Error("Current location is unavailable in this browser."));
+async function getCurrentDaveLocation() {
+	const res = await fetch(`/api/dave?id=${encodeURIComponent(userId)}&viewerId=${encodeURIComponent(userId)}`);
+	const dave = await res.json();
+
+	if (!res.ok) {
+		throw new Error(dave.error ?? `Unable to load current Dave location (${res.status}).`);
 	}
 
-	return new Promise((resolve, reject) => {
-		navigator.geolocation.getCurrentPosition(
-			(pos) => resolve({
-				lat: pos.coords.latitude,
-				lng: pos.coords.longitude
-			}),
-			(error) => reject(new Error(error.message || "Unable to get current location."))
-		);
-	});
+	return {
+		lat: dave.lat,
+		lng: dave.lng
+	};
 }
 
 document.addEventListener("click", (e) => {
@@ -280,8 +278,8 @@ document.addEventListener("click", (e) => {
 			return;
 		}
 
-		statusEl.textContent = "Getting current location...";
-		getCurrentLocation()
+		statusEl.textContent = "Using current Dave location...";
+		getCurrentDaveLocation()
 			.then((location) => {
 				const parsed = parseCurrentLocationLandmarkInput(currentLandmarkNameInputEl.value, location);
 				if (parsed.error) {
