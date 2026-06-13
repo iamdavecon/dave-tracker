@@ -28,3 +28,27 @@ export function parseLandmarkInput(value, createId = () => crypto.randomUUID()) 
 	};
 }
 
+export function parseCurrentLocationLandmarkInput(value, location, createId = () => crypto.randomUUID()) {
+	const name = value.trim();
+	if (!name) {
+		return { error: "Landmark name is required." };
+	}
+
+	const lat = Number(location?.lat);
+	const lng = Number(location?.lng);
+	if (!Number.isFinite(lat) || lat < -90 || lat > 90) {
+		return { error: "Current latitude is unavailable." };
+	}
+	if (!Number.isFinite(lng) || lng < -180 || lng > 180) {
+		return { error: "Current longitude is unavailable." };
+	}
+
+	return {
+		place: {
+			id: createId(),
+			lat,
+			lng,
+			name
+		}
+	};
+}

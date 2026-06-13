@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseLandmarkInput } from '../public/utils/adminPlaces.js';
+import { parseCurrentLocationLandmarkInput, parseLandmarkInput } from '../public/utils/adminPlaces.js';
 
 test('parseLandmarkInput builds a place from pasted lat lon name', () => {
 	const result = parseLandmarkInput(
@@ -35,3 +35,25 @@ test('parseLandmarkInput rejects invalid coordinates and missing names', () => {
 	assert.equal(parseLandmarkInput('36, -115, ').error, 'Landmark must be formatted as lat, lon, name.');
 });
 
+test('parseCurrentLocationLandmarkInput builds a place from a name and current location', () => {
+	const result = parseCurrentLocationLandmarkInput(
+		'🍸 Peppermill',
+		{ lat: 36.133736733141575, lng: -115.16348139665487 },
+		() => 'place-current'
+	);
+
+	assert.deepEqual(result, {
+		place: {
+			id: 'place-current',
+			lat: 36.133736733141575,
+			lng: -115.16348139665487,
+			name: '🍸 Peppermill'
+		}
+	});
+});
+
+test('parseCurrentLocationLandmarkInput rejects missing names and invalid current locations', () => {
+	assert.equal(parseCurrentLocationLandmarkInput('', { lat: 36, lng: -115 }).error, 'Landmark name is required.');
+	assert.equal(parseCurrentLocationLandmarkInput('Bad', { lat: 91, lng: -115 }).error, 'Current latitude is unavailable.');
+	assert.equal(parseCurrentLocationLandmarkInput('Bad', { lat: 36, lng: -181 }).error, 'Current longitude is unavailable.');
+});

@@ -332,10 +332,12 @@ export function registerHandlers(socket, daves, savedPlaces = {}, io, logEvent =
 
 		if (success) {
 			markActive(me);
+			/*
 			logEvent(`${me.name} introduced themselves to ${DAVE_TANGENT_NAME}.`, {
 				userId: me.userId
 			});
 			io.emit("update", { daves });
+			*/
 		}
 	});
 

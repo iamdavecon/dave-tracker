@@ -1,6 +1,6 @@
 import { getUserId } from './utils/id.js';
 import * as state from './utils/state.js';
-import { parseLandmarkInput } from './utils/adminPlaces.js';
+import { parseCurrentLocationLandmarkInput, parseLandmarkInput } from './utils/adminPlaces.js';
 
 const userId = getUserId();
 const socket = io({
@@ -16,6 +16,7 @@ const backLink = document.getElementById("backLink");
 const usersJsonEl = document.getElementById("usersJson");
 const placesJsonEl = document.getElementById("placesJson");
 const landmarkInputEl = document.getElementById("landmarkInput");
+const currentLandmarkNameInputEl = document.getElementById("currentLandmarkNameInput");
 
 backLink.href = `/player.html?id=${encodeURIComponent(userId)}&viewerId=${encodeURIComponent(userId)}`;
 
@@ -123,6 +124,42 @@ async function getActivePlaces() {
 		throw new Error("Active places are unavailable.");
 	}
 	return data.places;
+}
+
+async function addLandmarkPlace(place, inputEl) {
+	statusEl.textContent = "Adding landmark...";
+	try {
+		const places = await getActivePlaces();
+		const nextPlaces = { ...places, [place.id]: place };
+		placesJsonEl.value = JSON.stringify(nextPlaces, null, 2);
+		const added = await callAdminEndpoint(
+			"/api/admin/update-places",
+			"Adding landmark...",
+			() => `Added ${place.name}.`,
+			{ places: nextPlaces }
+		);
+		if (added) {
+			inputEl.value = "";
+		}
+	} catch (error) {
+		statusEl.textContent = `Unable to add landmark: ${error.message}`;
+	}
+}
+
+function getCurrentLocation() {
+	if (!navigator.geolocation) {
+		return Promise.reject(new Error("Current location is unavailable in this browser."));
+	}
+
+	return new Promise((resolve, reject) => {
+		navigator.geolocation.getCurrentPosition(
+			(pos) => resolve({
+				lat: pos.coords.latitude,
+				lng: pos.coords.longitude
+			}),
+			(error) => reject(new Error(error.message || "Unable to get current location."))
+		);
+	});
 }
 
 document.addEventListener("click", (e) => {
@@ -233,22 +270,25 @@ document.addEventListener("click", (e) => {
 			return;
 		}
 
-		statusEl.textContent = "Adding landmark...";
-		getActivePlaces()
-			.then((places) => {
-				const nextPlaces = { ...places, [parsed.place.id]: parsed.place };
-				placesJsonEl.value = JSON.stringify(nextPlaces, null, 2);
-				return callAdminEndpoint(
-					"/api/admin/update-places",
-					"Adding landmark...",
-					() => `Added ${parsed.place.name}.`,
-					{ places: nextPlaces }
-				);
-			})
-			.then((added) => {
-				if (added) {
-					landmarkInputEl.value = "";
+		addLandmarkPlace(parsed.place, landmarkInputEl);
+		return;
+	}
+
+	if (action === "addCurrentLocationLandmark") {
+		if (!currentLandmarkNameInputEl.value.trim()) {
+			statusEl.textContent = "Landmark name is required.";
+			return;
+		}
+
+		statusEl.textContent = "Getting current location...";
+		getCurrentLocation()
+			.then((location) => {
+				const parsed = parseCurrentLocationLandmarkInput(currentLandmarkNameInputEl.value, location);
+				if (parsed.error) {
+					statusEl.textContent = parsed.error;
+					return;
 				}
+				return addLandmarkPlace(parsed.place, currentLandmarkNameInputEl);
 			})
 			.catch((error) => {
 				statusEl.textContent = `Unable to add landmark: ${error.message}`;
