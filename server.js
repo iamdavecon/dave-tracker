@@ -703,8 +703,7 @@ app.post("/api/places/:id/deconstruct", express.json(), (req, res) => {
 		? `${daveName} deconstructed ${placeName} and recovered ${fragmentCount} fragments.`
 		: `${daveName} deconstructed ${placeName}.`, {
 		userId: dave.userId,
-		placeId,
-		important: true
+		placeId
 	});
 
 	io.emit("update");
@@ -880,11 +879,13 @@ io.on('connection', (socket) => {
 
 				if (difference <= 20 * 1000) {
 					//console.log("INSTALL");
-					state.installAntivirus(daves[socket.userId]);
-					markActive(daves[socket.userId]);
-					logEvent(`${daves[socket.userId].name} installed mind antivirus.`, {
-						userId: socket.userId
-					});
+					if (state.installAntivirus(daves[socket.userId])) {
+						markActive(daves[socket.userId]);
+						logEvent(`${daves[socket.userId].name} installed mind antivirus.`, {
+							userId: socket.userId,
+							important: true,
+						});
+					}
 				}
 			} catch (error) { //ignore
 				console.error("Error decoding base64:", error);

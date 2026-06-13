@@ -1,5 +1,6 @@
 import { getUserId } from './utils/id.js';
 import { getItemsForSource, displayItems } from './utils/itemUI.js';
+import { BABY_ITEM } from './utils/babies.js';
 import {
 	canAttemptPlaceFragmentChallenge,
 	canReceiveHackerJeopardyBaby,
@@ -36,8 +37,10 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const placeId = params.get("id");
 let isDebugUser = false;
-const DRINK_ITEM = "🍺";
-const COCKTAIL_ITEM = "🍸";
+const DRINK_ITEM = "\u{1F37A}";
+const COCKTAIL_ITEM = "\u{1F378}";
+const BEACH_BALL_ITEM = "\u{1F3D0}";
+const SAO_ITEM = "\u{131F2}";
 
 let map;
 
@@ -105,6 +108,42 @@ function openSolderingGame() {
 
 function getLineconUrl() {
 	return `/linecon.html?placeId=${encodeURIComponent(placeId)}`;
+}
+
+function getItemCountRow(dave, item, label, href = "") {
+	const amount = state.getAmt(dave, item);
+	const content = `
+		<span class="label">${label}</span>
+		<span>${amount}</span>`;
+
+	if (amount > 0 && href) {
+		return `<a class="field item-row" href="${href}">${content}</a>`;
+	}
+
+	return `<div class="field">${content}</div>`;
+}
+
+function getPlaceGrantItemStats(dave, place, firstEmoji, fragmentChallenge, isLineconNode) {
+	let html = "";
+
+	if (place.name?.includes("Circus Circus") && firstEmoji !== COCKTAIL_ITEM) {
+		html += getItemCountRow(dave, DRINK_ITEM, "🍺 Drinks");
+	}
+
+	if (fragmentChallenge?.action === "hackerJeopardy") {
+		const babyHref = `/babies.html?id=${encodeURIComponent(dave.userId || userId)}&viewerId=${encodeURIComponent(userId)}`;
+		html += getItemCountRow(dave, BABY_ITEM, "👶 Babies", babyHref);
+	}
+
+	if (fragmentChallenge?.action === "hardwareHacking") {
+		html += getItemCountRow(dave, SAO_ITEM, "𓇲 SAOs");
+	}
+
+	if (isLineconNode) {
+		html += getItemCountRow(dave, BEACH_BALL_ITEM, "🏐 Beach Balls", getLineconUrl());
+	}
+
+	return html;
 }
 
 function openLinecon() {
@@ -313,6 +352,8 @@ async function loadPlace() {
 
 	const characters = [...place.name]; // Splits correctly by Unicode code points
 	const firstEmoji = characters.find(char => /\p{Extended_Pictographic}/u.test(char));
+	const fragmentChallenge = getPlaceFragmentChallengeForPlaceName(place.name);
+	const isLineconNode = firstEmoji == '☠' || /def\s*con|line\s*con|linecon/i.test(place.name ?? "");
 
 	statHtml += `
 		<div class="field">
@@ -327,6 +368,7 @@ async function loadPlace() {
 	if (firstEmoji) {
 		statHtml += displayItems (dave, firstEmoji);
 	}
+	statHtml += getPlaceGrantItemStats(dave, place, firstEmoji, fragmentChallenge, isLineconNode);
 
 	document.getElementById("stats").innerHTML = statHtml;
 
@@ -348,7 +390,6 @@ async function loadPlace() {
 	place.mapData.inRange = placeInRange;
 
 	if (placeInRange) {
-		const isLineconNode = firstEmoji == '☠' || /def\s*con|line\s*con|linecon/i.test(place.name ?? "");
 		if (isLineconNode) {
 			actionHtml += state.hasTag(dave, "linecon")
 				? `<button data-action="playLinecon">Join LineCon</button>`
@@ -363,7 +404,6 @@ async function loadPlace() {
 				: `<button disabled>Is this not a reasonable place to park? (${remaining})</button>`;
 		}
 
-		const fragmentChallenge = getPlaceFragmentChallengeForPlaceName(place.name);
 		if (fragmentChallenge) {
 			const available = canAttemptPlaceFragmentChallenge(dave, fragmentChallenge);
 			const remaining = state.formatCooldownRemaining(getPlaceFragmentChallengeCooldownRemaining(dave, fragmentChallenge));

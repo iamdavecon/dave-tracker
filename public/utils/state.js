@@ -143,10 +143,11 @@ export function getAscendencyBonus(obj) {
 export function installAntivirus(dave) {
 	const state = getIndex(dave);
 	if (state < toNumber(STATES.IMMUNE)) {
-		return;
+		return false;
 	}
 
 	dave.state = STATES.IMMUNE;
+	return true;
 }
 
 
