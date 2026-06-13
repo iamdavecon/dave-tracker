@@ -439,7 +439,7 @@ test('claimGoonRaffle grants one black badge raffle ticket per GOON', () => {
 	handlers.claimGoonRaffle('source', 'otherGoon');
 
 	assert.deepEqual(daves.source.claimedGoonRaffles, ['goon', 'otherGoon']);
-	assert.deepEqual(daves.source["Black Badge Raffle Tickets"].count, 2);
+	assert.deepEqual(daves.source["🎟️"].count, 2);
 	assert.equal(logs.length, 2);
 	assert.equal(ioEvents.length, 2);
 });

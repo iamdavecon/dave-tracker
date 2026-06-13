@@ -7,7 +7,7 @@ import { DAVE_TANGENT_NAME, GOON_NAME } from "./bots.js";
 
 const TACO_ITEM = "🌮";
 const BABY_ITEM = "👶";
-export const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
+export const BLACK_BADGE_RAFFLE_ITEM = "🎟️";
 export const DAVE_RAVE_COOLDOWN = 60 * 60 * 1000;
 const VIRUS_INFLUENCE_BY_STATE = {
 	infected: 1,

@@ -17,8 +17,9 @@ const socket = io({
 const params = new URLSearchParams(window.location.search);
 const daveId = params.get("id");
 let isDebugUser = false;
-const BLACK_BADGE_RAFFLE_ITEM = "Black Badge Raffle Tickets";
+const BLACK_BADGE_RAFFLE_ITEM = "🎟️";
 const BEACH_BALL_ITEM = "🏐";
+const SAO_ITEM = "𓇲";
 
 let map;
 let preserveActionStatusUntil = 0;
@@ -610,6 +611,7 @@ async function loadPlayer() {
 		const babyStats = getBabyStats(dave, state);
 		const blackBadgeRaffleTickets = state.getAmt(dave, BLACK_BADGE_RAFFLE_ITEM);
 		const beachBalls = state.getAmt(dave, BEACH_BALL_ITEM);
+		const saos = state.getAmt(dave, SAO_ITEM);
 		const babyHref = `/babies.html?id=${encodeURIComponent(dave.userId || daveId)}&viewerId=${encodeURIComponent(userId)}`;
 		const babyRow = babyStats.hasActivity
 			? `<a class="field item-row" href="${babyHref}">
@@ -650,8 +652,12 @@ async function loadPlayer() {
 				<span>${dave.daveravesStarted ?? 0}</span>
 			</div>
 			<div class="field">
-				<span class="label">Black Badge Raffle Tickets</span>
+				<span class="label">🎟️ Black Badge Raffle</span>
 				<span>${blackBadgeRaffleTickets}</span>
+			</div>
+			<div class="field">
+				<span class="label">𓇲 SAOs</span>
+				<span>${saos}</span>
 			</div>
 			${beachBallRow}
 		`;

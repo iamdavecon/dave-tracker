@@ -803,6 +803,108 @@ test('claimPlaceFragmentChallenge grants fragments for correct hardware and vetc
 	assert.equal(daves.source.fragmentsCollected.length, 2);
 });
 
+test('finishSolderingGame grants an SAO at in-range HHV locations', () => {
+	const { socket, handlers, io, ioEvents, logs } = createHarness();
+	const sao = '𓇲';
+	let result;
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		hhv: {
+			id: 'hhv',
+			name: 'HHV Soldering Lab',
+			lat: 41,
+			lng: -87
+		}
+	};
+
+	registerHandlers(socket, daves, places, io, (message, options) => logs.push({ message, options }));
+	handlers.finishSolderingGame('source', 'hhv', true, (payload) => {
+		result = payload;
+	});
+
+	assert.equal(daves.source[sao].count, 1);
+	assert.equal(daves.source.fragmentsCollected, undefined);
+	assert.equal(Number.isFinite(daves.source.lastHardwareHackingTime), true);
+	assert.deepEqual(result, { ok: true, won: true, granted: true, saoCount: 1 });
+	assert.equal(ioEvents.length, 1);
+	assert.match(logs[0].message, /completed HHV soldering/);
+});
+
+test('finishSolderingGame ignores incomplete games and rejects forged, non-HHV, out-of-range, and cooldown attempts', () => {
+	const { socket, handlers, io } = createHarness();
+	const sao = '𓇲';
+	let incompleteResult;
+	let forgedResult;
+	let mismatchResult;
+	let farResult;
+	let cooldownResult;
+	const daves = {
+		source: {
+			userId: 'source',
+			name: 'Source',
+			fragmentsCollected: [],
+			lat: 41,
+			lng: -87
+		}
+	};
+	const places = {
+		hhv: {
+			id: 'hhv',
+			name: 'HHV Soldering Lab',
+			lat: 41,
+			lng: -87
+		},
+		plain: {
+			id: 'plain',
+			name: 'Plain Place',
+			lat: 41,
+			lng: -87
+		},
+		farHhv: {
+			id: 'farHhv',
+			name: 'Hardware Hacking Village',
+			lat: 42,
+			lng: -88
+		}
+	};
+
+	registerHandlers(socket, daves, places, io);
+	handlers.finishSolderingGame('source', 'hhv', false, (payload) => {
+		incompleteResult = payload;
+	});
+	handlers.finishSolderingGame('other', 'hhv', true, (payload) => {
+		forgedResult = payload;
+	});
+	handlers.finishSolderingGame('source', 'plain', true, (payload) => {
+		mismatchResult = payload;
+	});
+	handlers.finishSolderingGame('source', 'farHhv', true, (payload) => {
+		farResult = payload;
+	});
+	assert.deepEqual(daves.source.fragmentsCollected, []);
+	assert.equal(daves.source[sao], undefined);
+
+	handlers.finishSolderingGame('source', 'hhv', true);
+	handlers.finishSolderingGame('source', 'hhv', true, (payload) => {
+		cooldownResult = payload;
+	});
+
+	assert.equal(daves.source.fragmentsCollected.length, 0);
+	assert.equal(daves.source[sao].count, 1);
+	assert.deepEqual(incompleteResult, { ok: true, won: false, granted: false });
+	assert.deepEqual(forgedResult, { ok: false, error: 'source mismatch' });
+	assert.deepEqual(mismatchResult, { ok: false, error: 'soldering unavailable' });
+	assert.deepEqual(farResult, { ok: false, error: 'soldering unavailable' });
+	assert.deepEqual(cooldownResult, { ok: false, error: 'soldering cooldown active' });
+});
+
 test('claimPlaceFragmentChallenge rejects bad source, range, action, answer, and cooldown', () => {
 	const { socket, handlers, io } = createHarness();
 	const baby = '👶';

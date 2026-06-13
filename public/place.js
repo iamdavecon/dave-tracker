@@ -6,8 +6,8 @@ import {
 	formatPlaceChallengePrompt,
 	getHackerJeopardyBabyCooldownRemaining,
 	getPlaceFragmentChallengeCooldownRemaining,
-	getPlaceFragmentChallengeForEmoji,
 	getPlaceFragmentChallengeForAction,
+	getPlaceFragmentChallengeForPlaceName,
 	getRandomPlaceChallengeQuestion,
 	shufflePlaceChallengeOptions
 } from './utils/placeChallenges.js';
@@ -97,6 +97,10 @@ function getItem(item) {
 
 function openDrinkGame() {
 	window.location.href = `/drink-game.html?placeId=${encodeURIComponent(placeId)}&returnTo=${encodeURIComponent(window.location.href)}`;
+}
+
+function openSolderingGame() {
+	window.location.href = `/soldering-game.html?placeId=${encodeURIComponent(placeId)}&returnTo=${encodeURIComponent(window.location.href)}`;
 }
 
 function getLineconUrl() {
@@ -212,6 +216,9 @@ function addActions(actionHtml) {
 				break;
 			case "drinkGame":
 				openDrinkGame();
+				break;
+			case "solderingGame":
+				openSolderingGame();
 				break;
 			case "placeFragmentChallenge":
 				claimPlaceFragmentChallenge(e.target.dataset.challengeAction);
@@ -356,13 +363,22 @@ async function loadPlace() {
 				: `<button disabled>Is this not a reasonable place to park? (${remaining})</button>`;
 		}
 
-		const fragmentChallenge = getPlaceFragmentChallengeForEmoji(firstEmoji);
+		const fragmentChallenge = getPlaceFragmentChallengeForPlaceName(place.name);
 		if (fragmentChallenge) {
 			const available = canAttemptPlaceFragmentChallenge(dave, fragmentChallenge);
 			const remaining = state.formatCooldownRemaining(getPlaceFragmentChallengeCooldownRemaining(dave, fragmentChallenge));
+			const challengeAction = fragmentChallenge.action === "hardwareHacking"
+				? "solderingGame"
+				: "placeFragmentChallenge";
+			const challengeData = fragmentChallenge.action === "hardwareHacking"
+				? ""
+				: ` data-challenge-action="${fragmentChallenge.action}"`;
+			const challengeLabel = fragmentChallenge.action === "hardwareHacking"
+				? "Solder an SAO"
+				: fragmentChallenge.label;
 			actionHtml += available
-				? `<button data-action="placeFragmentChallenge" data-challenge-action="${fragmentChallenge.action}">${fragmentChallenge.label}</button>`
-				: `<button disabled>${fragmentChallenge.label} (${remaining})</button>`;
+				? `<button data-action="${challengeAction}"${challengeData}>${challengeLabel}</button>`
+				: `<button disabled>${challengeLabel} (${remaining})</button>`;
 
 			if (fragmentChallenge.action === "hackerJeopardy") {
 				const babyAvailable = canReceiveHackerJeopardyBaby(dave);

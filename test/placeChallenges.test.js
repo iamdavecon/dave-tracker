@@ -5,6 +5,7 @@ import {
 	formatPlaceChallengePrompt,
 	getPlaceChallengeQuestion,
 	getPlaceFragmentChallengeForEmoji,
+	getPlaceFragmentChallengeForPlaceName,
 	HACKER_JEOPARDY_QUESTIONS,
 	isCorrectPlaceFragmentAnswer,
 	shufflePlaceChallengeOptions
@@ -15,6 +16,11 @@ test('place fragment challenges map emoji to actions', () => {
 	assert.equal(getPlaceFragmentChallengeForEmoji('⚙️').action, 'hardwareHacking');
 	assert.equal(getPlaceFragmentChallengeForEmoji('⚙').action, 'hardwareHacking');
 	assert.equal(getPlaceFragmentChallengeForEmoji('🎖️').action, 'vetcon');
+});
+
+test('place fragment challenges map HHV names to hardware hacking', () => {
+	assert.equal(getPlaceFragmentChallengeForPlaceName('HHV Soldering Lab').action, 'hardwareHacking');
+	assert.equal(getPlaceFragmentChallengeForPlaceName('Hardware Hacking Village').action, 'hardwareHacking');
 });
 
 test('place fragment challenge answers are normalized', () => {

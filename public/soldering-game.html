@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>HHV Soldering</title>
+	<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+	<div class="container">
+		<a id="backLink" href="/" class="back-link">< Back</a>
+		<section class="panel">
+			<div class="section-title">HHV SAO Soldering</div>
+			<div class="solder-game-head">
+				<div id="solderStatus">Click or tap a copper pad to heat it. Fill every joint without cooking the board.</div>
+				<div id="solderMeters">Joints 0/5 | Heat OK</div>
+			</div>
+			<canvas id="solderCanvas" class="solder-game-canvas" width="420" height="520"></canvas>
+			<div id="solderDone" class="solder-game-done" hidden>
+				<button id="returnButton" type="button">Return</button>
+			</div>
+		</section>
+	</div>
+
+	<script src="/socket.io/socket.io.js"></script>
+	<script type="module" src="soldering-game.js"></script>
+</body>
+</html>

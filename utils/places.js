@@ -8,6 +8,7 @@ import {
 	getPlaceChallengeQuestion,
 	getPlaceFragmentChallengeForAction,
 	getPlaceFragmentChallengeForEmoji,
+	getPlaceFragmentChallengeForPlaceName,
 	HACKER_JEOPARDY_BABY_COOLDOWN_KEY,
 	isCorrectPlaceFragmentAnswer
 } from "../public/utils/placeChallenges.js";
@@ -29,6 +30,7 @@ const COCKTAIL_ITEM = "🍸";
 const DRINK_ITEMS = new Set([DRINK_ITEM, COCKTAIL_ITEM, "🍷", "🥂", "🍹", "🍾", "🫖"]);
 const PEPPER_ITEM = "🌶️";
 const BABY_ITEM = "👶";
+const SAO_ITEM = "𓇲";
 const BABY_LOSS_DRINK_CHANCE = 0.2;
 const PLASTIC_BABY_PASS_CHANCE = 0.5;
 const PLASTIC_BABY_PASS_EXPIRATION = 5 * 60 * 1000;
@@ -434,6 +436,44 @@ export function registerHandlers(socket, daves, savedPlaces, io, logEvent = () =
 		});
 		markActive(dave);
 		io.emit("update");
+	});
+
+	socket.on("finishSolderingGame", (sourceId, placeId, won, callback) => {
+		const respond = typeof callback === "function" ? callback : () => {};
+		if (sourceId !== socket.userId) {
+			respond({ ok: false, error: "source mismatch" });
+			return;
+		}
+
+		const dave = daves[sourceId];
+		const place = savedPlaces[placeId];
+		const challenge = getPlaceFragmentChallengeForAction("hardwareHacking");
+		if (!dave || !place || !challenge || !rangesOverlap(dave, place)) {
+			respond({ ok: false, error: "soldering unavailable" });
+			return;
+		}
+		if (getPlaceFragmentChallengeForPlaceName(place.name)?.action !== challenge.action) {
+			respond({ ok: false, error: "soldering unavailable" });
+			return;
+		}
+		if (!won) {
+			respond({ ok: true, won: false, granted: false });
+			return;
+		}
+		if (!canAttemptPlaceFragmentChallenge(dave, challenge)) {
+			respond({ ok: false, error: "soldering cooldown active" });
+			return;
+		}
+
+		const saoCount = grantItemReward(dave, SAO_ITEM);
+		dave[challenge.cooldownKey] = Date.now();
+		logEvent(`${dave.name} completed HHV soldering at ${place.name} and earned a 𓇲 SAO.`, {
+			userId: dave.userId,
+			placeId
+		});
+		markActive(dave);
+		io.emit("update");
+		respond({ ok: true, won: true, granted: true, saoCount });
 	});
 
 	socket.on("finishDrinkGame", (sourceId, placeId, won, callback) => {

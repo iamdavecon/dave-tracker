@@ -139,6 +139,18 @@ export function getPlaceFragmentChallengeForAction(action) {
 	return PLACE_CHALLENGES.find((challenge) => challenge.action === action);
 }
 
+export function getPlaceFragmentChallengeForPlaceName(name = "") {
+	const emoji = [...String(name)].find(char => /\p{Extended_Pictographic}/u.test(char));
+	const emojiChallenge = emoji ? getPlaceFragmentChallengeForEmoji(emoji) : null;
+	if (emojiChallenge) {
+		return emojiChallenge;
+	}
+	if (/\bHHV\b|hardware\s+hacking/i.test(String(name))) {
+		return getPlaceFragmentChallengeForAction("hardwareHacking");
+	}
+	return null;
+}
+
 export function getPlaceChallengeQuestion(action, questionId) {
 	const challenge = getPlaceFragmentChallengeForAction(action);
 	return challenge?.questions.find((question) => question.id === questionId) ?? null;

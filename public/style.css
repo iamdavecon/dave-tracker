@@ -1739,6 +1739,35 @@ opacity: 0.3;
 	margin-top: 14px;
 }
 
+.solder-game-head {
+	display: grid;
+	gap: 8px;
+	margin-bottom: 12px;
+	color: #aaa;
+	font-size: 13px;
+	line-height: 1.4;
+}
+
+#solderMeters {
+	color: #5cff9d;
+	font-weight: 700;
+}
+
+.solder-game-canvas {
+	display: block;
+	width: 100%;
+	height: 520px;
+	max-height: 70vh;
+	border: 2px solid #315542;
+	background: #07100d;
+	touch-action: none;
+	cursor: crosshair;
+}
+
+.solder-game-done {
+	margin-top: 14px;
+}
+
 @keyframes pulse {
 	0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
 	70% { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
