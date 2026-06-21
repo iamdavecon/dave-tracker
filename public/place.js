@@ -114,6 +114,10 @@ function getPirateVoyageUrl(mode = "join") {
 	return `/pirates/pirate-voyage.html?placeId=${encodeURIComponent(placeId)}&mode=${encodeURIComponent(mode)}`;
 }
 
+function getTreasureHoldUrl(mode = "join") {
+	return `/treasure-hold/?placeId=${encodeURIComponent(placeId)}&mode=${encodeURIComponent(mode)}`;
+}
+
 function getResolveSignalUrl() {
 	return `/resolve-signal.html?placeId=${encodeURIComponent(placeId)}`;
 }
@@ -160,6 +164,10 @@ function openLinecon() {
 
 function openPirateVoyage(mode = "join") {
 	window.location.href = getPirateVoyageUrl(mode);
+}
+
+function openTreasureHold(mode = "join") {
+	window.location.href = getTreasureHoldUrl(mode);
 }
 
 function stopPirateVoyage() {
@@ -326,6 +334,12 @@ function addActions(actionHtml) {
 			case "stopPirateVoyage":
 				stopPirateVoyage();
 				break;
+			case "createTreasureHold":
+				openTreasureHold("create");
+				break;
+			case "joinTreasureHold":
+				openTreasureHold("join");
+				break;
 			case "resolveSignal":
 				window.location.href = getResolveSignalUrl();
 				break;
@@ -340,7 +354,7 @@ async function loadPlace() {
 
 	const res = await fetch(`/api/place?id=${encodeURIComponent(placeId)}&viewerId=${encodeURIComponent(userId)}`);
 	const payload = await res.json();
-	const { place, dave, voyage } = payload;
+	const { place, dave, voyage, treasureHold } = payload;
 	isDebugUser = !!payload.isDebugUser;
 
 	//console.log("loading: " + JSON.stringify(payload, null, 2));
@@ -525,6 +539,12 @@ async function loadPlace() {
 				? `<button data-action="joinPirateVoyage">&#127988;&#8205;&#9760;&#65039; Join Crew</button>`
 				: `<button data-action="launchPirateVoyage">&#9875; Launch Voyage</button>`;
 		}
+
+		const holdActive = treasureHold && treasureHold.state !== "finished";
+		const joinedHold = !!treasureHold?.players?.[userId];
+		actionHtml += holdActive
+			? `<button data-action="joinTreasureHold">&#129498; ${joinedHold ? "Continue" : "Join"} Treasure Hold</button>`
+			: `<button data-action="createTreasureHold">&#128081; Open Treasure Hold</button>`;
 
 
 	} else {
