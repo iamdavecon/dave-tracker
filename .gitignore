@@ -9,3 +9,4 @@ csr.pem
 key.pem
 node_modules/
 package-lock.json
+*.log

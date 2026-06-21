@@ -114,6 +114,10 @@ function getPirateVoyageUrl(mode = "join") {
 	return `/pirates/pirate-voyage.html?placeId=${encodeURIComponent(placeId)}&mode=${encodeURIComponent(mode)}`;
 }
 
+function getResolveSignalUrl() {
+	return `/resolve-signal.html?placeId=${encodeURIComponent(placeId)}`;
+}
+
 function getItemCountRow(dave, item, label, href = "") {
 	const amount = state.getAmt(dave, item);
 	const content = `
@@ -322,6 +326,9 @@ function addActions(actionHtml) {
 			case "stopPirateVoyage":
 				stopPirateVoyage();
 				break;
+			case "resolveSignal":
+				window.location.href = getResolveSignalUrl();
+				break;
 			default:
 				emit(action);
 		}
@@ -509,6 +516,7 @@ async function loadPlace() {
 					: `<button disabled> ${rule.getLabel} (${remaining}) </button>`;
 		}
 
+		actionHtml += `<button data-action="resolveSignal">&#128225; Resolve the Signal</button>`;
 		if (voyage?.active && voyage?.isStarter) {
 			actionHtml += `<button data-action="joinPirateVoyage">Join the Voyage</button>`;
 			actionHtml += `<button data-action="stopPirateVoyage">Stop the Voyage</button>`;

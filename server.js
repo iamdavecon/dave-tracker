@@ -13,6 +13,7 @@ import * as raves from './utils/raves.js';
 import * as ascension from './utils/ascension.js';
 import * as debug from './utils/debug.js';
 import * as pirateVoyage from './utils/pirates/pirateVoyage.js';
+import * as resolveSignal from './utils/resolveSignal.js';
 import { postImportantLogToDiscord } from './utils/discord.js';
 import { DAVE_TANGENT_NAME, getBotLifetimeMs, hasDaveTangent, spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
@@ -1134,6 +1135,7 @@ io.on('connection', (socket) => {
 	raves.registerHandlers(socket, daves, io, logEvent, awardDodCommendations);
 	ascension.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 	pirateVoyage.registerHandlers(socket, daves, savedPlaces, io, logEvent);
+	resolveSignal.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 
 	debug.registerHandlers(socket, daves, savedPlaces, io);
 });
