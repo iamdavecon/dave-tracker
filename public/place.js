@@ -110,6 +110,10 @@ function getLineconUrl() {
 	return `/linecon.html?placeId=${encodeURIComponent(placeId)}`;
 }
 
+function getPirateVoyageUrl(mode = "join") {
+	return `/pirates/pirate-voyage.html?placeId=${encodeURIComponent(placeId)}&mode=${encodeURIComponent(mode)}`;
+}
+
 function getItemCountRow(dave, item, label, href = "") {
 	const amount = state.getAmt(dave, item);
 	const content = `
@@ -148,6 +152,29 @@ function getPlaceGrantItemStats(dave, place, firstEmoji, fragmentChallenge, isLi
 
 function openLinecon() {
 	window.location.href = getLineconUrl();
+}
+
+function openPirateVoyage(mode = "join") {
+	window.location.href = getPirateVoyageUrl(mode);
+}
+
+function stopPirateVoyage() {
+	let handled = false;
+
+	socket.emit("stopPirateVoyage", userId, placeId, (result) => {
+		handled = true;
+		if (!result?.ok) {
+			alert(result?.error || "Unable to stop the voyage.");
+			return;
+		}
+		location.reload();
+	});
+
+	setTimeout(() => {
+		if (!handled) {
+			location.reload();
+		}
+	}, 800);
 }
 
 function joinLinecon() {
@@ -286,6 +313,15 @@ function addActions(actionHtml) {
 			case "playLinecon":
 				openLinecon();
 				break;
+			case "launchPirateVoyage":
+				openPirateVoyage("launch");
+				break;
+			case "joinPirateVoyage":
+				openPirateVoyage("join");
+				break;
+			case "stopPirateVoyage":
+				stopPirateVoyage();
+				break;
 			default:
 				emit(action);
 		}
@@ -297,7 +333,7 @@ async function loadPlace() {
 
 	const res = await fetch(`/api/place?id=${encodeURIComponent(placeId)}&viewerId=${encodeURIComponent(userId)}`);
 	const payload = await res.json();
-	const { place, dave } = payload;
+	const { place, dave, voyage } = payload;
 	isDebugUser = !!payload.isDebugUser;
 
 	//console.log("loading: " + JSON.stringify(payload, null, 2));
@@ -472,6 +508,17 @@ async function loadPlace() {
 					? `<button data-action="${action}" data-item="${rule.item}"> ${rule.getLabel} </button>`
 					: `<button disabled> ${rule.getLabel} (${remaining}) </button>`;
 		}
+
+		if (voyage?.active && voyage?.isStarter) {
+			actionHtml += `<button data-action="joinPirateVoyage">Join the Voyage</button>`;
+			actionHtml += `<button data-action="stopPirateVoyage">Stop the Voyage</button>`;
+		} else {
+			actionHtml += voyage?.active
+				? `<button data-action="joinPirateVoyage">&#127988;&#8205;&#9760;&#65039; Join Crew</button>`
+				: `<button data-action="launchPirateVoyage">&#9875; Launch Voyage</button>`;
+		}
+
+
 	} else {
 		actionHtml += "OUT OF RANGE";
 	}

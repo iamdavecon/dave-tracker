@@ -12,6 +12,7 @@ import * as places from './utils/places.js';
 import * as raves from './utils/raves.js';
 import * as ascension from './utils/ascension.js';
 import * as debug from './utils/debug.js';
+import * as pirateVoyage from './utils/pirates/pirateVoyage.js';
 import { postImportantLogToDiscord } from './utils/discord.js';
 import { DAVE_TANGENT_NAME, getBotLifetimeMs, hasDaveTangent, spawnBot, updateBots } from "./utils/bots.js";
 import { summarizeDave, getInteraction } from "./utils/players.js";
@@ -658,6 +659,7 @@ app.get('/api/place', (req, res) => {
 	res.json({
 		place: places.getInteraction(me, place),
 		dave: me,
+		voyage: pirateVoyage.getPlaceVoyageSummary(id, me.userId),
 		isDebugUser: isDebugId(viewerId)
 	});
 });
@@ -1131,6 +1133,7 @@ io.on('connection', (socket) => {
 	places.registerHandlers(socket, daves, savedPlaces, io, logEvent, awardDodCommendations);
 	raves.registerHandlers(socket, daves, io, logEvent, awardDodCommendations);
 	ascension.registerHandlers(socket, daves, savedPlaces, io, logEvent);
+	pirateVoyage.registerHandlers(socket, daves, savedPlaces, io, logEvent);
 
 	debug.registerHandlers(socket, daves, savedPlaces, io);
 });
